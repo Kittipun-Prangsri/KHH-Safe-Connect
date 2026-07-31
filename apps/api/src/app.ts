@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express, { Express, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { requireAuth, AuthenticatedRequest } from './middleware/auth.js';
 
-const app = express();
+const app: Express = express();
 
 // Security middlewares
 app.use(helmet());
