@@ -9,3 +9,6 @@ onlyBuiltDependencies:
   - '@esbuild/darwin-arm64'
   - '@esbuild/darwin-x64'
   - '@esbuild/linux-x64'
+  - '@esbuild/linux-x64-gnu'
+  - '@esbuild/android-arm64'
+  - '@esbuild/win32-x64'
