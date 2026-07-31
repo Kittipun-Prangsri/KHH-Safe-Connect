@@ -1,0 +1,292 @@
+'use client';
+
+import React, { useState } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
+import { Users, Plus, Search, Filter, Phone, Heart, ChevronRight, Activity, X, UserPlus, CheckCircle2 } from 'lucide-react';
+
+interface Patient {
+  id: string;
+  hn: string;
+  name: string;
+  age: number;
+  gender: string;
+  phone: string;
+  diseases: string[];
+  status: 'active' | 'inactive' | 'transferred';
+  lastVisit: string;
+  caregiver?: string;
+  contactConsent: boolean;
+}
+
+export default function PatientsPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDisease, setSelectedDisease] = useState<string>('all');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [patients, setPatients] = useState<Patient[]>([
+    { id: '1', hn: 'HN-98302', name: 'นายสมชาย ดีเลิศ', age: 58, gender: 'ชาย', phone: '081-234-5678', diseases: ['DM', 'HT'], status: 'active', lastVisit: '15 ก.ค. 2026', caregiver: 'นางสมศรี ดีเลิศ (ภรรยา)', contactConsent: true },
+    { id: '2', hn: 'HN-12493', name: 'นางสาววิมล ศรีใส', age: 64, gender: 'หญิง', phone: '089-876-5432', diseases: ['CKD', 'HT'], status: 'active', lastVisit: '20 ก.ค. 2026', caregiver: 'นายวิชัย ศรีใส (บุตร)', contactConsent: true },
+    { id: '3', hn: 'HN-85401', name: 'นายเกรียงไกร ลุยรบ', age: 71, gender: 'ชาย', phone: '086-555-4321', diseases: ['COPD'], status: 'active', lastVisit: '02 ก.ค. 2026', contactConsent: false },
+    { id: '4', hn: 'HN-44102', name: 'นางปราณี มั่นคง', age: 52, gender: 'หญิง', phone: '092-333-1122', diseases: ['DM', 'HT', 'CKD'], status: 'active', lastVisit: '28 ก.ค. 2026', caregiver: 'นายสุพจน์ มั่นคง (สามี)', contactConsent: true },
+    { id: '5', hn: 'HN-67812', name: 'นายอนันต์ แสงทอง', age: 60, gender: 'ชาย', phone: '084-999-8877', diseases: ['ASTHMA'], status: 'active', lastVisit: '10 ก.ค. 2026', contactConsent: true },
+  ]);
+
+  const filteredPatients = patients.filter((p) => {
+    const matchesSearch = p.name.includes(searchTerm) || p.hn.toLowerCase().includes(searchTerm.toLowerCase()) || p.phone.includes(searchTerm);
+    const matchesDisease = selectedDisease === 'all' || p.diseases.includes(selectedDisease);
+    return matchesSearch && matchesDisease;
+  });
+
+  return (
+    <AppLayout>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+              <Users className="w-7 h-7 text-teal-600" />
+              <span>ทะเบียนผู้ป่วย NCDs</span>
+            </h1>
+            <p className="text-slate-500 text-xs sm:text-sm">จัดการประวัติ ข้อมูลติดต่อ โรคประจำตัว และญาติผู้ดูแล</p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>ลงทะเบียนผู้ป่วยใหม่</span>
+          </button>
+        </div>
+
+        {/* Filter & Search Bar */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full md:w-96">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ค้นหา HN, ชื่อ-นามสกุล, หรือเบอร์โทร..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+            />
+          </div>
+
+          {/* Disease Category Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+            <span className="text-xs text-slate-500 font-semibold mr-1 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5" /> โรค:
+            </span>
+            {['all', 'DM', 'HT', 'CKD', 'COPD', 'ASTHMA'].map((code) => (
+              <button
+                key={code}
+                onClick={() => setSelectedDisease(code)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                  selectedDisease === code
+                    ? 'bg-teal-600 text-white shadow-sm font-bold'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {code === 'all' ? 'ทั้งหมด' : code}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Patient Table */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <th className="pb-3 font-semibold">HN / ชื่อ-นามสกุล</th>
+                  <th className="pb-3 font-semibold">อายุ / เพศ</th>
+                  <th className="pb-3 font-semibold">กลุ่มโรค NCDs</th>
+                  <th className="pb-3 font-semibold">เบอร์โทรศัพท์</th>
+                  <th className="pb-3 font-semibold">ผู้ดูแล / ญาติ</th>
+                  <th className="pb-3 font-semibold">ตรวจล่าสุด</th>
+                  <th className="pb-3 font-semibold text-right">รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {filteredPatients.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                      ไม่พบข้อมูลผู้ป่วยตามเงื่อนไข
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPatients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-slate-50 transition-all group">
+                      <td className="py-4 pr-3">
+                        <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
+                          {patient.name}
+                        </span>
+                        <span className="block text-[10px] text-teal-600 font-mono">{patient.hn}</span>
+                      </td>
+                      <td className="py-4 text-slate-600">
+                        {patient.age} ปี ({patient.gender})
+                      </td>
+                      <td className="py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {patient.diseases.map((d) => (
+                            <span
+                              key={d}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                d === 'DM' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
+                                d === 'HT' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                d === 'CKD' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                              }`}
+                            >
+                              {d}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-4 text-slate-700 flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{patient.phone}</span>
+                      </td>
+                      <td className="py-4 text-slate-600">
+                        {patient.caregiver || <span className="text-slate-400 italic">ไม่มีข้อมูล</span>}
+                      </td>
+                      <td className="py-4 text-slate-500 text-[11px]">{patient.lastVisit}</td>
+                      <td className="py-4 text-right">
+                        <button
+                          onClick={() => setSelectedPatient(patient)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 rounded-lg transition-all text-xs cursor-pointer border border-slate-200"
+                        >
+                          <span>ดูประวัติ</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Patient Detail Modal */}
+        {selectedPatient && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-5">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                <div>
+                  <span className="text-xs text-teal-600 font-mono font-bold">{selectedPatient.hn}</span>
+                  <h3 className="text-xl font-extrabold text-slate-800">{selectedPatient.name}</h3>
+                </div>
+                <button onClick={() => setSelectedPatient(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-600">
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">อายุ / เพศ</span>
+                    <span className="font-semibold text-slate-800">{selectedPatient.age} ปี ({selectedPatient.gender})</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">เบอร์โทรหลัก</span>
+                    <span className="font-semibold text-slate-800">{selectedPatient.phone}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block text-[10px] mb-1">กลุ่มโรคประจำตัว</span>
+                  <div className="flex gap-1.5">
+                    {selectedPatient.diseases.map((d) => (
+                      <span key={d} className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block text-[10px] mb-1">ผู้ดูแล / ญาติที่ติดต่อได้</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                    {selectedPatient.caregiver ? (
+                      <span className="font-medium text-slate-800">{selectedPatient.caregiver}</span>
+                    ) : (
+                      <span className="text-slate-400 italic">ไม่ระบุข้อมูลผู้ดูแล</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block text-[10px] mb-1">ยินยอมให้ติดต่อสื่อสาร</span>
+                  <span className={`inline-flex items-center gap-1 font-semibold ${selectedPatient.contactConsent ? 'text-teal-600' : 'text-rose-600'}`}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {selectedPatient.contactConsent ? 'ยินยอมให้โทรและส่งข้อความติดตาม' : 'ยังไม่ได้ระบุความยินยอม'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  onClick={() => setSelectedPatient(null)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-all"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Patient Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-teal-600" />
+                  <span>ลงทะเบียนผู้ป่วย NCDs ใหม่</span>
+                </h3>
+                <button onClick={() => setShowAddModal(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setShowAddModal(false);
+                  alert('บันทึกข้อมูลผู้ป่วยใหม่เรียบร้อย!');
+                }}
+                className="space-y-3 text-xs"
+              >
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">หมายเลข HN</label>
+                  <input required type="text" placeholder="เช่น HN-99001" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">ชื่อ-นามสกุล</label>
+                  <input required type="text" placeholder="ระบุชื่อและนามสกุล" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">อายุ (ปี)</label>
+                    <input required type="number" placeholder="เช่น 60" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">เบอร์โทรศัพท์</label>
+                    <input required type="tel" placeholder="08x-xxx-xxxx" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl">ยกเลิก</button>
+                  <button type="submit" className="px-4 py-2 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700">บันทึกข้อมูล</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+}

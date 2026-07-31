@@ -4,6 +4,7 @@ module.exports = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./features/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -29,12 +30,16 @@ module.exports = {
           500: '#3b5c92',
           600: '#2e4976',
           700: '#263b62',
-          800: '#1b2a47', // Rich deep navy for high-end UI
+          800: '#1b2a47',
           900: '#0f172a',
+          950: '#080d1a',
         }
       },
       fontFamily: {
-        sans: ['var(--font-outfit)', 'Inter', 'sans-serif'],
+        sans: ['var(--font-prompt)', 'Prompt', 'var(--font-sarabun)', 'Sarabun', 'var(--font-inter)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        prompt: ['var(--font-prompt)', 'Prompt', 'sans-serif'],
+        sarabun: ['var(--font-sarabun)', 'Sarabun', 'sans-serif'],
+        inter: ['var(--font-inter)', 'Inter', 'sans-serif'],
       },
       backgroundImage: {
         'glass-gradient': 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)',

@@ -1,3 +1,11 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - 'protobufjs'
+  - 'esbuild'
+  - '@esbuild/darwin-arm64'
+  - '@esbuild/darwin-x64'
+  - '@esbuild/linux-x64'

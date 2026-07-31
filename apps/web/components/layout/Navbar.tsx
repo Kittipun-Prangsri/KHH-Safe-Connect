@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HeartHandshake, LayoutDashboard, Users, Calendar, PhoneCall, MessageSquare, BookOpen, Settings, LogOut } from 'lucide-react';
+import { HeartHandshake, LayoutDashboard, Users, Calendar, PhoneCall, MessageSquare, BookOpen, BarChart3, Upload, Settings, LogOut } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -13,25 +13,27 @@ export default function Navbar() {
     { href: '/patients', label: 'ทะเบียนผู้ป่วย', icon: Users },
     { href: '/appointments', label: 'นัดหมาย', icon: Calendar },
     { href: '/follow-ups', label: 'งานติดตาม', icon: PhoneCall },
-    { href: '/reply', label: 'กล่องข้อความ Reply', icon: MessageSquare, badge: 3 },
+    { href: '/reply', label: 'Reply', icon: MessageSquare, badge: 3 },
     { href: '/education', label: 'คำแนะนำสุขภาพ', icon: BookOpen },
+    { href: '/reports', label: 'รายงาน', icon: BarChart3 },
+    { href: '/imports', label: 'นำเข้า Excel', icon: Upload },
   ];
 
   return (
-    <nav className="glassmorphism border-b border-white/5 sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-md">
+    <nav className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm">
       {/* Brand Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2.5 group">
-        <div className="p-1.5 rounded-lg bg-clinical-500 text-white shadow-glow transition-all group-hover:scale-105">
+      <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
+        <div className="p-2 rounded-xl bg-teal-600 text-white shadow-md transition-all group-hover:scale-105 group-hover:bg-teal-500">
           <HeartHandshake className="w-5 h-5" />
         </div>
         <div>
-          <span className="font-bold text-sm tracking-wider text-white">KHH SAFE-CONNECT</span>
-          <span className="block text-[8px] text-clinical-400 font-bold uppercase tracking-widest leading-none">NCDs Dashboard</span>
+          <span className="font-extrabold text-sm tracking-wide text-slate-800 group-hover:text-teal-700 transition-colors">KHH SAFE-CONNECT</span>
+          <span className="block text-[9px] text-teal-600 font-bold uppercase tracking-wider leading-none">NCDs Care Platform</span>
         </div>
       </Link>
 
       {/* Main Nav Links */}
-      <div className="hidden lg:flex items-center gap-1.5 bg-navy-950/40 p-1 rounded-xl border border-white/5">
+      <div className="hidden xl:flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname?.startsWith(item.href);
@@ -40,16 +42,16 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all relative ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all relative ${
                 isActive
-                  ? 'bg-clinical-500 text-white shadow-sm font-bold'
-                  : 'text-navy-300 hover:bg-white/5 hover:text-white'
+                  ? 'bg-teal-600 text-white shadow-sm font-bold'
+                  : 'text-slate-600 hover:bg-white hover:text-teal-700'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               <span>{item.label}</span>
               {item.badge && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full flex items-center justify-center animate-pulse">
                   {item.badge}
                 </span>
               )}
@@ -58,15 +60,15 @@ export default function Navbar() {
         })}
       </div>
 
-      {/* Right Side: Profile Info & Logout */}
-      <div className="flex items-center gap-4">
+      {/* Right Side: Profile Info & Actions */}
+      <div className="flex items-center gap-3">
         {/* User Card */}
-        <div className="flex items-center gap-2.5 border-l border-white/10 pl-4">
-          <div className="text-right hidden sm:block">
-            <span className="block text-xs font-bold text-white">กิตติพงษ์ แก้วมณี</span>
-            <span className="block text-[10px] text-clinical-400 font-medium">พยาบาลวิชาชีพ (Nurse)</span>
+        <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+          <div className="text-right hidden md:block">
+            <span className="block text-xs font-bold text-slate-800">กิตติพงษ์ แก้วมณี</span>
+            <span className="block text-[9px] text-teal-600 font-medium">พยาบาลวิชาชีพ (Nurse)</span>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-clinical-500/20 border border-clinical-500/40 flex items-center justify-center text-xs font-bold text-clinical-300">
+          <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-xs font-bold text-teal-700">
             กแก
           </div>
         </div>
@@ -74,8 +76,12 @@ export default function Navbar() {
         {/* Settings button */}
         <Link
           href="/settings"
-          className="p-2 rounded-lg border border-white/5 hover:bg-white/5 text-navy-300 hover:text-white transition-all"
-          title="ตั้งค่า"
+          className={`p-2 rounded-xl border transition-all ${
+            pathname?.startsWith('/settings')
+              ? 'bg-teal-600 text-white border-teal-600'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-teal-700'
+          }`}
+          title="ตั้งค่าระบบ"
         >
           <Settings className="w-4 h-4" />
         </Link>
@@ -83,7 +89,7 @@ export default function Navbar() {
         {/* Logout */}
         <Link
           href="/"
-          className="p-2 rounded-lg border border-rose-500/10 bg-rose-500/5 hover:bg-rose-500/10 text-rose-400 transition-all"
+          className="p-2 rounded-xl border border-rose-100 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all"
           title="ออกจากระบบ"
         >
           <LogOut className="w-4 h-4" />

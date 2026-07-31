@@ -4,143 +4,139 @@ import React, { useState } from 'react';
 import { Shield, Lock, User, Activity, ArrowRight, HeartHandshake } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('nurse@khh.go.th');
+  const [password, setPassword] = useState('12345678');
   const [role, setRole] = useState('nurse');
   const [loading, setLoading] = useState(false);
+
+  const roles = [
+    { id: 'nurse', label: 'พยาบาล (Nurse)', email: 'nurse@khh.go.th' },
+    { id: 'doctor', label: 'แพทย์ (Doctor)', email: 'doctor@khh.go.th' },
+    { id: 'ncd_coordinator', label: 'ผู้ประสานงาน NCDs', email: 'coordinator@khh.go.th' },
+    { id: 'hospital_admin', label: 'ผู้ดูแลระบบ', email: 'admin@khh.go.th' },
+  ];
+
+  const handleRoleSelect = (item: { id: string; email: string }) => {
+    setRole(item.id);
+    setEmail(item.email);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate navigation/auth check for foundation phase
     setTimeout(() => {
       setLoading(false);
-      alert('เข้าสู่ระบบสำเร็จ (โหมดการพัฒนา)');
-    }, 1000);
+      window.location.href = '/dashboard';
+    }, 400);
   };
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row min-h-screen">
-      {/* Left Banner: Brand and Info */}
-      <div className="md:w-1/2 flex flex-col justify-between p-8 md:p-16 bg-navy-800/40 relative overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
+    <div className="flex-1 flex flex-col md:flex-row min-h-screen bg-slate-50">
+      {/* Left Banner: Brand and Dark Teal Atmosphere */}
+      <div className="md:w-1/2 flex flex-col justify-between p-8 md:p-16 bg-gradient-to-br from-slate-900 via-teal-900 to-slate-950 text-white relative overflow-hidden">
         {/* Decorative Glowing Orbs */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-clinical-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-clinical-500/10 blur-3xl" />
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-teal-500/20 blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl" />
 
-        <div className="z-10 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-clinical-500 text-white shadow-glow">
-            <HeartHandshake className="w-6 h-6" />
+        {/* Top Brand Logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-teal-500 text-white shadow-lg">
+            <HeartHandshake className="w-7 h-7" />
           </div>
           <div>
-            <span className="font-semibold text-lg text-white tracking-wider">KHH SAFE-CONNECT</span>
-            <div className="text-[10px] text-clinical-400 font-bold uppercase tracking-widest">NCDs Patient Care Platform</div>
+            <h1 className="font-extrabold text-xl tracking-wider text-white">KHH SAFE-CONNECT</h1>
+            <span className="text-[10px] text-teal-300 font-bold uppercase tracking-widest block">NCDs Care & Requisition Portal</span>
           </div>
         </div>
 
-        <div className="z-10 my-16 md:my-auto max-w-lg">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-clinical-500/15 text-clinical-300 border border-clinical-500/30 text-xs font-semibold mb-6">
-            <Activity className="w-4 h-4 animate-pulse" />
-            ระบบปฏิบัติการสำหรับเจ้าหน้าที่
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
-            เชื่อมต่อการดูแลผู้ป่วย <span className="text-transparent bg-clip-text bg-gradient-to-r from-clinical-400 to-clinical-300">NCDs</span> อย่างปลอดภัยและต่อเนื่อง
-          </h1>
-          <p className="text-navy-200 leading-relaxed text-sm md:text-base">
-            ระบบบริหารข้อมูลประวัติติดตาม นัดหมาย การสื่อสารสองทาง และการวิเคราะห์คำแนะนำการดูแลสุขภาพเฉพาะบุคคลสำหรับผู้ป่วยเบาหวาน ความดันโลหิตสูง และกลุ่มโรคไม่ติดต่อเรื้อรัง
+        {/* Middle Value Proposition */}
+        <div className="relative z-10 my-12 space-y-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+            <Activity className="w-3.5 h-3.5" /> ระบบจัดการและติดตามผู้ป่วยโรคเรื้อรัง
+          </span>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
+            เชื่อมโยงการดูแลผู้ป่วย NCDs <br />
+            <span className="text-teal-400">อย่างเป็นระบบและไร้รอยต่อ</span>
+          </h2>
+          <p className="text-xs md:text-sm text-slate-300 max-w-md leading-relaxed">
+            เพิ่มประสิทธิภาพในการติดตามผู้ป่วยขาดนัด บริหารจัดการวันนัด สื่อสารผ่าน Reply และประเมินความเข้าใจผู้ป่วยได้อย่างแม่นยำ
           </p>
         </div>
 
-        <div className="z-10 text-xs text-navy-400">
-          &copy; {new Date().getFullYear()} โรงพยาบาลส่งเสริมสุขภาพตำบล KHH. สงวนลิขสิทธิ์ทั้งหมด.
+        {/* Footer info */}
+        <div className="relative z-10 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/10 pt-4">
+          <span>โรงพยาบาลส่งเสริมสุขภาพตำบล KHH</span>
+          <span>Version 1.0.0</span>
         </div>
       </div>
 
-      {/* Right Section: Glassmorphic Login Form */}
-      <div className="md:w-1/2 flex items-center justify-center p-6 md:p-16 relative">
-        {/* Background Decorative Blur */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-clinical-500/5 blur-3xl" />
-
-        <div className="w-full max-w-md p-8 rounded-2xl glassmorphism hover-grow shadow-glass border border-white/10 z-10">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">ลงชื่อเข้าใช้งาน</h2>
-            <p className="text-navy-300 text-sm">เข้าสู่ระบบการบริหารการนัดหมายและการตอบกลับผู้ป่วย</p>
+      {/* Right Form: Login Card */}
+      <div className="md:w-1/2 flex items-center justify-center p-6 md:p-12">
+        <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-2xl p-8 shadow-xl space-y-6">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-800">เข้าสู่ระบบ (Sign In)</h3>
+            <p className="text-xs text-slate-500 mt-1">เลือกรอบการทดสอบบทบาทหน้าที่เพื่อเข้าใช้งานระบบ</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-navy-200 uppercase tracking-wider mb-2">บทบาทผู้ใช้ (สำหรับเข้าทดสอบ)</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'nurse', label: 'พยาบาล (Nurse)' },
-                  { id: 'doctor', label: 'แพทย์ (Doctor)' },
-                  { id: 'ncd_coordinator', label: 'ผู้ประสานงาน NCDs' },
-                  { id: 'hospital_admin', label: 'ผู้ดูแลระบบ' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setRole(item.id)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium border text-center transition-all ${
-                      role === item.id
-                        ? 'bg-clinical-500/20 border-clinical-500 text-clinical-300 font-bold'
-                        : 'border-white/5 bg-white/5 text-navy-300 hover:bg-white/10'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+          {/* Preset Roles Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 block">เลือกสิทธิ์ทดสอบเข้าใช้งาน (Role Preview):</label>
+            <div className="grid grid-cols-2 gap-2">
+              {roles.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleRoleSelect(item)}
+                  className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer flex items-center justify-between ${
+                    role === item.id
+                      ? 'border-teal-500 bg-teal-50 text-teal-800 font-bold shadow-sm'
+                      : 'border-slate-200 bg-slate-50/50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  {role === item.id && <div className="w-2 h-2 rounded-full bg-teal-500" />}
+                </button>
+              ))}
             </div>
+          </div>
 
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-navy-200 uppercase tracking-wider mb-2">อีเมลผู้ใช้</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">อีเมลผู้ใช้งาน (Email)</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-navy-400">
-                  <User className="w-4 h-4" />
-                </span>
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
-                  type="email"
+                  type="text"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@hospital.go.th"
-                  required
-                  className="w-full bg-navy-900/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-clinical-500 focus:ring-1 focus:ring-clinical-500 placeholder-navy-500 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-navy-200 uppercase tracking-wider mb-2">รหัสผ่าน</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน (Password)</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-navy-400">
-                  <Lock className="w-4 h-4" />
-                </span>
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full bg-navy-900/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-clinical-500 focus:ring-1 focus:ring-clinical-500 placeholder-navy-500 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-navy-300">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="rounded bg-navy-950 border-white/10 text-clinical-500 focus:ring-0 focus:ring-offset-0" />
-                <span>จำฉันไว้ในระบบ</span>
-              </label>
-              <a href="#" className="hover:text-clinical-400 transition-colors">ลืมรหัสผ่าน?</a>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-clinical-600 to-clinical-500 text-white rounded-xl py-3 font-semibold text-sm flex items-center justify-center gap-2 glow-on-hover hover:from-clinical-500 hover:to-clinical-400 transition-all cursor-pointer shadow-md disabled:opacity-50"
+              className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
-                <span>กำลังโหลด...</span>
+                <span>กำลังตรวจสอบสิทธิ์...</span>
               ) : (
                 <>
                   <span>เข้าสู่ระบบ</span>
@@ -149,11 +145,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-navy-400 uppercase tracking-widest border-t border-white/5 pt-4">
-            <Shield className="w-3.5 h-3.5 text-clinical-500" />
-            <span>ความปลอดภัยระดับคลินิก (HIPAA-Ready)</span>
-          </div>
         </div>
       </div>
     </div>

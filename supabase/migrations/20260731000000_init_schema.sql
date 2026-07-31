@@ -1,9 +1,36 @@
--- Create custom schema types or helpers if needed
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Clean up existing conflicting tables if present from previous projects
+DROP TABLE IF EXISTS public.audit_logs CASCADE;
+DROP TABLE IF EXISTS public.consent_records CASCADE;
+DROP TABLE IF EXISTS public.integration_logs CASCADE;
+DROP TABLE IF EXISTS public.import_errors CASCADE;
+DROP TABLE IF EXISTS public.import_batches CASCADE;
+DROP TABLE IF EXISTS public.patient_education_logs CASCADE;
+DROP TABLE IF EXISTS public.education_topics CASCADE;
+DROP TABLE IF EXISTS public.conversation_assignments CASCADE;
+DROP TABLE IF EXISTS public.reply_templates CASCADE;
+DROP TABLE IF EXISTS public.message_reads CASCADE;
+DROP TABLE IF EXISTS public.message_attachments CASCADE;
+DROP TABLE IF EXISTS public.messages CASCADE;
+DROP TABLE IF EXISTS public.conversation_members CASCADE;
+DROP TABLE IF EXISTS public.conversations CASCADE;
+DROP TABLE IF EXISTS public.contact_logs CASCADE;
+DROP TABLE IF EXISTS public.follow_up_tasks CASCADE;
+DROP TABLE IF EXISTS public.appointment_status_history CASCADE;
+DROP TABLE IF EXISTS public.appointments CASCADE;
+DROP TABLE IF EXISTS public.patient_diseases CASCADE;
+DROP TABLE IF EXISTS public.disease_master CASCADE;
+DROP TABLE IF EXISTS public.patient_caregivers CASCADE;
+DROP TABLE IF EXISTS public.patient_addresses CASCADE;
+DROP TABLE IF EXISTS public.patients CASCADE;
+DROP TABLE IF EXISTS public.clinics CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP TABLE IF EXISTS public.organizations CASCADE;
+
 -- 1. Organizations
-CREATE TABLE public.organizations (
+CREATE TABLE IF NOT EXISTS public.organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
@@ -18,7 +45,7 @@ CREATE TABLE public.organizations (
 );
 
 -- 2. Profiles (Linked to auth.users)
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY, -- Will reference auth.users(id) via foreign key dynamically or via triggers
     organization_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
     employee_code TEXT,
@@ -34,7 +61,7 @@ CREATE TABLE public.profiles (
 );
 
 -- 3. Clinics
-CREATE TABLE public.clinics (
+CREATE TABLE IF NOT EXISTS public.clinics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     code TEXT NOT NULL,
@@ -49,7 +76,7 @@ CREATE TABLE public.clinics (
 );
 
 -- 4. Patients
-CREATE TABLE public.patients (
+CREATE TABLE IF NOT EXISTS public.patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     hn TEXT NOT NULL,
@@ -77,7 +104,7 @@ CREATE TABLE public.patients (
 );
 
 -- 5. Patient Addresses
-CREATE TABLE public.patient_addresses (
+CREATE TABLE IF NOT EXISTS public.patient_addresses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     address_type TEXT DEFAULT 'home' NOT NULL,
@@ -99,7 +126,7 @@ CREATE TABLE public.patient_addresses (
 );
 
 -- 6. Patient Caregivers
-CREATE TABLE public.patient_caregivers (
+CREATE TABLE IF NOT EXISTS public.patient_caregivers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     full_name TEXT NOT NULL,
@@ -115,7 +142,7 @@ CREATE TABLE public.patient_caregivers (
 );
 
 -- 7. Disease Master
-CREATE TABLE public.disease_master (
+CREATE TABLE IF NOT EXISTS public.disease_master (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT UNIQUE NOT NULL,
     name_th TEXT NOT NULL,
@@ -128,7 +155,7 @@ CREATE TABLE public.disease_master (
 );
 
 -- 8. Patient Diseases
-CREATE TABLE public.patient_diseases (
+CREATE TABLE IF NOT EXISTS public.patient_diseases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     disease_id UUID REFERENCES public.disease_master(id) ON DELETE CASCADE NOT NULL,
@@ -145,7 +172,7 @@ CREATE TABLE public.patient_diseases (
 );
 
 -- 9. Appointments
-CREATE TABLE public.appointments (
+CREATE TABLE IF NOT EXISTS public.appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
@@ -168,7 +195,7 @@ CREATE TABLE public.appointments (
 );
 
 -- 10. Appointment Status History
-CREATE TABLE public.appointment_status_history (
+CREATE TABLE IF NOT EXISTS public.appointment_status_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     appointment_id UUID REFERENCES public.appointments(id) ON DELETE CASCADE NOT NULL,
     previous_status TEXT,
@@ -179,7 +206,7 @@ CREATE TABLE public.appointment_status_history (
 );
 
 -- 11. Follow-up Tasks
-CREATE TABLE public.follow_up_tasks (
+CREATE TABLE IF NOT EXISTS public.follow_up_tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
@@ -201,7 +228,7 @@ CREATE TABLE public.follow_up_tasks (
 );
 
 -- 12. Contact Logs
-CREATE TABLE public.contact_logs (
+CREATE TABLE IF NOT EXISTS public.contact_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     appointment_id UUID REFERENCES public.appointments(id) ON DELETE SET NULL,
@@ -220,7 +247,7 @@ CREATE TABLE public.contact_logs (
 );
 
 -- 13. Conversations (Reply Module)
-CREATE TABLE public.conversations (
+CREATE TABLE IF NOT EXISTS public.conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
@@ -240,7 +267,7 @@ CREATE TABLE public.conversations (
 );
 
 -- 14. Conversation Members
-CREATE TABLE public.conversation_members (
+CREATE TABLE IF NOT EXISTS public.conversation_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
     member_type TEXT NOT NULL CHECK (member_type IN ('staff', 'patient', 'caregiver')),
@@ -257,7 +284,7 @@ CREATE TABLE public.conversation_members (
 );
 
 -- 15. Messages
-CREATE TABLE public.messages (
+CREATE TABLE IF NOT EXISTS public.messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
     sender_type TEXT NOT NULL CHECK (sender_type IN ('staff', 'patient', 'caregiver')),
@@ -279,7 +306,7 @@ CREATE TABLE public.messages (
 );
 
 -- 16. Message Attachments
-CREATE TABLE public.message_attachments (
+CREATE TABLE IF NOT EXISTS public.message_attachments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL,
     file_name TEXT NOT NULL,
@@ -291,7 +318,7 @@ CREATE TABLE public.message_attachments (
 );
 
 -- 17. Message Reads
-CREATE TABLE public.message_reads (
+CREATE TABLE IF NOT EXISTS public.message_reads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL,
     reader_type TEXT NOT NULL CHECK (reader_type IN ('staff', 'patient', 'caregiver')),
@@ -300,7 +327,7 @@ CREATE TABLE public.message_reads (
 );
 
 -- 18. Reply Templates
-CREATE TABLE public.reply_templates (
+CREATE TABLE IF NOT EXISTS public.reply_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     template_name TEXT NOT NULL,
@@ -313,7 +340,7 @@ CREATE TABLE public.reply_templates (
 );
 
 -- 19. Conversation Assignments
-CREATE TABLE public.conversation_assignments (
+CREATE TABLE IF NOT EXISTS public.conversation_assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
     assigned_from UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -323,7 +350,7 @@ CREATE TABLE public.conversation_assignments (
 );
 
 -- 20. Education Topics
-CREATE TABLE public.education_topics (
+CREATE TABLE IF NOT EXISTS public.education_topics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category TEXT NOT NULL CHECK (category IN ('diet', 'stress', 'medication')),
     code TEXT UNIQUE NOT NULL,
@@ -337,7 +364,7 @@ CREATE TABLE public.education_topics (
 );
 
 -- 21. Patient Education Logs
-CREATE TABLE public.patient_education_logs (
+CREATE TABLE IF NOT EXISTS public.patient_education_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     topic_id UUID REFERENCES public.education_topics(id) ON DELETE CASCADE NOT NULL,
@@ -356,7 +383,7 @@ CREATE TABLE public.patient_education_logs (
 );
 
 -- 22. Import Batches
-CREATE TABLE public.import_batches (
+CREATE TABLE IF NOT EXISTS public.import_batches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     file_name TEXT NOT NULL,
@@ -373,7 +400,7 @@ CREATE TABLE public.import_batches (
 );
 
 -- 23. Import Errors
-CREATE TABLE public.import_errors (
+CREATE TABLE IF NOT EXISTS public.import_errors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     batch_id UUID REFERENCES public.import_batches(id) ON DELETE CASCADE NOT NULL,
     row_number INTEGER NOT NULL,
@@ -385,7 +412,7 @@ CREATE TABLE public.import_errors (
 );
 
 -- 24. Integration Logs
-CREATE TABLE public.integration_logs (
+CREATE TABLE IF NOT EXISTS public.integration_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     source_system TEXT NOT NULL,
@@ -399,7 +426,7 @@ CREATE TABLE public.integration_logs (
 );
 
 -- 25. Consent Records
-CREATE TABLE public.consent_records (
+CREATE TABLE IF NOT EXISTS public.consent_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     consent_type TEXT NOT NULL,
@@ -414,7 +441,7 @@ CREATE TABLE public.consent_records (
 );
 
 -- 26. Audit Logs
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
     actor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -433,13 +460,13 @@ CREATE TABLE public.audit_logs (
 -- -------------------------------------------------------------
 -- Indexes (as recommended in README.md)
 -- -------------------------------------------------------------
-CREATE INDEX idx_patients_org_hn ON public.patients (organization_id, hn);
-CREATE INDEX idx_patients_name ON public.patients (organization_id, first_name, last_name);
-CREATE INDEX idx_appointments_date_status ON public.appointments (organization_id, appointment_date, status);
-CREATE INDEX idx_followups_assignee_due ON public.follow_up_tasks (organization_id, assigned_to, status, due_at);
-CREATE INDEX idx_conversations_assignee_status ON public.conversations (organization_id, assigned_to, status, updated_at DESC);
-CREATE INDEX idx_messages_conversation_created ON public.messages (conversation_id, created_at);
-CREATE INDEX idx_audit_entity ON public.audit_logs (organization_id, entity_type, entity_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_patients_org_hn ON public.patients (organization_id, hn);
+CREATE INDEX IF NOT EXISTS idx_patients_name ON public.patients (organization_id, first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_appointments_date_status ON public.appointments (organization_id, appointment_date, status);
+CREATE INDEX IF NOT EXISTS idx_followups_assignee_due ON public.follow_up_tasks (organization_id, assigned_to, status, due_at);
+CREATE INDEX IF NOT EXISTS idx_conversations_assignee_status ON public.conversations (organization_id, assigned_to, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_created ON public.messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON public.audit_logs (organization_id, entity_type, entity_id, created_at DESC);
 
 
 -- -------------------------------------------------------------
@@ -454,21 +481,52 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply update trigger to relevant tables
+DROP TRIGGER IF EXISTS trigger_update_organizations ON public.organizations;
 CREATE TRIGGER trigger_update_organizations BEFORE UPDATE ON public.organizations FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_profiles ON public.profiles;
 CREATE TRIGGER trigger_update_profiles BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_clinics ON public.clinics;
 CREATE TRIGGER trigger_update_clinics BEFORE UPDATE ON public.clinics FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_patients ON public.patients;
 CREATE TRIGGER trigger_update_patients BEFORE UPDATE ON public.patients FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_patient_addresses ON public.patient_addresses;
 CREATE TRIGGER trigger_update_patient_addresses BEFORE UPDATE ON public.patient_addresses FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_patient_caregivers ON public.patient_caregivers;
 CREATE TRIGGER trigger_update_patient_caregivers BEFORE UPDATE ON public.patient_caregivers FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_disease_master ON public.disease_master;
 CREATE TRIGGER trigger_update_disease_master BEFORE UPDATE ON public.disease_master FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_patient_diseases ON public.patient_diseases;
 CREATE TRIGGER trigger_update_patient_diseases BEFORE UPDATE ON public.patient_diseases FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_appointments ON public.appointments;
 CREATE TRIGGER trigger_update_appointments BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_follow_up_tasks ON public.follow_up_tasks;
 CREATE TRIGGER trigger_update_follow_up_tasks BEFORE UPDATE ON public.follow_up_tasks FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_contact_logs ON public.contact_logs;
 CREATE TRIGGER trigger_update_contact_logs BEFORE UPDATE ON public.contact_logs FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_conversations ON public.conversations;
 CREATE TRIGGER trigger_update_conversations BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_reply_templates ON public.reply_templates;
 CREATE TRIGGER trigger_update_reply_templates BEFORE UPDATE ON public.reply_templates FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_education_topics ON public.education_topics;
 CREATE TRIGGER trigger_update_education_topics BEFORE UPDATE ON public.education_topics FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_patient_education_logs ON public.patient_education_logs;
 CREATE TRIGGER trigger_update_patient_education_logs BEFORE UPDATE ON public.patient_education_logs FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_update_consent_records ON public.consent_records;
 CREATE TRIGGER trigger_update_consent_records BEFORE UPDATE ON public.consent_records FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
 
 
@@ -503,7 +561,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Check if auth.users triggers should be created (this references auth.users table which exists in Supabase environments)
-CREATE OR REPLACE TRIGGER trigger_on_auth_user_created
+DROP TRIGGER IF EXISTS trigger_on_auth_user_created ON auth.users;
+CREATE TRIGGER trigger_on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
@@ -563,34 +622,41 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 -- -------------------------------------------------------------
 
 -- 1. Organizations Policy: Super admins read/write all, normal staff can only read their own org
+DROP POLICY IF EXISTS "org_read_policy" ON public.organizations;
 CREATE POLICY "org_read_policy" ON public.organizations
     FOR SELECT TO authenticated
     USING (id = public.current_user_organization_id() OR public.current_user_role() = 'super_admin');
 
+DROP POLICY IF EXISTS "org_all_policy_super_admin" ON public.organizations;
 CREATE POLICY "org_all_policy_super_admin" ON public.organizations
     FOR ALL TO authenticated
     USING (public.current_user_role() = 'super_admin');
 
 -- 2. Profiles Policy: Staff can view profiles in their own organization.
+DROP POLICY IF EXISTS "profiles_select_same_org" ON public.profiles;
 CREATE POLICY "profiles_select_same_org" ON public.profiles
     FOR SELECT TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
+DROP POLICY IF EXISTS "profiles_update_self" ON public.profiles;
 CREATE POLICY "profiles_update_self" ON public.profiles
     FOR UPDATE TO authenticated
     USING (id = auth.uid() AND public.current_user_is_active());
 
 -- 3. Clinics Policy: Read clinics in same organization
+DROP POLICY IF EXISTS "clinics_select_same_org" ON public.clinics;
 CREATE POLICY "clinics_select_same_org" ON public.clinics
     FOR SELECT TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 4. Patients Policy: Read/write patients in same organization
+DROP POLICY IF EXISTS "patients_all_same_org" ON public.patients;
 CREATE POLICY "patients_all_same_org" ON public.patients
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 5. Patient Addresses Policy
+DROP POLICY IF EXISTS "patient_addresses_all_same_org" ON public.patient_addresses;
 CREATE POLICY "patient_addresses_all_same_org" ON public.patient_addresses
     FOR ALL TO authenticated
     USING (
@@ -602,6 +668,7 @@ CREATE POLICY "patient_addresses_all_same_org" ON public.patient_addresses
     );
 
 -- 6. Patient Caregivers Policy
+DROP POLICY IF EXISTS "patient_caregivers_all_same_org" ON public.patient_caregivers;
 CREATE POLICY "patient_caregivers_all_same_org" ON public.patient_caregivers
     FOR ALL TO authenticated
     USING (
@@ -613,11 +680,13 @@ CREATE POLICY "patient_caregivers_all_same_org" ON public.patient_caregivers
     );
 
 -- 7. Disease Master: All authenticated users can view active diseases
+DROP POLICY IF EXISTS "disease_master_read_all" ON public.disease_master;
 CREATE POLICY "disease_master_read_all" ON public.disease_master
     FOR SELECT TO authenticated
     USING (is_active = TRUE);
 
 -- 8. Patient Diseases Policy
+DROP POLICY IF EXISTS "patient_diseases_all_same_org" ON public.patient_diseases;
 CREATE POLICY "patient_diseases_all_same_org" ON public.patient_diseases
     FOR ALL TO authenticated
     USING (
@@ -629,11 +698,13 @@ CREATE POLICY "patient_diseases_all_same_org" ON public.patient_diseases
     );
 
 -- 9. Appointments Policy: Read/write appointments in same organization
+DROP POLICY IF EXISTS "appointments_all_same_org" ON public.appointments;
 CREATE POLICY "appointments_all_same_org" ON public.appointments
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 10. Appointment Status History Policy
+DROP POLICY IF EXISTS "appointment_history_all_same_org" ON public.appointment_status_history;
 CREATE POLICY "appointment_history_all_same_org" ON public.appointment_status_history
     FOR ALL TO authenticated
     USING (
@@ -645,11 +716,13 @@ CREATE POLICY "appointment_history_all_same_org" ON public.appointment_status_hi
     );
 
 -- 11. Follow-up Tasks Policy
+DROP POLICY IF EXISTS "followups_all_same_org" ON public.follow_up_tasks;
 CREATE POLICY "followups_all_same_org" ON public.follow_up_tasks
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 12. Contact Logs Policy
+DROP POLICY IF EXISTS "contact_logs_all_same_org" ON public.contact_logs;
 CREATE POLICY "contact_logs_all_same_org" ON public.contact_logs
     FOR ALL TO authenticated
     USING (
@@ -661,11 +734,13 @@ CREATE POLICY "contact_logs_all_same_org" ON public.contact_logs
     );
 
 -- 13. Conversations Policy
+DROP POLICY IF EXISTS "conversations_all_same_org" ON public.conversations;
 CREATE POLICY "conversations_all_same_org" ON public.conversations
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 14. Conversation Members Policy
+DROP POLICY IF EXISTS "conversation_members_all_same_org" ON public.conversation_members;
 CREATE POLICY "conversation_members_all_same_org" ON public.conversation_members
     FOR ALL TO authenticated
     USING (
@@ -677,6 +752,7 @@ CREATE POLICY "conversation_members_all_same_org" ON public.conversation_members
     );
 
 -- 15. Messages Policy
+DROP POLICY IF EXISTS "messages_all_same_org" ON public.messages;
 CREATE POLICY "messages_all_same_org" ON public.messages
     FOR ALL TO authenticated
     USING (
@@ -688,6 +764,7 @@ CREATE POLICY "messages_all_same_org" ON public.messages
     );
 
 -- 16. Message Attachments Policy
+DROP POLICY IF EXISTS "message_attachments_all_same_org" ON public.message_attachments;
 CREATE POLICY "message_attachments_all_same_org" ON public.message_attachments
     FOR ALL TO authenticated
     USING (
@@ -700,6 +777,7 @@ CREATE POLICY "message_attachments_all_same_org" ON public.message_attachments
     );
 
 -- 17. Message Reads Policy
+DROP POLICY IF EXISTS "message_reads_all_same_org" ON public.message_reads;
 CREATE POLICY "message_reads_all_same_org" ON public.message_reads
     FOR ALL TO authenticated
     USING (
@@ -712,11 +790,13 @@ CREATE POLICY "message_reads_all_same_org" ON public.message_reads
     );
 
 -- 18. Reply Templates Policy
+DROP POLICY IF EXISTS "reply_templates_all_same_org" ON public.reply_templates;
 CREATE POLICY "reply_templates_all_same_org" ON public.reply_templates
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 19. Conversation Assignments Policy
+DROP POLICY IF EXISTS "conversation_assignments_all_same_org" ON public.conversation_assignments;
 CREATE POLICY "conversation_assignments_all_same_org" ON public.conversation_assignments
     FOR ALL TO authenticated
     USING (
@@ -728,11 +808,13 @@ CREATE POLICY "conversation_assignments_all_same_org" ON public.conversation_ass
     );
 
 -- 20. Education Topics: Read-only for all active authenticated staff
+DROP POLICY IF EXISTS "education_topics_read_all" ON public.education_topics;
 CREATE POLICY "education_topics_read_all" ON public.education_topics
     FOR SELECT TO authenticated
     USING (is_active = TRUE);
 
 -- 21. Patient Education Logs Policy
+DROP POLICY IF EXISTS "patient_education_logs_all_same_org" ON public.patient_education_logs;
 CREATE POLICY "patient_education_logs_all_same_org" ON public.patient_education_logs
     FOR ALL TO authenticated
     USING (
@@ -744,11 +826,13 @@ CREATE POLICY "patient_education_logs_all_same_org" ON public.patient_education_
     );
 
 -- 22. Import Batches Policy
+DROP POLICY IF EXISTS "import_batches_all_same_org" ON public.import_batches;
 CREATE POLICY "import_batches_all_same_org" ON public.import_batches
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 23. Import Errors Policy
+DROP POLICY IF EXISTS "import_errors_all_same_org" ON public.import_errors;
 CREATE POLICY "import_errors_all_same_org" ON public.import_errors
     FOR ALL TO authenticated
     USING (
@@ -760,11 +844,13 @@ CREATE POLICY "import_errors_all_same_org" ON public.import_errors
     );
 
 -- 24. Integration Logs Policy
+DROP POLICY IF EXISTS "integration_logs_all_same_org" ON public.integration_logs;
 CREATE POLICY "integration_logs_all_same_org" ON public.integration_logs
     FOR ALL TO authenticated
     USING (organization_id = public.current_user_organization_id() AND public.current_user_is_active());
 
 -- 25. Consent Records Policy
+DROP POLICY IF EXISTS "consent_records_all_same_org" ON public.consent_records;
 CREATE POLICY "consent_records_all_same_org" ON public.consent_records
     FOR ALL TO authenticated
     USING (
@@ -776,6 +862,7 @@ CREATE POLICY "consent_records_all_same_org" ON public.consent_records
     );
 
 -- 26. Audit Logs Policy: Read-only for same org auditor / admins
+DROP POLICY IF EXISTS "audit_logs_select_same_org" ON public.audit_logs;
 CREATE POLICY "audit_logs_select_same_org" ON public.audit_logs
     FOR SELECT TO authenticated
     USING (
@@ -784,6 +871,7 @@ CREATE POLICY "audit_logs_select_same_org" ON public.audit_logs
         AND public.current_user_role() IN ('super_admin', 'hospital_admin', 'ncd_coordinator', 'auditor')
     );
 
+DROP POLICY IF EXISTS "audit_logs_insert_same_org" ON public.audit_logs;
 CREATE POLICY "audit_logs_insert_same_org" ON public.audit_logs
     FOR INSERT TO authenticated
     WITH CHECK (

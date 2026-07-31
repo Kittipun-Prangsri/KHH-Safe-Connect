@@ -1,11 +1,25 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
+import { Prompt, Sarabun, Inter } from 'next/font/google';
 import './globals.css';
 
-const outfit = Outfit({
+const prompt = Prompt({
+  weight: ['300', '400', '500', '600', '700', '800'],
+  subsets: ['thai', 'latin'],
+  display: 'swap',
+  variable: '--font-prompt',
+});
+
+const sarabun = Sarabun({
+  weight: ['300', '400', '500', '600', '700', '800'],
+  subsets: ['thai', 'latin'],
+  display: 'swap',
+  variable: '--font-sarabun',
+});
+
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-outfit',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -19,11 +33,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" className={`${outfit.variable} h-full`}>
+    <html lang="th" className={`${prompt.variable} ${sarabun.variable} ${inter.variable} h-full`}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="font-sans flex flex-col min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-clinical-900">
+      <body className="font-sans flex flex-col min-h-screen bg-slate-50 text-slate-800 antialiased">
         {children}
       </body>
     </html>
