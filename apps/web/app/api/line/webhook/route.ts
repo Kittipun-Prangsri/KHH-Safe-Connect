@@ -14,6 +14,15 @@ import {
 
 // Helper to reply via LINE Messaging API
 async function replyLineMessage(replyToken: string, messages: any[]) {
+  // Ignore LINE dummy verification tokens
+  if (
+    !replyToken ||
+    replyToken === '00000000000000000000000000000000' ||
+    replyToken === '11111111111111111111111111111111'
+  ) {
+    return;
+  }
+
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) {
     console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN not configured.');
