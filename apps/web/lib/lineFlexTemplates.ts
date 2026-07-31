@@ -30,7 +30,6 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
           {
             type: 'box',
             layout: 'horizontal',
-            alignment: 'center',
             contents: [
               {
                 type: 'text',
