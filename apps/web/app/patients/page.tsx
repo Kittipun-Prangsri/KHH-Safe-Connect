@@ -24,6 +24,18 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // New patient state
+  const [newPatient, setNewPatient] = useState({
+    hn: '',
+    name: '',
+    age: '',
+    gender: 'ชาย',
+    phone: '',
+    diseases: ['DM'],
+    caregiver: '',
+    contactConsent: true,
+  });
+
   const [patients, setPatients] = useState<Patient[]>([
     { id: '1', hn: 'HN-98302', name: 'นายสมชาย ดีเลิศ', age: 58, gender: 'ชาย', phone: '081-234-5678', diseases: ['DM', 'HT'], status: 'active', lastVisit: '15 ก.ค. 2026', caregiver: 'นางสมศรี ดีเลิศ (ภรรยา)', contactConsent: true },
     { id: '2', hn: 'HN-12493', name: 'นางสาววิมล ศรีใส', age: 64, gender: 'หญิง', phone: '089-876-5432', diseases: ['CKD', 'HT'], status: 'active', lastVisit: '20 ก.ค. 2026', caregiver: 'นายวิชัย ศรีใส (บุตร)', contactConsent: true },
@@ -37,6 +49,48 @@ export default function PatientsPage() {
     const matchesDisease = selectedDisease === 'all' || p.diseases.includes(selectedDisease);
     return matchesSearch && matchesDisease;
   });
+
+  const handleDiseaseToggle = (code: string) => {
+    if (newPatient.diseases.includes(code)) {
+      setNewPatient({ ...newPatient, diseases: newPatient.diseases.filter((d) => d !== code) });
+    } else {
+      setNewPatient({ ...newPatient, diseases: [...newPatient.diseases, code] });
+    }
+  };
+
+  const handleAddPatientSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPatient.hn || !newPatient.name) return;
+
+    const created: Patient = {
+      id: Date.now().toString(),
+      hn: newPatient.hn.startsWith('HN-') ? newPatient.hn : `HN-${newPatient.hn}`,
+      name: newPatient.name,
+      age: Number(newPatient.age) || 50,
+      gender: newPatient.gender,
+      phone: newPatient.phone || '081-000-0000',
+      diseases: newPatient.diseases.length > 0 ? newPatient.diseases : ['DM'],
+      status: 'active',
+      lastVisit: 'วันนี้',
+      caregiver: newPatient.caregiver || undefined,
+      contactConsent: newPatient.contactConsent,
+    };
+
+    setPatients([created, ...patients]);
+    setShowAddModal(false);
+    setNewPatient({
+      hn: '',
+      name: '',
+      age: '',
+      gender: 'ชาย',
+      phone: '',
+      diseases: ['DM'],
+      caregiver: '',
+      contactConsent: true,
+    });
+
+    alert(`✅ ลงทะเบียนผู้ป่วยใหม่ "${created.name}" (${created.hn}) เข้าสู่ฐานข้อมูลเรียบร้อยแล้ว!`);
+  };
 
   return (
     <AppLayout>
@@ -238,10 +292,10 @@ export default function PatientsPage() {
           </div>
         )}
 
-        {/* Add Patient Modal */}
+        {/* Add Patient Modal (Matching all table fields) */}
         {showAddModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <UserPlus className="w-5 h-5 text-teal-600" />
@@ -252,35 +306,122 @@ export default function PatientsPage() {
                 </button>
               </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setShowAddModal(false);
-                  alert('บันทึกข้อมูลผู้ป่วยใหม่เรียบร้อย!');
-                }}
-                className="space-y-3 text-xs"
-              >
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">หมายเลข HN</label>
-                  <input required type="text" placeholder="เช่น HN-99001" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+              <form onSubmit={handleAddPatientSubmit} className="space-y-3.5 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">หมายเลข HN *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="เช่น HN-99001"
+                      value={newPatient.hn}
+                      onChange={(e) => setNewPatient({ ...newPatient, hn: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">ชื่อ-นามสกุล *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="ระบุชื่อและนามสกุล"
+                      value={newPatient.name}
+                      onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">ชื่อ-นามสกุล</label>
-                  <input required type="text" placeholder="ระบุชื่อและนามสกุล" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-slate-700 font-semibold mb-1">อายุ (ปี)</label>
-                    <input required type="number" placeholder="เช่น 60" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                    <input
+                      required
+                      type="number"
+                      placeholder="เช่น 60"
+                      value={newPatient.age}
+                      onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">เพศ</label>
+                    <select
+                      value={newPatient.gender}
+                      onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
+                    >
+                      <option value="ชาย">ชาย</option>
+                      <option value="หญิง">หญิง</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-slate-700 font-semibold mb-1">เบอร์โทรศัพท์</label>
-                    <input required type="tel" placeholder="08x-xxx-xxxx" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
+                    <input
+                      required
+                      type="tel"
+                      placeholder="08x-xxx-xxxx"
+                      value={newPatient.phone}
+                      onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono"
+                    />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">กลุ่มโรคประจำตัว NCDs (เลือกได้มากกว่า 1)</label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {['DM', 'HT', 'CKD', 'COPD', 'ASTHMA'].map((code) => {
+                      const selected = newPatient.diseases.includes(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => handleDiseaseToggle(code)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                            selected
+                              ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {selected ? `✓ ${code}` : `+ ${code}`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">ข้อมูลผู้ดูแล / ญาติ (ระบุชื่อและเบอร์โทร)</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น นางสมศรี ดีเลิศ (ภรรยา - 081-999-7777)"
+                    value={newPatient.caregiver}
+                    onChange={(e) => setNewPatient({ ...newPatient, caregiver: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"
+                  />
+                </div>
+
+                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                    <span className="text-xs text-teal-800 font-medium">ยินยอมให้โทรและส่ง SMS/LINE ติดตามนัดหมาย</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={newPatient.contactConsent}
+                    onChange={(e) => setNewPatient({ ...newPatient, contactConsent: e.target.checked })}
+                    className="w-4 h-4 text-teal-600 rounded cursor-pointer"
+                  />
+                </div>
+
                 <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl">ยกเลิก</button>
-                  <button type="submit" className="px-4 py-2 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700">บันทึกข้อมูล</button>
+                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium">
+                    ยกเลิก
+                  </button>
+                  <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all">
+                    บันทึกข้อมูลผู้ป่วย
+                  </button>
                 </div>
               </form>
             </div>
