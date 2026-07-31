@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Calendar as CalendarIcon, Plus, Filter, CheckCircle2, Clock, XCircle, AlertCircle, Search, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Filter, CheckCircle2, Clock, XCircle, AlertCircle, Search, ChevronRight, MessageSquare } from 'lucide-react';
 
 interface Appointment {
   id: string;
@@ -62,13 +62,37 @@ export default function AppointmentsPage() {
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm">บริหารจัดการวันนัด ยืนยันการมาตามนัด เลื่อนนัด และติดตามผู้ป่วยขาดนัด</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>สร้างรายการนัดใหม่</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/notify/appointments', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    hn: 'HN-98302',
+                    patientName: 'นายสมชาย ดีเลิศ',
+                    appointmentDate: '1 สิงหาคม 2026',
+                    appointmentTime: '09:00 น.',
+                    clinicName: 'คลินิกเบาหวาน',
+                  }),
+                });
+                const data = await res.json();
+                alert(`📱 [LINE Notify Result]\n${data.lineResult?.message || 'ส่งข้อความสำเร็จ'}`);
+              }}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>ส่ง LINE แจ้งเตือน</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>สร้างรายการนัดใหม่</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter & Search Bar */}

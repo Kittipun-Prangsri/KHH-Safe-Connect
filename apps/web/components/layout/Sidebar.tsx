@@ -45,15 +45,17 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     <div className="flex flex-col justify-between h-full bg-slate-900 text-slate-300 select-none">
       <div>
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-800/60 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-800/60 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="bg-teal-500/10 p-2.5 rounded-xl border border-teal-500/20 text-teal-400 group-hover:scale-105 transition-transform">
-              <HeartHandshake className="w-6 h-6 stroke-[2.2]" />
-            </div>
+            <img
+              src="/khh-safe-connect-symbol.svg"
+              alt="KHH Safe-Connect Logo"
+              className="w-10 h-10 group-hover:scale-105 transition-transform"
+            />
             <div>
-              <h1 className="text-sm font-bold text-white tracking-wide uppercase">KHH SAFE-CONNECT</h1>
-              <p className="text-[10px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">
-                ระบบดูแลผู้ป่วย NCDs
+              <h1 className="text-xs font-extrabold text-white tracking-wider uppercase">KHH SAFE-CONNECT</h1>
+              <p className="text-[9px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">
+                NCDs Care &amp; Requisition Portal
               </p>
             </div>
           </Link>
