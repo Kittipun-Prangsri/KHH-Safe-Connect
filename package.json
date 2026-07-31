@@ -2,7 +2,7 @@
   "name": "khh-safe-connect-monorepo",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@11.18.0",
+  "packageManager": "pnpm@10.5.2",
   "engines": {
     "node": ">=20.0.0"
   },
