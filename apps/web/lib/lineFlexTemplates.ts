@@ -233,7 +233,7 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
             action: {
               type: 'message',
               label: '🟢 ยืนยันมาตามนัด',
-              text: `ยืนยันมาตามนัด HN ${data.hn} วันที่ ${data.appointmentDate}`,
+              text: `ยืนยันนัด`,
             },
           },
           {
@@ -243,7 +243,486 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
             action: {
               type: 'message',
               label: '🟡 ขอเลื่อนวันนัด',
-              text: `ขอเลื่อนนัด HN ${data.hn} วันที่ ${data.appointmentDate}`,
+              text: `ขอเลื่อนนัด`,
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+// ----------------------------------------------------
+// Rich Menu Tile Responses (6 Custom Functions)
+// ----------------------------------------------------
+
+/**
+ * 1. Tile 1: "นัดหมายของฉัน"
+ */
+export function createMyAppointmentsFlex(patientName: string = 'สมชาย ดีเลิศ', hn: string = 'HN-98302') {
+  return {
+    type: 'flex',
+    altText: '🗓️ รายการนัดหมายของฉัน - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0B6F8A',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🗓️ รายการนัดหมายของฉัน',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: `คุณ${patientName} (${hn})`,
+            color: '#13A89E',
+            size: 'xs',
+            weight: 'bold',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📌 นัดหมายถัดไป',
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'วันเสาร์ที่ 1 สิงหาคม 2026',
+                size: 'md',
+                color: '#17324D',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: 'เวลา 09:00 น. | คลินิกเบาหวาน',
+                size: 'xs',
+                color: '#0B6F8A',
+              },
+              {
+                type: 'text',
+                text: 'แพทย์ผู้ตรวจ: พญ. วรรณภา จิตดี',
+                size: 'xs',
+                color: '#64748B',
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🟢 ยืนยันนัด',
+              text: 'ยืนยันนัด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: 'ขอเลื่อนนัด',
+              text: 'ขอเลื่อนนัด',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 2. Tile 2: "ยืนยันนัด"
+ */
+export function createConfirmSuccessFlex(patientName: string = 'สมชาย ดีเลิศ', date: string = '1 สิงหาคม 2026') {
+  return {
+    type: 'flex',
+    altText: '✅ ยืนยันการมาตามนัดเรียบร้อยแล้ว',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0D9488',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '✅ ยืนยันการมาตามนัดสำเร็จ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'text',
+            text: `ขอบคุณครับ คุณ${patientName}`,
+            size: 'sm',
+            weight: 'bold',
+            color: '#0F172A',
+          },
+          {
+            type: 'text',
+            text: `ระบบบันทึกการยืนยันนัดวันที่ ${date} (เวลา 09:00 น.) เข้าสู่ระบบโรงพยาบาลเรียบร้อยแล้ว`,
+            size: 'xs',
+            color: '#475569',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: '💡 ข้อแนะนำ: โปรดงดน้ำและอาหารหลัง 20:00 น. คืนก่อนวันตรวจ และนำบัตรประชาชนมาด้วยทุกครั้ง',
+            size: 'xs',
+            color: '#B45309',
+            wrap: true,
+            margin: 'md',
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 3. Tile 3: "ขอเลื่อนนัด"
+ */
+export function createRescheduleRequestFlex() {
+  return {
+    type: 'flex',
+    altText: '🟡 แจ้งขอเลื่อนวันนัดหมาย',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#D97706',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🟡 แจ้งขอเลื่อนวันนัดหมาย',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'ท่านต้องการขอเลื่อนวันนัดตรวจเป็นช่วงใดคะ?',
+            size: 'xs',
+            color: '#334155',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: 'โปรดพิมพ์ระบุวัน/เวลา หรือสัปดาห์ที่สะดวกส่งกลับมาในแชทนี้ เจ้าหน้าที่จะทำการปรับวันนัดและแจ้งยืนยันกลับโดยเร็วที่สุดค่ะ',
+            size: 'xs',
+            color: '#64748B',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 พิมพ์คุยกับพยาบาล',
+              text: 'ติดต่อเจ้าหน้าที่',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 4. Tile 4: "ติดต่อเจ้าหน้าที่"
+ */
+export function createContactStaffFlex() {
+  return {
+    type: 'flex',
+    altText: '🎧 ติดต่อเจ้าหน้าที่ / พยาบาล NCDs',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#084C61',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🎧 ติดต่อเจ้าหน้าที่ / พยาบาล',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'ศูนย์ประสานงาน NCDs Care รพ.คลองหาด',
+            color: '#13A89E',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'text',
+            text: 'ท่านสามารถพิมพ์ข้อความ คำถาม หรือแจ้งเรื่องผิดปกติส่งในแชทนี้ได้ทันที',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'ข้อความของท่านถูกส่งตรงถึงพยาบาลผู้ดูแลระบบเรียบร้อยแล้วค่ะ',
+            size: 'xs',
+            color: '#0D9488',
+            margin: 'sm',
+          },
+          {
+            type: 'text',
+            text: '📞 เบอร์โทรศัพท์ห้องคลินิก NCDs: 037-xxx-xxx (ในเวลาราชการ 08:30 - 16:30 น.)',
+            size: 'xs',
+            color: '#64748B',
+            wrap: true,
+            margin: 'md',
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 5. Tile 5: "การเตรียมตัวก่อนพบแพทย์"
+ */
+export function createPreparationGuideFlex() {
+  return {
+    type: 'flex',
+    altText: '📋 ข้อแนะนำการเตรียมตัวก่อนพบแพทย์',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0284C7',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📋 การเตรียมตัวก่อนพบแพทย์',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: '1. การเจาะเลือดตรวจน้ำตาล/ไขมัน:',
+            size: 'xs',
+            color: '#0369A1',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: '• งดน้ำและอาหารทุกชนิดอย่างน้อย 8-12 ชั่วโมง (จิบน้ำบริสุทธิ์ได้เล็กน้อย)',
+            size: 'xs',
+            color: '#475569',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: '2. ยาประจำตัว:',
+            size: 'xs',
+            color: '#0369A1',
+            weight: 'bold',
+            margin: 'sm',
+          },
+          {
+            type: 'text',
+            text: '• นำยาที่รับประทานประจำและฉีดประจำมาแสดงต่อเจ้าหน้าที่ทุกครั้ง (ยาทานหลังอาหารมื้อเช้าให้งดไว้ก่อน แล้วทานหลังเจาะเลือดเสร็จ)',
+            size: 'xs',
+            color: '#475569',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: '3. เอกสาร:',
+            size: 'xs',
+            color: '#0369A1',
+            weight: 'bold',
+            margin: 'sm',
+          },
+          {
+            type: 'text',
+            text: '• บัตรประชาชน และใบนัดหมายเดิม',
+            size: 'xs',
+            color: '#475569',
+            wrap: true,
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 6. Tile 6: "คำแนะนำสุขภาพ"
+ */
+export function createHealthEducationMenuFlex() {
+  return {
+    type: 'flex',
+    altText: '💚 คำแนะนำสุขภาพสำหรับผู้ป่วย NCDs',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#15803D',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '💚 คำแนะนำสุขภาพ NCDs Care',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'text',
+            text: 'เลือกหมวดคำแนะนำทางการแพทย์ที่ต้องการอ่านเพิ่มเติม:',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#16A34A',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🥗 1. การรับประทานอาหาร',
+              text: 'คำแนะนำการรับประทานอาหาร',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🧘 2. ความเครียดและการนอน',
+              text: 'คำแนะนำการนอนและการคลายเครียด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0284C7',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💊 3. การใช้ยาและข้อควรระวัง',
+              text: 'คำแนะนำการใช้ยา',
             },
           },
         ],

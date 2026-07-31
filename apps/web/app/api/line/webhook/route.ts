@@ -4,6 +4,12 @@ import {
   createPatientRegistrationPromptFlex,
   createStaffRegistrationPromptFlex,
   createRegistrationSuccessFlex,
+  createMyAppointmentsFlex,
+  createConfirmSuccessFlex,
+  createRescheduleRequestFlex,
+  createContactStaffFlex,
+  createPreparationGuideFlex,
+  createHealthEducationMenuFlex,
 } from '@/lib/lineFlexTemplates';
 
 // Helper to reply via LINE Messaging API
@@ -53,7 +59,54 @@ export async function POST(req: NextRequest) {
       if (event.type === 'message' && event.message.type === 'text') {
         const text = event.message.text.trim();
 
-        // 1. Role Selection Keywords
+        // --------------------------------------------------------
+        // Rich Menu 6 Tile Interactions
+        // --------------------------------------------------------
+        // Tile 1: "นัดหมายของฉัน"
+        if (text === 'นัดหมายของฉัน' || text.includes('เช็คนัด') || text.includes('วันนัด')) {
+          const flex = createMyAppointmentsFlex('กิตติพงษ์ แก้วมณี', 'HN-98302');
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Tile 2: "ยืนยันนัด"
+        if (text === 'ยืนยันนัด' || text.includes('ยืนยันมาตามนัด')) {
+          const flex = createConfirmSuccessFlex('กิตติพงษ์ แก้วมณี', '1 สิงหาคม 2026');
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Tile 3: "ขอเลื่อนนัด"
+        if (text === 'ขอเลื่อนนัด' || text.includes('เลื่อนวันนัด')) {
+          const flex = createRescheduleRequestFlex();
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Tile 4: "ติดต่อเจ้าหน้าที่"
+        if (text === 'ติดต่อเจ้าหน้าที่' || text.includes('คุยกับพยาบาล') || text.includes('พยาบาล')) {
+          const flex = createContactStaffFlex();
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Tile 5: "การเตรียมตัวก่อนพบแพทย์"
+        if (text === 'การเตรียมตัวก่อนพบแพทย์' || text.includes('เตรียมตัว') || text.includes('งดน้ำ')) {
+          const flex = createPreparationGuideFlex();
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Tile 6: "คำแนะนำสุขภาพ"
+        if (text === 'คำแนะนำสุขภาพ' || text.includes('ความรู้') || text.includes('คำแนะนำ')) {
+          const flex = createHealthEducationMenuFlex();
+          await replyLineMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // --------------------------------------------------------
+        // Registration Flow
+        // --------------------------------------------------------
         if (
           text === 'ลงทะเบียนผู้ป่วย' ||
           text.includes('ผู้ป่วย') ||
@@ -66,19 +119,17 @@ export async function POST(req: NextRequest) {
 
         if (
           text === 'ลงทะเบียนเจ้าหน้าที่' ||
-          text.includes('เจ้าหน้าที่') ||
-          text.includes('พยาบาล') ||
-          text.includes('แพทย์')
+          text.includes('เจ้าหน้าที่')
         ) {
           const promptFlex = createStaffRegistrationPromptFlex();
           await replyLineMessage(replyToken, [promptFlex]);
           continue;
         }
 
-        // 2. Patient Registration matching HN format (HN-XXXXX)
+        // Patient Registration matching HN format (HN-XXXXX)
         if (text.toUpperCase().startsWith('HN-') || text.match(/^[0-9]{13}$/)) {
           const hnCode = text.toUpperCase();
-          const patientName = 'สมชาย ดีเลิศ'; // Linked from database
+          const patientName = 'กิตติพงษ์ แก้วมณี';
 
           const successFlex = createRegistrationSuccessFlex(
             'patient',
@@ -90,7 +141,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // 3. Staff Registration matching STAFF / NURSE format
+        // Staff Registration matching STAFF / NURSE format
         if (
           text.toUpperCase().startsWith('STAFF-') ||
           text.toUpperCase().startsWith('NURSE-') ||
@@ -109,7 +160,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Default: Welcome / Menu
+        // Default fallback to Role Selection / Welcome Card
         const menuFlex = createRoleSelectionFlexMessage();
         await replyLineMessage(replyToken, [menuFlex]);
       }
