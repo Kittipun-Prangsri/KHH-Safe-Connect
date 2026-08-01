@@ -270,9 +270,9 @@ export default function AppointmentsPage() {
               onClick={() => setShowAddModal(true)}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
               <span>สร้างรายการนัดหมายใหม่</span>
             </button>
+          </div>
         </div>
 
         {/* Batch Notice Result Banner */}
