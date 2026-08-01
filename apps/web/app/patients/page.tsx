@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import {
   Users,
@@ -19,20 +19,24 @@ import {
   Stethoscope,
   Database,
   Calendar,
+  RefreshCw,
 } from 'lucide-react';
 
 interface Patient {
   id: string;
   hn: string;
+  rawHn: string;
   name: string;
-  age: number;
+  age?: number;
   gender: string;
+  sex?: string;
   phone: string;
   diseases: string[];
   status: 'active' | 'inactive' | 'transferred';
   lastVisit: string;
   caregiver?: string;
   contactConsent: boolean;
+  cid?: string;
 }
 
 interface MedicalVisitHistory {
@@ -52,43 +56,11 @@ export default function PatientsPage() {
   const [selectedDisease, setSelectedDisease] = useState<string>('all');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Sample HOSxP Medical History for selected patient
-  const [patientHistory, setPatientHistory] = useState<MedicalVisitHistory[]>([
-    {
-      vn: '690715200247',
-      visitDate: '15 ก.ค. 2026',
-      visitTime: '20:02 น.',
-      bp: '108/60 mmHg',
-      fbs: 'ไม่พบข้อมูล',
-      bw: '54.5 kg',
-      bmi: '22.1',
-      pulse: '72 bpm',
-      primaryDiagnosisICD10: 'F322 (Major depressive disorder)',
-    },
-    {
-      vn: '690713090332',
-      visitDate: '13 ก.ค. 2026',
-      visitTime: '09:03 น.',
-      bp: '117/67 mmHg',
-      fbs: '112 mg/dL',
-      bw: '54.8 kg',
-      bmi: '22.2',
-      pulse: '76 bpm',
-      primaryDiagnosisICD10: 'F322 (Major depressive disorder)',
-    },
-    {
-      vn: '690416074023',
-      visitDate: '16 เม.ย. 2026',
-      visitTime: '07:40 น.',
-      bp: '113/71 mmHg',
-      fbs: '105 mg/dL',
-      bw: '55.0 kg',
-      bmi: '22.3',
-      pulse: '70 bpm',
-      primaryDiagnosisICD10: 'F322 (Major depressive disorder)',
-    },
-  ]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientHistory, setPatientHistory] = useState<MedicalVisitHistory[]>([]);
 
   // New patient state
   const [newPatient, setNewPatient] = useState({
@@ -102,19 +74,44 @@ export default function PatientsPage() {
     contactConsent: true,
   });
 
-  const [patients, setPatients] = useState<Patient[]>([
-    { id: '1', hn: 'HN-98302', name: 'นายสมชาย ดีเลิศ', age: 58, gender: 'ชาย', phone: '081-234-5678', diseases: ['DM', 'HT'], status: 'active', lastVisit: '15 ก.ค. 2026', caregiver: 'นางสมศรี ดีเลิศ (ภรรยา)', contactConsent: true },
-    { id: '2', hn: 'HN-12493', name: 'นางสาววิมล ศรีใส', age: 64, gender: 'หญิง', phone: '089-876-5432', diseases: ['CKD', 'HT'], status: 'active', lastVisit: '20 ก.ค. 2026', caregiver: 'นายวิชัย ศรีใส (บุตร)', contactConsent: true },
-    { id: '3', hn: 'HN-85401', name: 'นายเกรียงไกร ลุยรบ', age: 71, gender: 'ชาย', phone: '086-555-4321', diseases: ['COPD'], status: 'active', lastVisit: '02 ก.ค. 2026', contactConsent: false },
-    { id: '4', hn: 'HN-44102', name: 'นางปราณี มั่นคง', age: 52, gender: 'หญิง', phone: '092-333-1122', diseases: ['DM', 'HT', 'CKD'], status: 'active', lastVisit: '28 ก.ค. 2026', caregiver: 'นายสุพจน์ มั่นคง (สามี)', contactConsent: true },
-    { id: '5', hn: 'HN-67812', name: 'นายอนันต์ แสงทอง', age: 60, gender: 'ชาย', phone: '084-999-8877', diseases: ['ASTHMA'], status: 'active', lastVisit: '10 ก.ค. 2026', contactConsent: true },
-  ]);
+  // Fetch Live Real Patients from HOSxP Database
+  const fetchLiveHosxpPatients = async (query = '') => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/hosxp/patients?search=${encodeURIComponent(query)}&limit=30`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.patients)) {
+        setPatients(data.patients);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch HOSxP patients:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredPatients = patients.filter((p) => {
-    const matchesSearch = p.name.includes(searchTerm) || p.hn.toLowerCase().includes(searchTerm.toLowerCase()) || p.phone.includes(searchTerm);
-    const matchesDisease = selectedDisease === 'all' || p.diseases.includes(selectedDisease);
-    return matchesSearch && matchesDisease;
-  });
+  useEffect(() => {
+    fetchLiveHosxpPatients(searchTerm);
+  }, [searchTerm]);
+
+  // Fetch Live Medical History when a patient is selected
+  const handleSelectPatient = async (patient: Patient) => {
+    setSelectedPatient(patient);
+    setLoadingHistory(true);
+    setPatientHistory([]);
+
+    try {
+      const res = await fetch(`/api/hosxp/patients/${patient.rawHn || patient.hn}/history`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.history)) {
+        setPatientHistory(data.history);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch patient history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleDiseaseToggle = (code: string) => {
     if (newPatient.diseases.includes(code)) {
@@ -131,6 +128,7 @@ export default function PatientsPage() {
     const created: Patient = {
       id: Date.now().toString(),
       hn: newPatient.hn.startsWith('HN-') ? newPatient.hn : `HN-${newPatient.hn}`,
+      rawHn: newPatient.hn.replace(/^HN-?/i, ''),
       name: newPatient.name,
       age: Number(newPatient.age) || 50,
       gender: newPatient.gender,
@@ -155,7 +153,7 @@ export default function PatientsPage() {
       contactConsent: true,
     });
 
-    alert(`✅ ลงทะเบียนผู้ป่วยใหม่ "${created.name}" (${created.hn}) เข้าสู่ฐานข้อมูลเรียบร้อยแล้ว!`);
+    alert(`✅ ลงทะเบียนผู้ป่วยใหม่ "${created.name}" (${created.hn}) สำเร็จ!`);
   };
 
   return (
@@ -166,17 +164,29 @@ export default function PatientsPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
               <Users className="w-7 h-7 text-teal-600" />
-              <span>ทะเบียนผู้ป่วย NCDs (เชื่อมต่อ HOSxP 97,859 รายชื่อ)</span>
+              <span>ทะเบียนผู้ป่วย NCDs (ข้อมูลจริง HOSxP 97,859 รายชื่อ)</span>
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm">จัดการประวัติ ข้อมูลการตรวจรักษาย้อนหลัง (ovst, opdscreen, vn_stat) และญาติผู้ดูแล</p>
+            <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>ดึงข้อมูลสดจากเซิร์ฟเวอร์ HOSxP 192.168.1.4 (ตาราง patient, ovst, opdscreen, vn_stat)</span>
+            </p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>ลงทะเบียนผู้ป่วยใหม่</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchLiveHosxpPatients(searchTerm)}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
+              <span>โหลดข้อมูล HOSxP ใหม่</span>
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>ลงทะเบียนผู้ป่วยใหม่</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter & Search Bar */}
@@ -185,7 +195,7 @@ export default function PatientsPage() {
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="ค้นหา HN, ชื่อ-นามสกุล, หรือเบอร์โทรใน HOSxP..."
+              placeholder="ค้นหา HN, ชื่อ-นามสกุล, หรือ CID ใน HOSxP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
@@ -195,9 +205,9 @@ export default function PatientsPage() {
           {/* Disease Category Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
             <span className="text-xs text-slate-500 font-semibold mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> โรค:
+              <Filter className="w-3.5 h-3.5" /> กลุ่มโรค:
             </span>
-            {['all', 'DM', 'HT', 'CKD', 'COPD', 'ASTHMA'].map((code) => (
+            {['all', 'NCDs', 'DM', 'HT', 'CKD'].map((code) => (
               <button
                 key={code}
                 onClick={() => setSelectedDisease(code)}
@@ -220,23 +230,31 @@ export default function PatientsPage() {
               <thead>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="pb-3 font-semibold">HN / ชื่อ-นามสกุล</th>
-                  <th className="pb-3 font-semibold">อายุ / เพศ</th>
+                  <th className="pb-3 font-semibold">เพศ</th>
                   <th className="pb-3 font-semibold">กลุ่มโรค NCDs</th>
                   <th className="pb-3 font-semibold">เบอร์โทรศัพท์</th>
-                  <th className="pb-3 font-semibold">ผู้ดูแล / ญาติ</th>
-                  <th className="pb-3 font-semibold">ตรวจล่าสุด</th>
-                  <th className="pb-3 font-semibold text-right">รายละเอียด & ประวัติ</th>
+                  <th className="pb-3 font-semibold">เลขบัตรประชาชน (CID)</th>
+                  <th className="pb-3 font-semibold text-right">รายละเอียด & ประวัติ HOSxP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredPatients.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                    <td colSpan={6} className="py-12 text-center text-slate-500 font-medium">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
+                        <span>กำลังดึงข้อมูลสดจากฐานข้อมูล HOSxP 192.168.1.4...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : patients.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
                       ไม่พบข้อมูลผู้ป่วยตามเงื่อนไข
                     </td>
                   </tr>
                 ) : (
-                  filteredPatients.map((patient) => (
+                  patients.map((patient) => (
                     <tr key={patient.id} className="hover:bg-slate-50 transition-all group">
                       <td className="py-4 pr-3">
                         <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
@@ -244,20 +262,15 @@ export default function PatientsPage() {
                         </span>
                         <span className="block text-[10px] text-teal-600 font-mono font-bold">{patient.hn}</span>
                       </td>
-                      <td className="py-4 text-slate-600">
-                        {patient.age} ปี ({patient.gender})
+                      <td className="py-4 text-slate-600 font-medium">
+                        {patient.sex || 'ไม่ระบุ'}
                       </td>
                       <td className="py-4">
                         <div className="flex flex-wrap gap-1">
-                          {patient.diseases.map((d) => (
+                          {(patient.diseases || ['NCDs']).map((d) => (
                             <span
                               key={d}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                d === 'DM' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
-                                d === 'HT' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                d === 'CKD' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                                'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                              }`}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200"
                             >
                               {d}
                             </span>
@@ -268,17 +281,16 @@ export default function PatientsPage() {
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
                         <span>{patient.phone}</span>
                       </td>
-                      <td className="py-4 text-slate-600">
-                        {patient.caregiver || <span className="text-slate-400 italic">ไม่มีข้อมูล</span>}
+                      <td className="py-4 text-slate-500 font-mono text-[11px]">
+                        {patient.cid || '-'}
                       </td>
-                      <td className="py-4 text-slate-500 text-[11px]">{patient.lastVisit}</td>
                       <td className="py-4 text-right">
                         <button
-                          onClick={() => setSelectedPatient(patient)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white font-semibold rounded-lg transition-all text-xs cursor-pointer border border-teal-200 shadow-sm"
+                          onClick={() => handleSelectPatient(patient)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white font-bold rounded-lg transition-all text-xs cursor-pointer border border-teal-200 shadow-sm"
                         >
                           <FileText className="w-3.5 h-3.5" />
-                          <span>ดูประวัติรักษา</span>
+                          <span>ดูประวัติการรักษาจริง HOSxP</span>
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       </td>
@@ -298,8 +310,8 @@ export default function PatientsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-teal-600 font-mono font-bold">{selectedPatient.hn}</span>
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Database className="w-3 h-3" /> HOSxP Sync
+                    <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
+                      <Database className="w-3 h-3" /> ข้อมูลจริง HOSxP
                     </span>
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-800">{selectedPatient.name}</h3>
@@ -313,16 +325,16 @@ export default function PatientsPage() {
                 {/* Demographics Card */}
                 <div className="grid grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">อายุ / เพศ</span>
-                    <span className="font-bold text-slate-800">{selectedPatient.age} ปี ({selectedPatient.gender})</span>
+                    <span className="text-slate-400 block text-[10px]">เพศ</span>
+                    <span className="font-bold text-slate-800">{selectedPatient.sex || 'ไม่ระบุ'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">เบอร์โทรศัพท์</span>
                     <span className="font-bold text-slate-800 font-mono">{selectedPatient.phone}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">ญาติ / ผู้ดูแล</span>
-                    <span className="font-medium text-slate-700">{selectedPatient.caregiver || 'ไม่ระบุ'}</span>
+                    <span className="text-slate-400 block text-[10px]">เลขบัตรประชาชน (CID)</span>
+                    <span className="font-bold text-slate-800 font-mono">{selectedPatient.cid || '-'}</span>
                   </div>
                 </div>
 
@@ -330,43 +342,54 @@ export default function PatientsPage() {
                 <div>
                   <h4 className="font-extrabold text-slate-800 text-sm mb-2.5 flex items-center gap-1.5 text-teal-700">
                     <Stethoscope className="w-4 h-4 text-teal-600" />
-                    <span>ประวัติการตรวจรักษาย้อนหลังใน HOSxP (ovst / opdscreen / vn_stat)</span>
+                    <span>ประวัติการตรวจรักษาย้อนหลังจริงใน HOSxP (ovst / opdscreen / vn_stat)</span>
                   </h4>
 
-                  <div className="space-y-3">
-                    {patientHistory.map((item, idx) => (
-                      <div key={idx} className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:border-teal-300 transition-all space-y-2">
-                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
-                          <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-teal-600" />
-                            {item.visitDate} ({item.visitTime})
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                            VN: {item.vn}
-                          </span>
-                        </div>
+                  {loadingHistory ? (
+                    <div className="p-8 text-center text-slate-500 font-medium bg-slate-50 rounded-xl">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-600" />
+                      <span>กำลังดึงประวัติการรักษาจริงจากฐานข้อมูล HOSxP...</span>
+                    </div>
+                  ) : patientHistory.length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-xl">
+                      ไม่พบประวัติการรับบริการย้อนหลังใน HOSxP สำหรับผู้ป่วยรายนี้
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {patientHistory.map((item, idx) => (
+                        <div key={idx} className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:border-teal-300 transition-all space-y-2">
+                          <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
+                            <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                              {item.visitDate} ({item.visitTime})
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                              VN: {item.vn}
+                            </span>
+                          </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                          <div className="bg-white p-2 rounded-lg border border-slate-200/60">
-                            <span className="text-[10px] text-slate-400 block">ความดัน (BP)</span>
-                            <span className="font-bold text-slate-800">{item.bp}</span>
-                          </div>
-                          <div className="bg-white p-2 rounded-lg border border-slate-200/60">
-                            <span className="text-[10px] text-slate-400 block">น้ำตาล (FBS)</span>
-                            <span className="font-bold text-amber-700">{item.fbs}</span>
-                          </div>
-                          <div className="bg-white p-2 rounded-lg border border-slate-200/60">
-                            <span className="text-[10px] text-slate-400 block">น้ำหนัก / BMI</span>
-                            <span className="font-semibold text-slate-700">{item.bw} ({item.bmi})</span>
-                          </div>
-                          <div className="bg-white p-2 rounded-lg border border-slate-200/60">
-                            <span className="text-[10px] text-slate-400 block">วินิจฉัย (ICD-10)</span>
-                            <span className="font-bold text-teal-700">{item.primaryDiagnosisICD10}</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">ความดัน (BP)</span>
+                              <span className="font-bold text-slate-800">{item.bp}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">น้ำตาล (FBS)</span>
+                              <span className="font-bold text-amber-700">{item.fbs}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">น้ำหนัก / BMI</span>
+                              <span className="font-semibold text-slate-700">{item.bw} ({item.bmi})</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">วินิจฉัย (ICD-10)</span>
+                              <span className="font-bold text-teal-700">{item.primaryDiagnosisICD10}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -456,53 +479,6 @@ export default function PatientsPage() {
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">กลุ่มโรคประจำตัว NCDs (เลือกได้มากกว่า 1)</label>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {['DM', 'HT', 'CKD', 'COPD', 'ASTHMA'].map((code) => {
-                      const selected = newPatient.diseases.includes(code);
-                      return (
-                        <button
-                          key={code}
-                          type="button"
-                          onClick={() => handleDiseaseToggle(code)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                            selected
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {selected ? `✓ ${code}` : `+ ${code}`}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">ข้อมูลผู้ดูแล / ญาติ (ระบุชื่อและเบอร์โทร)</label>
-                  <input
-                    type="text"
-                    placeholder="เช่น นางสมศรี ดีเลิศ (ภรรยา - 081-999-7777)"
-                    value={newPatient.caregiver}
-                    onChange={(e) => setNewPatient({ ...newPatient, caregiver: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"
-                  />
-                </div>
-
-                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-teal-600" />
-                    <span className="text-xs text-teal-800 font-medium">ยินยอมให้โทรและส่ง SMS/LINE ติดตามนัดหมาย</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={newPatient.contactConsent}
-                    onChange={(e) => setNewPatient({ ...newPatient, contactConsent: e.target.checked })}
-                    className="w-4 h-4 text-teal-600 rounded cursor-pointer"
-                  />
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Calendar as CalendarIcon, Plus, Filter, CheckCircle2, Clock, XCircle, AlertCircle, Search, ChevronRight, MessageSquare, Edit3, Save } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Filter, CheckCircle2, Clock, XCircle, AlertCircle, Search, ChevronRight, MessageSquare, Edit3, Save, RefreshCw, Database } from 'lucide-react';
 
 interface Appointment {
   id: string;
@@ -22,14 +22,40 @@ export default function AppointmentsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [notifyLineOnSave, setNotifyLineOnSave] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    { id: '1', hn: 'HN-98302', patientName: 'นายสมชาย ดีเลิศ', disease: 'DM, HT', date: '31 ก.ค. 2026', time: '09:00 น.', clinic: 'คลินิกเบาหวาน', provider: 'พญ. วรรณภา จิตดี', status: 'confirmed' },
-    { id: '2', hn: 'HN-12493', patientName: 'นางสาววิมล ศรีใส', disease: 'CKD Stage 3', date: '31 ก.ค. 2026', time: '10:30 น.', clinic: 'คลินิกโรคไต', provider: 'นพ. ศุภชัย เลิศสุวรรณ', status: 'scheduled' },
-    { id: '3', hn: 'HN-85401', patientName: 'นายเกรียงไกร ลุยรบ', disease: 'COPD', date: '30 ก.ค. 2026', time: '11:00 น.', clinic: 'คลินิกโรคปอด', provider: 'พญ. วรรณภา จิตดี', status: 'missed' },
-    { id: '4', hn: 'HN-44102', patientName: 'นางปราณี มั่นคง', disease: 'DM, HT, CKD', date: '01 ส.ค. 2026', time: '09:30 น.', clinic: 'คลินิกเบาหวาน', provider: 'นพ. ศุภชัย เลิศสุวรรณ', status: 'confirmed' },
-    { id: '5', hn: 'HN-67812', patientName: 'นายอนันต์ แสงทอง', disease: 'ASTHMA', date: '02 ส.ค. 2026', time: '13:00 น.', clinic: 'คลินิกโรคหืด', provider: 'พญ. วรรณภา จิตดี', status: 'rescheduled' },
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  // Fetch Live Real Appointments from HOSxP Database
+  const fetchLiveHosxpAppointments = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/hosxp/appointments');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.appointments)) {
+        const formatted = data.appointments.map((a: any) => ({
+          id: a.id,
+          hn: a.hn,
+          patientName: a.patientName,
+          disease: 'NCDs (HOSxP)',
+          date: a.appointmentDate,
+          time: a.appointmentTime,
+          clinic: a.clinic,
+          provider: a.doctor,
+          status: 'confirmed' as const,
+        }));
+        setAppointments(formatted);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch live HOSxP appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveHosxpAppointments();
+  }, []);
 
   const filteredAppointments = appointments.filter((app) => {
     const matchesSearch = app.patientName.includes(searchTerm) || app.hn.toLowerCase().includes(searchTerm.toLowerCase());
@@ -56,31 +82,30 @@ export default function AppointmentsPage() {
     e.preventDefault();
     if (!editingAppointment) return;
 
-    // Update list
     setAppointments(appointments.map(a => a.id === editingAppointment.id ? editingAppointment : a));
 
-    // Optional LINE notification on edit
     if (notifyLineOnSave) {
       try {
         await fetch('/api/notify/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            hn: editingAppointment.hn,
+            userId: 'Uf636cf9137cbd32ff2c18773591be46a',
             patientName: editingAppointment.patientName,
+            hn: editingAppointment.hn,
             appointmentDate: editingAppointment.date,
             appointmentTime: editingAppointment.time,
-            clinicName: editingAppointment.clinic,
-            doctorName: editingAppointment.provider,
+            clinic: editingAppointment.clinic,
+            doctor: editingAppointment.provider,
           }),
         });
       } catch (err) {
-        console.error('Failed LINE notify:', err);
+        console.error('Error sending LINE alert:', err);
       }
     }
 
     setEditingAppointment(null);
-    alert(`✅ อัปเดตข้อมูลการนัดหมายของ ${editingAppointment.patientName} (${editingAppointment.hn}) เรียบร้อยแล้ว!`);
+    alert(`✅ บันทึกข้อมูลนัดหมายผู้ป่วย "${editingAppointment.patientName}" (${editingAppointment.hn}) เรียบร้อย!`);
   };
 
   return (
@@ -91,53 +116,34 @@ export default function AppointmentsPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
               <CalendarIcon className="w-7 h-7 text-teal-600" />
-              <span>รายการนัดหมายผู้ป่วย (Appointments)</span>
+              <span>รายการนัดหมายผู้ป่วย (HOSxP Real Database)</span>
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm">บริหารจัดการวันนัด ยืนยันการมาตามนัด แก้ไขข้อมูล และติดตามผู้ป่วยขาดนัด</p>
+            <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>ดึงข้อมูลนัดหมายล่วงหน้าสดจากตาราง oapp & patient เซิร์ฟเวอร์ HOSxP 192.168.1.4</span>
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
-              onClick={async () => {
-                const res = await fetch('/api/notify/appointments', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    hn: 'HN-98302',
-                    patientName: 'นายสมชาย ดีเลิศ',
-                    appointmentDate: '1 สิงหาคม 2026',
-                    appointmentTime: '09:00 น.',
-                    clinicName: 'คลินิกเบาหวาน',
-                  }),
-                });
-                const data = await res.json();
-                alert(`📱 [LINE Notify Result]\n${data.lineResult?.message || 'ส่งข้อความสำเร็จ'}`);
-              }}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+              onClick={fetchLiveHosxpAppointments}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span>ส่ง LINE แจ้งเตือน</span>
-            </button>
-
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>สร้างรายการนัดใหม่</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
+              <span>โหลดนัดหมาย HOSxP ใหม่</span>
             </button>
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
+        {/* Search & Filter Bar */}
         <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full md:w-96">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="ค้นหาชื่อผู้ป่วย หรือ HN..."
+              placeholder="ค้นหา HN หรือชื่อผู้ป่วยใน HOSxP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
             />
           </div>
 
@@ -149,79 +155,78 @@ export default function AppointmentsPage() {
               { code: 'all', label: 'ทั้งหมด' },
               { code: 'confirmed', label: 'ยืนยันแล้ว' },
               { code: 'scheduled', label: 'รอยืนยัน' },
-              { code: 'missed', label: 'ขาดนัด' },
               { code: 'rescheduled', label: 'ขอเลื่อน' },
-            ].map((st) => (
+              { code: 'missed', label: 'ขาดนัด' },
+            ].map((s) => (
               <button
-                key={st.code}
-                onClick={() => setSelectedStatus(st.code)}
+                key={s.code}
+                onClick={() => setSelectedStatus(s.code)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                  selectedStatus === st.code
+                  selectedStatus === s.code
                     ? 'bg-teal-600 text-white shadow-sm font-bold'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {st.label}
+                {s.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Appointment Table */}
+        {/* Appointments Table */}
         <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <th className="pb-3 font-semibold">HN / ชื่อผู้ป่วย</th>
                   <th className="pb-3 font-semibold">วัน-เวลานัดหมาย</th>
-                  <th className="pb-3 font-semibold">ผู้ป่วย (HN)</th>
-                  <th className="pb-3 font-semibold">โรคประจำตัว</th>
                   <th className="pb-3 font-semibold">คลินิก / แพทย์</th>
                   <th className="pb-3 font-semibold">สถานะนัดหมาย</th>
-                  <th className="pb-3 font-semibold text-right">การดำเนินการ</th>
+                  <th className="pb-3 font-semibold text-right">การจัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredAppointments.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400">
-                      ไม่พบนัดหมายตามเงื่อนไข
+                    <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
+                        <span>กำลังดึงรายการนัดหมายล่วงหน้าสดจาก HOSxP (oapp & patient)...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredAppointments.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                      ไม่พบรายการนัดหมายตามเงื่อนไข
                     </td>
                   </tr>
                 ) : (
                   filteredAppointments.map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50 transition-all">
+                    <tr key={app.id} className="hover:bg-slate-50 transition-all group">
                       <td className="py-4 pr-3">
+                        <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
+                          {app.patientName}
+                        </span>
+                        <span className="block text-[10px] text-teal-600 font-mono font-bold">{app.hn}</span>
+                      </td>
+                      <td className="py-4">
                         <span className="block font-bold text-slate-800">{app.date}</span>
-                        <span className="block text-[10px] text-teal-600 font-mono">{app.time}</span>
+                        <span className="block text-[11px] text-amber-700 font-semibold">{app.time}</span>
                       </td>
                       <td className="py-4">
-                        <span className="block font-bold text-slate-800">{app.patientName}</span>
-                        <span className="block text-[10px] text-slate-400">{app.hn}</span>
-                      </td>
-                      <td className="py-4 text-slate-600">{app.disease}</td>
-                      <td className="py-4">
-                        <span className="block text-slate-700 font-medium">{app.clinic}</span>
+                        <span className="block font-medium text-slate-700">{app.clinic}</span>
                         <span className="block text-[10px] text-slate-400">{app.provider}</span>
                       </td>
                       <td className="py-4">{getStatusBadge(app.status)}</td>
                       <td className="py-4 text-right">
-                        <div className="flex justify-end gap-1.5">
-                          {app.status === 'scheduled' && (
-                            <button
-                              onClick={() => {
-                                setAppointments(appointments.map(a => a.id === app.id ? { ...a, status: 'confirmed' } : a));
-                              }}
-                              className="px-2.5 py-1 bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white rounded-lg transition-all text-xs font-semibold cursor-pointer border border-teal-200"
-                            >
-                              ยืนยันนัด
-                            </button>
-                          )}
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => setEditingAppointment({ ...app })}
-                            className="flex items-center gap-1 px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg transition-all text-xs font-semibold cursor-pointer border border-teal-200"
+                            onClick={() => setEditingAppointment(app)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 rounded-lg transition-all text-xs font-semibold border border-slate-200 cursor-pointer"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            <Edit3 className="w-3.5 h-3.5 text-teal-600" />
                             <span>แก้ไข</span>
                           </button>
                         </div>
@@ -234,70 +239,58 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        {/* Edit Appointment Modal */}
+        {/* Interactive Edit Appointment Modal */}
         {editingAppointment && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Edit3 className="w-5 h-5 text-teal-600" />
-                  <span>แก้ไขข้อมูลนัดหมาย: {editingAppointment.patientName}</span>
+                  <span>แก้ไขข้อมูลรายการนัดหมาย ({editingAppointment.hn})</span>
                 </h3>
                 <button onClick={() => setEditingAppointment(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700">
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">ชื่อผู้ป่วย</label>
-                    <input
-                      required
-                      type="text"
-                      value={editingAppointment.patientName}
-                      onChange={(e) => setEditingAppointment({ ...editingAppointment, patientName: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">HN</label>
-                    <input
-                      required
-                      type="text"
-                      value={editingAppointment.hn}
-                      onChange={(e) => setEditingAppointment({ ...editingAppointment, hn: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono"
-                    />
-                  </div>
+              <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">ชื่อ-นามสกุล ผู้ป่วย</label>
+                  <input
+                    required
+                    type="text"
+                    value={editingAppointment.patientName}
+                    onChange={(e) => setEditingAppointment({ ...editingAppointment, patientName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1">วันนัดหมาย</label>
+                    <label className="block text-slate-700 font-semibold mb-1">วันนัดหมายใหม่</label>
                     <input
                       required
                       type="text"
                       value={editingAppointment.date}
                       onChange={(e) => setEditingAppointment({ ...editingAppointment, date: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-bold"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1">เวลานัด</label>
+                    <label className="block text-slate-700 font-semibold mb-1">เวลานัดหมายใหม่</label>
                     <input
                       required
                       type="text"
                       value={editingAppointment.time}
                       onChange={(e) => setEditingAppointment({ ...editingAppointment, time: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1">คลินิก</label>
+                    <label className="block text-slate-700 font-semibold mb-1">คลินิกบริการ</label>
                     <input
                       required
                       type="text"
@@ -319,17 +312,17 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">สถานะนัดหมาย</label>
+                  <label className="block text-slate-700 font-semibold mb-1">สถานะการนัดหมาย</label>
                   <select
                     value={editingAppointment.status}
                     onChange={(e) => setEditingAppointment({ ...editingAppointment, status: e.target.value as Appointment['status'] })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium"
                   >
-                    <option value="confirmed">ยืนยันนัดแล้ว (Confirmed)</option>
-                    <option value="scheduled">รอยืนยันนัด (Scheduled)</option>
-                    <option value="rescheduled">ขอเลื่อนนัด (Rescheduled)</option>
-                    <option value="missed">ขาดนัดตรวจ (Missed)</option>
-                    <option value="completed">ตรวจแล้ว (Completed)</option>
+                    <option value="confirmed">ยืนยันนัดแล้ว</option>
+                    <option value="scheduled">รอยืนยันนัด</option>
+                    <option value="rescheduled">ขอเลื่อนนัด</option>
+                    <option value="missed">ขาดนัดตรวจ</option>
+                    <option value="completed">ตรวจแล้ว</option>
                   </select>
                 </div>
 
@@ -361,60 +354,6 @@ export default function AppointmentsPage() {
                     <Save className="w-4 h-4" />
                     <span>บันทึกการแก้ไข</span>
                   </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Add Appointment Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-teal-600" />
-                  <span>สร้างรายการนัดหมายใหม่</span>
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700">
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setShowAddModal(false);
-                  alert('สร้างรายการนัดหมายใหม่สำเร็จ!');
-                }}
-                className="space-y-3 text-xs"
-              >
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">เลือกผู้ป่วย (HN)</label>
-                  <input required type="text" placeholder="พิมพ์ HN-XXXXX หรือชื่อผู้ป่วย" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">วันนัดหมาย</label>
-                    <input required type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">เวลานัด</label>
-                    <input required type="time" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">คลินิก</label>
-                  <select className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
-                    <option value="dm">คลินิกเบาหวาน</option>
-                    <option value="ht">คลินิกความดันโลหิตสูง</option>
-                    <option value="ckd">คลินิกโรคไต</option>
-                    <option value="copd">คลินิกโรคปอดและหืด</option>
-                  </select>
-                </div>
-                <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl">ยกเลิก</button>
-                  <button type="submit" className="px-4 py-2 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700">บันทึกวันนัด</button>
                 </div>
               </form>
             </div>

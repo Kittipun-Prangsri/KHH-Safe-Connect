@@ -99,6 +99,9 @@ importers:
       lucide-react:
         specifier: ^0.331.0
         version: 0.331.0(react@18.3.1)
+      mysql2:
+        specifier: ^3.23.2
+        version: 3.23.2(@types/node@20.19.43)
       next:
         specifier: ^14.1.0
         version: 14.2.35(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
