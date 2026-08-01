@@ -183,11 +183,11 @@ export default function FollowUpsPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
               <PhoneCall className="w-7 h-7 text-teal-600" />
-              <span>งานติดตามผู้ป่วย (Follow-up Tasks — HOSxP Real-Time)</span>
+              <span>งานติดตามผู้ป่วยขาดนัด NCDs</span>
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-              <span>ตรวจจับผู้ป่วยขาดนัดจากระบบ HOSxP และสร้างงานติดตามให้อัตโนมัติ</span>
+              <span>ตรวจจับผู้ป่วยขาดนัดเฉพาะคลินิก NCDs (เบาหวาน, ความดัน, CKD, COPD, Stroke) จากระบบ HOSxP</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
