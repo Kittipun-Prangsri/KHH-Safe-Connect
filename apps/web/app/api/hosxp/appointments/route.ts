@@ -21,12 +21,14 @@ export async function GET() {
     const [rows]: any = await pool.execute(
       `SELECT o.oapp_id, o.hn, CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) AS patient_name, 
               COALESCE(p.mobile_phone_number, p.hometel, p.informtel) AS phone,
-              o.nextdate, o.nexttime, o.clinic, o.doctor, o.app_cause
+              o.nextdate, o.nexttime, o.clinic, c.name AS clinic_name, o.doctor, d.name AS doctor_name, o.app_cause
        FROM oapp o
        LEFT JOIN patient p ON o.hn = p.hn
+       LEFT JOIN clinic c ON o.clinic = c.clinic
+       LEFT JOIN doctor d ON o.doctor = d.code
        WHERE o.nextdate >= CURDATE()
        ORDER BY o.nextdate ASC
-       LIMIT 30`
+       LIMIT 50`
     );
 
     const appointments = rows.map((r: any) => {
@@ -39,8 +41,8 @@ export async function GET() {
         phone: r.phone || '081-000-0000',
         appointmentDate: dateStr,
         appointmentTime: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
-        clinic: `คลินิก ${r.clinic || 'NCDs'}`,
-        doctor: `แพทย์รหัส ${r.doctor || '0087'}`,
+        clinic: r.clinic_name || `คลินิก (${r.clinic || 'NCDs'})`,
+        doctor: r.doctor_name || `แพทย์ (รหัส ${r.doctor || '0087'})`,
         status: 'confirmed',
         lineNotificationSent: true,
       };

@@ -140,16 +140,18 @@ export async function getHosxpPatientMedicalHistory(hn: string, limit = 10) {
 }
 
 /**
- * Query upcoming appointments from HOSxP `oapp` & `patient`
+ * Query upcoming appointments from HOSxP `oapp` JOIN `patient`, `clinic`, `doctor`
  */
 export async function getHosxpAppointments(limit = 50) {
   try {
     const pool = getHosxpPool();
     const [rows]: any = await pool.execute(
       `SELECT o.oapp_id, o.hn, CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) AS patient_name, 
-              o.nextdate, o.nexttime, o.clinic, o.doctor, o.app_cause
+              o.nextdate, o.nexttime, o.clinic, c.name AS clinic_name, o.doctor, d.name AS doctor_name, o.app_cause
        FROM oapp o
        LEFT JOIN patient p ON o.hn = p.hn
+       LEFT JOIN clinic c ON o.clinic = c.clinic
+       LEFT JOIN doctor d ON o.doctor = d.code
        WHERE o.nextdate >= CURDATE()
        ORDER BY o.nextdate ASC
        LIMIT ?`,
