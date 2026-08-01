@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { getHosxpPatientByHnOrCid, getHosxpAppointments } from '../services/hosxpService';
+import {
+  getHosxpPatientByHnOrCid,
+  getHosxpPatientList,
+  getHosxpPatientMedicalHistory,
+  getHosxpAppointments,
+} from '../services/hosxpService';
 
 const router = Router();
 
@@ -16,9 +21,23 @@ router.get('/test-connection', async (req, res) => {
   } catch (error: any) {
     res.status(500).json({
       status: 'error',
-      message: '❌ ไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP ได้ โปรดตรวจสอบ IP, User, Password ใน .env.local',
+      message: '❌ ไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP ได้',
       error: error.message,
     });
+  }
+});
+
+// Get Paginated Patient List directly from HOSxP `patient` table
+router.get('/patients-list', async (req, res) => {
+  try {
+    const search = String(req.query.search || '');
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+
+    const data = await getHosxpPatientList(search, page, limit);
+    res.json({ status: 'success', ...data });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
@@ -36,7 +55,18 @@ router.get('/patients/:query', async (req, res) => {
   }
 });
 
-// Query Upcoming Appointments from HOSxP `oapp_moph_appointment_log`
+// Get Medical Treatment History for a specific patient from HOSxP (`ovst` + `opdscreen` + `vn_stat`)
+router.get('/patients/:hn/history', async (req, res) => {
+  try {
+    const { hn } = req.params;
+    const history = await getHosxpPatientMedicalHistory(hn);
+    res.json({ status: 'success', hn, historyCount: history.length, history });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query Upcoming Appointments from HOSxP `oapp`
 router.get('/appointments', async (req, res) => {
   try {
     const appointments = await getHosxpAppointments(50);
