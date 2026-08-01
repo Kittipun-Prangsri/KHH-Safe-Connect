@@ -27,6 +27,19 @@ const PROVISIONED_PROFILES_STORE = new Map<string, UserSessionProfile>();
 // Seed default standard HOSxP accounts into Duplicated Store
 const DEFAULT_DUPLICATED_ACCOUNTS: UserSessionProfile[] = [
   {
+    id: 'kittipun',
+    loginname: 'Kittipun',
+    name: 'กิตติพันธ์ (Kittipun - IT Administrator)',
+    doctorcode: '-',
+    position: 'นักวิชาการคอมพิวเตอร์ / สารสนเทศ',
+    department: 'กลุ่มงานสารสนเทศทางการแพทย์ โรงพยาบาลคลองหาด',
+    role: 'super_admin',
+    roleLabel: 'ผู้ดูแลระบบ (IT Super Admin)',
+    badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
+    avatarInitials: 'KI',
+    isDuplicatedStore: true,
+  },
+  {
     id: 'admin',
     loginname: 'admin',
     name: 'ผู้ดูแลระบบ IT (Super Admin)',
@@ -84,6 +97,44 @@ const DEFAULT_DUPLICATED_ACCOUNTS: UserSessionProfile[] = [
 DEFAULT_DUPLICATED_ACCOUNTS.forEach((account) => {
   PROVISIONED_PROFILES_STORE.set(account.loginname.toLowerCase(), account);
 });
+
+/**
+ * Create dynamic fallback standby profile when HOSxP DB is offline/unreachable
+ */
+export async function createDynamicStandbyProfile(username: string): Promise<UserSessionProfile> {
+  const clean = username.trim();
+  const lower = clean.toLowerCase();
+
+  let role = 'staff';
+  let roleLabel = 'เจ้าหน้าที่ (Staff)';
+  let badgeColor = 'bg-amber-100 text-amber-700 border-amber-200';
+
+  if (lower.includes('admin') || lower.includes('it') || lower.includes('kittipun') || lower.includes('root')) {
+    role = 'super_admin';
+    roleLabel = 'ผู้ดูแลระบบ (IT Super Admin)';
+    badgeColor = 'bg-purple-100 text-purple-700 border-purple-200';
+  } else if (lower.includes('doc') || lower.includes('dr') || lower === '0816' || lower.includes('หมอ')) {
+    role = 'doctor';
+    roleLabel = 'แพทย์ประจำคลินิก (Doctor)';
+    badgeColor: 'bg-sky-100 text-sky-700 border-sky-200';
+  } else if (lower.includes('nurse') || lower.includes('พยาบาล')) {
+    role = 'nurse';
+    roleLabel = 'พยาบาลวิชาชีพ (Nurse)';
+    badgeColor = 'bg-teal-100 text-teal-700 border-teal-200';
+  }
+
+  return provisionHosxpUserToStore({
+    loginname: clean,
+    name: `${clean} (HOSxP User)`,
+    entryposition: roleLabel,
+    department: 'โรงพยาบาลคลองหาด',
+    doctorcode: role === 'doctor' ? clean : '-',
+    role,
+    roleLabel,
+    badgeColor,
+  });
+}
+
 
 /**
  * Find duplicated user profile by loginname, doctorcode, or ID

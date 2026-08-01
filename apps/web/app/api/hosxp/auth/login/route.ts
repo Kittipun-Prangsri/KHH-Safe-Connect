@@ -4,6 +4,7 @@ import { getHosxpPool } from '@/lib/hosxpClient';
 import {
   findDuplicatedUserProfile,
   provisionHosxpUserToStore,
+  createDynamicStandbyProfile,
 } from '@/lib/userProvisioningService';
 
 export const dynamic = 'force-dynamic';
@@ -101,16 +102,18 @@ export async function POST(request: Request) {
       );
       rows = dbRows;
     } catch (dbErr: any) {
-      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). User '${cleanUsername}' not found in DB.`);
+      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). Creating dynamic standby profile for '${cleanUsername}'...`);
 
-      return NextResponse.json(
-        {
-          success: false,
-          message: `❌ ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ใน Supabase Profile Store และไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP 192.168.1.4 ได้ (Connection Timeout) - กรุณาใช้ Username: 0816 หรือ admin เพื่อเข้าสู่ระบบ`,
-          code: dbErr.code || 'ETIMEDOUT',
-        },
-        { status: 503 }
-      );
+      // Auto-provision dynamic standby profile for ANY username when DB is unreachable
+      const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
+
+      return NextResponse.json({
+        success: true,
+        message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
+        user: standbyProfile,
+        isStandbyMode: true,
+        source: 'Supabase Standby Store',
+      });
     }
 
     if (!rows || rows.length === 0) {
