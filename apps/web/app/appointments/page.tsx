@@ -42,6 +42,8 @@ export default function AppointmentsPage() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [notifyLineOnSave, setNotifyLineOnSave] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [sendingBatchLine, setSendingBatchLine] = useState(false);
+  const [batchNoticeResult, setBatchNoticeResult] = useState<any | null>(null);
 
   // New Appointment Form State
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -213,6 +215,25 @@ export default function AppointmentsPage() {
     alert(`✅ บันทึกข้อมูลนัดหมายผู้ป่วย "${editingAppointment.patientName}" (${editingAppointment.hn}) เรียบร้อย!`);
   };
 
+  const handleSendBatchLineReminders = async () => {
+    setSendingBatchLine(true);
+    setBatchNoticeResult(null);
+
+    try {
+      const res = await fetch('/api/notify/appointments', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setBatchNoticeResult(data);
+      } else {
+        alert(`❌ เกิดข้อผิดพลาด: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert(`❌ ไม่สามารถส่งแจ้งเตือน LINE ได้: ${err.message}`);
+    } finally {
+      setSendingBatchLine(false);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -230,8 +251,17 @@ export default function AppointmentsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleSendBatchLineReminders}
+              disabled={sendingBatchLine}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-50"
+              title="รันระบบส่ง LINE Flex Message แจ้งเตือนคนไข้นัดล่วงหน้า 3 วัน และ 1 วัน อัตโนมัติ"
+            >
+              <Send className={`w-4 h-4 ${sendingBatchLine ? 'animate-bounce' : ''}`} />
+              <span>{sendingBatchLine ? 'กำลังส่ง LINE เตือนนัด...' : '⚡ รันระบบส่ง LINE เตือนนัด 3วัน/1วัน สด'}</span>
+            </button>
+            <button
               onClick={fetchLiveHosxpAppointments}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
               <span>โหลดนัดหมาย HOSxP ใหม่</span>
@@ -243,8 +273,39 @@ export default function AppointmentsPage() {
               <Plus className="w-4 h-4" />
               <span>สร้างรายการนัดหมายใหม่</span>
             </button>
-          </div>
         </div>
+
+        {/* Batch Notice Result Banner */}
+        {batchNoticeResult && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs shadow-sm flex items-start justify-between gap-3 animate-fade-in">
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-extrabold text-emerald-950 text-sm mb-1">
+                  {batchNoticeResult.message}
+                </h4>
+                <p className="text-emerald-800 font-medium">
+                  📊 สรุปผลการประมวลผล: <span className="font-bold">เตือนล่วงหน้า 3 วัน ({batchNoticeResult.sent3DaysCount} ราย)</span> | <span className="font-bold">เตือนล่วงหน้า 1 วัน ({batchNoticeResult.sent1DayCount} ราย)</span>
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                  {batchNoticeResult.recipients?.slice(0, 8).map((r: any, i: number) => (
+                    <span key={i} className="px-2 py-0.5 bg-white border border-emerald-200 rounded text-[10px] font-bold text-emerald-800">
+                      👤 {r.name} ({r.clinic}) • {r.noticeType}
+                    </span>
+                  ))}
+                  {(batchNoticeResult.recipients?.length || 0) > 8 && (
+                    <span className="px-2 py-0.5 bg-emerald-100 rounded text-[10px] font-bold text-emerald-800">
+                      +{batchNoticeResult.recipients.length - 8} รายชื่อเพิ่มเติม
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setBatchNoticeResult(null)} className="text-emerald-700 hover:text-emerald-950 font-bold p-1">
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Search & Filter Bar */}
         <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
