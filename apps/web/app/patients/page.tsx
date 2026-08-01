@@ -164,7 +164,7 @@ export default function PatientsPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
               <Users className="w-7 h-7 text-teal-600" />
-              <span>ทะเบียนผู้ป่วย NCDs (ข้อมูลจริง HOSxP 97,859 รายชื่อ)</span>
+              <span>ทะเบียนผู้ป่วย NCDs</span>
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
