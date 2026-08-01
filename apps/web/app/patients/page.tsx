@@ -20,7 +20,11 @@ import {
   Database,
   Calendar,
   RefreshCw,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from 'lucide-react';
+import { maskCid, maskPhone, maskName } from '@/lib/pdpaMasking';
 
 interface Patient {
   id: string;
@@ -55,6 +59,9 @@ export default function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDisease, setSelectedDisease] = useState<string>('all');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  
+  // PDPA Privacy State (Default = Masked for Security)
+  const [showPdpaData, setShowPdpaData] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -173,6 +180,18 @@ export default function PatientsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowPdpaData(!showPdpaData)}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer border ${
+                showPdpaData
+                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                  : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
+              }`}
+              title="สลับโหมดซ่อน/แสดง ข้อมูลตามมาตรฐาน PDPA"
+            >
+              {showPdpaData ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-teal-600" />}
+              <span>{showPdpaData ? 'โหมด PDPA: แสดงข้อมูลจริง' : 'โหมด PDPA: ซ่อนข้อมูล'}</span>
+            </button>
+            <button
               onClick={() => fetchLiveHosxpPatients(searchTerm)}
               className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
@@ -258,7 +277,7 @@ export default function PatientsPage() {
                     <tr key={patient.id} className="hover:bg-slate-50 transition-all group">
                       <td className="py-4 pr-3">
                         <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
-                          {patient.name}
+                          {showPdpaData ? patient.name : maskName(patient.name)}
                         </span>
                         <span className="block text-[10px] text-teal-600 font-mono font-bold">{patient.hn}</span>
                       </td>
@@ -277,12 +296,14 @@ export default function PatientsPage() {
                           ))}
                         </div>
                       </td>
-                      <td className="py-4 text-slate-700 flex items-center gap-1.5 font-mono">
-                        <Phone className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{patient.phone}</span>
+                      <td className="py-4 text-slate-700 font-mono">
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{showPdpaData ? patient.phone : maskPhone(patient.phone)}</span>
+                        </div>
                       </td>
                       <td className="py-4 text-slate-500 font-mono text-[11px]">
-                        {patient.cid || '-'}
+                        {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid)}
                       </td>
                       <td className="py-4 text-right">
                         <button
