@@ -22,9 +22,14 @@ export async function GET() {
 
     // Query missed appointments in past 30 days from HOSxP `oapp` & `patient` & `clinic`
     const [rows]: any = await pool.execute(
-      `SELECT o.oapp_id, o.hn, CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) AS patient_name,
+      `SELECT o.oapp_id, o.hn, 
+              CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
               COALESCE(p.mobile_phone_number, p.hometel, p.informtel) AS phone,
-              o.nextdate, o.nexttime, o.clinic, c.name AS clinic_name, o.doctor, d.name AS doctor_name, o.app_cause
+              o.nextdate, o.nexttime, o.clinic, 
+              CONVERT(c.name USING utf8mb4) AS clinic_name, 
+              o.doctor, 
+              CONVERT(d.name USING utf8mb4) AS doctor_name, 
+              CONVERT(o.app_cause USING utf8mb4) AS app_cause
        FROM oapp o
        LEFT JOIN patient p ON o.hn = p.hn
        LEFT JOIN clinic c ON o.clinic = c.clinic

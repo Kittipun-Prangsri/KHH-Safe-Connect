@@ -32,10 +32,14 @@ export async function GET() {
     // 4. Missed Appointments (Follow-ups needed in past 30 days)
     const [missedCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate < CURDATE() AND nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)');
 
-    // 5. Recent Appointments List
+    // 5. Recent Appointments List (Convert TIS-620 Thai strings to utf8mb4)
     const [recentApps]: any = await pool.execute(`
-      SELECT o.oapp_id, o.hn, CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) AS patient_name,
-             o.nextdate, o.nexttime, c.name AS clinic_name, d.name AS doctor_name, o.app_cause
+      SELECT o.oapp_id, o.hn, 
+             CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
+             o.nextdate, o.nexttime, 
+             CONVERT(c.name USING utf8mb4) AS clinic_name, 
+             CONVERT(d.name USING utf8mb4) AS doctor_name, 
+             CONVERT(o.app_cause USING utf8mb4) AS app_cause
       FROM oapp o
       LEFT JOIN patient p ON o.hn = p.hn
       LEFT JOIN clinic c ON o.clinic = c.clinic
@@ -52,7 +56,7 @@ export async function GET() {
       date: r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-',
       time: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
       clinic: r.clinic_name || 'คลินิก NCDs',
-      doctor: r.doctor_name || 'พญ. วรรณภา จิตดี',
+      doctor: r.doctor_name || 'แพทย์ผู้ตรวจ',
       status: 'confirmed',
     }));
 
