@@ -187,7 +187,7 @@ export default function FollowUpsPage() {
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-              <span>ตรวจจับผู้ป่วยขาดนัดจากเซิร์ฟเวอร์ HOSxP 192.168.1.4 และสร้างงานติดตามให้อัตโนมัติ</span>
+              <span>ตรวจจับผู้ป่วยขาดนัดจากระบบ HOSxP และสร้างงานติดตามให้อัตโนมัติ</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -265,7 +265,7 @@ export default function FollowUpsPage() {
           {loading ? (
             <div className="col-span-full py-16 text-center text-slate-500 font-medium bg-white rounded-2xl border border-slate-200">
               <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-teal-600" />
-              <span>กำลังดึงรายการผู้ป่วยขาดนัดสดจาก HOSxP 192.168.1.4...</span>
+              <span>กำลังดึงรายการผู้ป่วยขาดนัดจากระบบ HOSxP...</span>
             </div>
           ) : filteredTasks.length === 0 ? (
             <div className="col-span-full py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">

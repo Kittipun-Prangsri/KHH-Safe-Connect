@@ -168,7 +168,7 @@ export default function PatientsPage() {
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>ดึงข้อมูลสดจากเซิร์ฟเวอร์ HOSxP 192.168.1.4 (ตาราง patient, ovst, opdscreen, vn_stat)</span>
+              <span>ดึงข้อมูลผู้ป่วยสดจากระบบ HOSxP</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export default function PatientsPage() {
                     <td colSpan={6} className="py-12 text-center text-slate-500 font-medium">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-                        <span>กำลังดึงข้อมูลสดจากฐานข้อมูล HOSxP 192.168.1.4...</span>
+                        <span>กำลังดึงข้อมูลจากระบบ HOSxP...</span>
                       </div>
                     </td>
                   </tr>

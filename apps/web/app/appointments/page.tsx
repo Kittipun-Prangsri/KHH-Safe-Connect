@@ -225,7 +225,7 @@ export default function AppointmentsPage() {
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>ดึงข้อมูลนัดหมายล่วงหน้าสดจากตาราง oapp, patient, clinic, doctor เซิร์ฟเวอร์ HOSxP 192.168.1.4</span>
+              <span>ดึงข้อมูลนัดหมายสดจากระบบ HOSxP</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ export default function AppointmentsPage() {
                     <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-                        <span>กำลังดึงรายการนัดหมายล่วงหน้าสดจาก HOSxP (oapp, patient, clinic, doctor)...</span>
+                        <span>กำลังดึงรายการนัดหมายจากระบบ HOSxP...</span>
                       </div>
                     </td>
                   </tr>

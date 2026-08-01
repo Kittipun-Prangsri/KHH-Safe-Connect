@@ -50,11 +50,11 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-              <span>ภาพรวมระบบ (Dashboard — ข้อมูลจริง HOSxP)</span>
+              <span>ภาพรวมระบบ (Dashboard)</span>
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>ดึงข้อมูลสถิติตามเวลาจริงจากเซิร์ฟเวอร์ HOSxP 192.168.1.4 (ตาราง patient & oapp)</span>
+              <span>ข้อมูลสถิติอัปเดตตามเวลาจริง | {new Date().toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -152,7 +152,7 @@ export default function Dashboard() {
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
                   <span className="font-bold text-emerald-800 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    HOSxP Database (192.168.1.4)
+                    HOSxP Database
                   </span>
                   <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">ACTIVE</span>
                 </div>
