@@ -1,68 +1,92 @@
 import { NextResponse } from 'next/server';
 import { getHosxpPool } from '@/lib/hosxpClient';
+import { getOrFetchHosxpCache } from '@/lib/hosxpCache';
+import { getSnapshotStatsFallback } from '@/lib/hosxpSyncService';
 
 export const dynamic = 'force-dynamic';
 
+// 5 Minutes Cache TTL for Dashboard Stats
+const STATS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export async function GET() {
   try {
-    const pool = getHosxpPool();
+    const cachedResult = await getOrFetchHosxpCache('hosxp:stats', STATS_CACHE_TTL_MS, async () => {
+      const pool = getHosxpPool();
 
-    // 1. Total Patients in HOSxP
-    const [patientCount]: any = await pool.execute('SELECT COUNT(*) as total FROM patient');
+      // 1. Total Patients in HOSxP
+      const [patientCount]: any = await pool.execute('SELECT COUNT(*) as total FROM patient');
 
-    // 2. Appointments Today
-    const [todayCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate = CURDATE()');
+      // 2. Appointments Today
+      const [todayCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate = CURDATE()');
 
-    // 3. Upcoming Appointments
-    const [upcomingCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate > CURDATE()');
+      // 3. Upcoming Appointments
+      const [upcomingCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate > CURDATE()');
 
-    // 4. Missed Appointments (Follow-ups needed in past 30 days)
-    const [missedCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate < CURDATE() AND nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)');
+      // 4. Missed Appointments (Follow-ups needed in past 30 days)
+      const [missedCount]: any = await pool.execute(
+        'SELECT COUNT(*) as total FROM oapp WHERE nextdate < CURDATE() AND nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)'
+      );
 
-    // 5. Recent Appointments List (Convert TIS-620 Thai strings to utf8mb4)
-    const [recentApps]: any = await pool.execute(`
-      SELECT o.oapp_id, o.hn, 
-             CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
-             o.nextdate, o.nexttime, 
-             CONVERT(c.name USING utf8mb4) AS clinic_name, 
-             CONVERT(d.name USING utf8mb4) AS doctor_name, 
-             CONVERT(o.app_cause USING utf8mb4) AS app_cause
-      FROM oapp o
-      LEFT JOIN patient p ON o.hn = p.hn
-      LEFT JOIN clinic c ON o.clinic = c.clinic
-      LEFT JOIN doctor d ON o.doctor = d.code
-      WHERE o.nextdate >= CURDATE()
-      ORDER BY o.nextdate ASC, o.nexttime ASC
-      LIMIT 6
-    `);
+      // 5. Recent Appointments List (Convert TIS-620 Thai strings to utf8mb4)
+      const [recentApps]: any = await pool.execute(`
+        SELECT o.oapp_id, o.hn, 
+               CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
+               o.nextdate, o.nexttime, 
+               CONVERT(c.name USING utf8mb4) AS clinic_name, 
+               CONVERT(d.name USING utf8mb4) AS doctor_name, 
+               CONVERT(o.app_cause USING utf8mb4) AS app_cause
+        FROM oapp o
+        LEFT JOIN patient p ON o.hn = p.hn
+        LEFT JOIN clinic c ON o.clinic = c.clinic
+        LEFT JOIN doctor d ON o.doctor = d.code
+        WHERE o.nextdate >= CURDATE()
+        ORDER BY o.nextdate ASC, o.nexttime ASC
+        LIMIT 6
+      `);
 
-    const formattedRecent = recentApps.map((r: any) => ({
-      id: String(r.oapp_id),
-      hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
-      patientName: r.patient_name || 'ไม่ระบุชื่อ',
-      date: r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-',
-      time: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
-      clinic: r.clinic_name || 'คลินิก NCDs',
-      doctor: r.doctor_name || 'แพทย์ผู้ตรวจ',
-      status: 'confirmed',
-    }));
+      const formattedRecent = recentApps.map((r: any) => ({
+        id: String(r.oapp_id),
+        hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
+        patientName: r.patient_name || 'ไม่ระบุชื่อ',
+        date: r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-',
+        time: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
+        clinic: r.clinic_name || 'คลินิก NCDs',
+        doctor: r.doctor_name || 'แพทย์ผู้ตรวจ',
+        status: 'confirmed',
+      }));
+
+      return {
+        stats: {
+          totalPatients: patientCount[0].total,
+          appointmentsToday: todayCount[0].total,
+          upcomingAppointments: upcomingCount[0].total,
+          missedFollowUps: missedCount[0].total,
+        },
+        recentAppointments: formattedRecent,
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      stats: {
-        totalPatients: patientCount[0].total,
-        appointmentsToday: todayCount[0].total,
-        upcomingAppointments: upcomingCount[0].total,
-        missedFollowUps: missedCount[0].total,
+      ...cachedResult.data,
+      cacheInfo: {
+        isCached: cachedResult.isCached,
+        cachedAt: cachedResult.cachedAt,
+        ttlRemainingSeconds: cachedResult.ttlRemainingSeconds,
       },
-      recentAppointments: formattedRecent,
     });
   } catch (error: any) {
-    console.error('❌ Real HOSxP Stats API Error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'ไม่สามารถติดต่อฐานข้อมูล HOSxP (192.168.1.4) จากวงภายนอกได้ กรุณาใช้งานผ่านระบบเครือข่ายภายในโรงพยาบาล (LAN)',
-      details: error.message 
-    }, { status: 500 });
+    console.warn('⚠️ Real HOSxP Stats DB Query Error/Timeout. Serving Freeze Snapshot Fallback:', error.message);
+    const snapshot = getSnapshotStatsFallback();
+    return NextResponse.json({
+      success: true,
+      ...snapshot,
+      cacheInfo: {
+        isCached: true,
+        isSnapshotFallback: true,
+        notice: 'ดึงข้อมูลสแนปชอตสำรอง (Freeze Snapshot) เนื่องจากไม่พบการเชื่อมต่อ HOSxP 192.168.1.4',
+      },
+    });
   }
 }
+
