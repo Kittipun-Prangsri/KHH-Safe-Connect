@@ -26,7 +26,7 @@ async function replyLineMessage(replyToken: string, messages: any[]) {
   // Token with fallback to guarantee Vercel Production replies
   const token = (
     process.env.LINE_CHANNEL_ACCESS_TOKEN ||
-    'jXwSqFzYZPjCp/a9QC6zaAK9MDCaWBlKsGMIcKlUVxhYHJ7ISuu8n74IbiHb0IuNRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGPcSfQG9Xh5njwsrtDN3uu5s44HrbrSCxJm8+EzL5lDqgdB04t89/1O/w1cDnyilFU='
+    '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
   ).trim();
 
   try {

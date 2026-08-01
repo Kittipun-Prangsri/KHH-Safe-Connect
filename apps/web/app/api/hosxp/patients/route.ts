@@ -1,20 +1,7 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import { getHosxpPool } from '@/lib/hosxpClient';
 
 export const dynamic = 'force-dynamic';
-
-function getHosxpPool() {
-  return mysql.createPool({
-    host: process.env.HOSXP_DB_HOST || '192.168.1.4',
-    port: Number(process.env.HOSXP_DB_PORT) || 3306,
-    user: process.env.HOSXP_DB_USER || 'Khos',
-    password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh',
-    database: process.env.HOSXP_DB_NAME || 'hos',
-    charset: 'tis620',
-    waitForConnections: true,
-    connectionLimit: 10,
-  });
-}
 
 export async function GET(request: Request) {
   try {
@@ -58,13 +45,11 @@ export async function GET(request: Request) {
       phone: p.mobile_phone_number || p.hometel || p.informtel || '081-000-0000',
       diseases: ['NCDs', 'DM/HT'],
       status: 'active',
-      lastVisit: 'ล่าสุด',
-      contactConsent: true,
     }));
 
     return NextResponse.json({ success: true, count: patients.length, patients });
   } catch (error: any) {
-    console.error('❌ Real HOSxP API Error:', error);
+    console.error('❌ Real HOSxP Patients API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

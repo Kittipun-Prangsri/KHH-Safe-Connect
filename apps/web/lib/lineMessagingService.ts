@@ -5,7 +5,7 @@ export async function sendLineAppointmentReminder(
   appointmentData: AppointmentNotificationData,
   channelAccessToken?: string
 ) {
-  const token = channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const token = channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU=';
 
   if (!token) {
     console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN is missing. Returning simulated notification response.');

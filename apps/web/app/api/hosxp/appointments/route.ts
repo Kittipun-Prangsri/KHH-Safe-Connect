@@ -1,20 +1,7 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import { getHosxpPool } from '@/lib/hosxpClient';
 
 export const dynamic = 'force-dynamic';
-
-function getHosxpPool() {
-  return mysql.createPool({
-    host: process.env.HOSXP_DB_HOST || '192.168.1.4',
-    port: Number(process.env.HOSXP_DB_PORT) || 3306,
-    user: process.env.HOSXP_DB_USER || 'Khos',
-    password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh',
-    database: process.env.HOSXP_DB_NAME || 'hos',
-    charset: 'tis620',
-    waitForConnections: true,
-    connectionLimit: 10,
-  });
-}
 
 export async function GET() {
   try {
@@ -33,26 +20,23 @@ export async function GET() {
        LEFT JOIN clinic c ON o.clinic = c.clinic
        LEFT JOIN doctor d ON o.doctor = d.code
        WHERE o.nextdate >= CURDATE()
-       ORDER BY o.nextdate ASC
+       ORDER BY o.nextdate ASC, o.nexttime ASC
        LIMIT 50`
     );
 
-    const appointments = rows.map((r: any) => {
-      const dateStr = r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
-      return {
-        id: String(r.oapp_id),
-        hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
-        rawHn: r.hn,
-        patientName: r.patient_name || 'ไม่ระบุชื่อ',
-        phone: r.phone || '081-000-0000',
-        appointmentDate: dateStr,
-        appointmentTime: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
-        clinic: r.clinic_name || `คลินิก (${r.clinic || 'NCDs'})`,
-        doctor: r.doctor_name || `แพทย์ (รหัส ${r.doctor || '0087'})`,
-        status: 'confirmed',
-        lineNotificationSent: true,
-      };
-    });
+    const appointments = rows.map((r: any) => ({
+      id: String(r.oapp_id),
+      hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
+      patientName: r.patient_name || 'ไม่ระบุชื่อ',
+      phone: r.phone || '081-234-5678',
+      date: r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-',
+      time: r.nexttime ? `${r.nexttime} น.` : '08:30 น.',
+      clinic: r.clinic_name || 'คลินิก NCDs',
+      provider: r.doctor_name || 'แพทย์ผู้ตรวจ',
+      type: r.app_cause || 'ตรวจติดตามอาการ NCDs',
+      status: 'confirmed',
+      lineNotified: true,
+    }));
 
     return NextResponse.json({ success: true, count: appointments.length, appointments });
   } catch (error: any) {
