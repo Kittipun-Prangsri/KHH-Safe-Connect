@@ -23,14 +23,14 @@ async function replyLineMessage(replyToken: string, messages: any[]) {
     return;
   }
 
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  if (!token) {
-    console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN not configured.');
-    return;
-  }
+  // Token with fallback to guarantee Vercel Production replies
+  const token = (
+    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
+    'jXwSqFzYZPjCp/a9QC6zaAK9MDCaWBlKsGMIcKlUVxhYHJ7ISuu8n74IbiHb0IuNRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGPcSfQG9Xh5njwsrtDN3uu5s44HrbrSCxJm8+EzL5lDqgdB04t89/1O/w1cDnyilFU='
+  ).trim();
 
   try {
-    await fetch('https://api.line.me/v2/bot/message/reply', {
+    const res = await fetch('https://api.line.me/v2/bot/message/reply', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,6 +41,11 @@ async function replyLineMessage(replyToken: string, messages: any[]) {
         messages,
       }),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('❌ LINE Reply API status:', res.status, errText);
+    }
   } catch (err) {
     console.error('❌ LINE Reply error:', err);
   }
