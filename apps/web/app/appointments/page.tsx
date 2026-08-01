@@ -21,6 +21,7 @@ import {
   Stethoscope,
   Building,
   Check,
+  Send,
 } from 'lucide-react';
 
 interface Appointment {
