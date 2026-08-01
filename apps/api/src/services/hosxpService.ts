@@ -19,6 +19,7 @@ export function getHosxpPool() {
     charset: 'tis620',
     waitForConnections: true,
     connectionLimit: 10,
+    connectTimeout: 3000,
     queueLimit: 0,
   });
 }

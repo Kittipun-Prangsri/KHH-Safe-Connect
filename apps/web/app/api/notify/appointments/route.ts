@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
 import { sendLineAppointmentReminder } from '@/lib/lineMessagingService';
+import { getHosxpPool } from '@/lib/hosxpClient';
 
 export const dynamic = 'force-dynamic';
 
-function getHosxpPool() {
-  return mysql.createPool({
-    host: process.env.HOSXP_DB_HOST || '192.168.1.4',
-    port: Number(process.env.HOSXP_DB_PORT) || 3306,
-    user: process.env.HOSXP_DB_USER || 'Khos',
-    password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh',
-    database: process.env.HOSXP_DB_NAME || 'hos',
-    charset: 'tis620',
-    waitForConnections: true,
-    connectionLimit: 10,
-  });
-}
 
 /**
  * Helper to process and send LINE Flex Message Reminders for upcoming NCDs appointments

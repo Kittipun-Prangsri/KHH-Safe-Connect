@@ -5,19 +5,19 @@ let pool: mysql.Pool | null = null;
 /**
  * Get or initialize HOSxP MySQL Connection Pool with short connectTimeout (3s) to prevent Vercel ETIMEDOUT hangs
  */
-export function getHosxpPool() {
+export function getHosxpPool(): mysql.Pool {
   if (!pool) {
     const host = process.env.HOSXP_DB_HOST || '192.168.1.4';
     const port = Number(process.env.HOSXP_DB_PORT) || 3306;
     const user = process.env.HOSXP_DB_USER || 'Khos';
-    password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh';
+    const password = process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh';
     const database = process.env.HOSXP_DB_NAME || 'hos';
 
     pool = mysql.createPool({
       host,
       port,
       user,
-      password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh',
+      password,
       database,
       charset: 'tis620',
       waitForConnections: true,
@@ -28,3 +28,4 @@ export function getHosxpPool() {
   }
   return pool;
 }
+
