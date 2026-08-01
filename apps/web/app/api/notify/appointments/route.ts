@@ -95,7 +95,7 @@ async function processUpcomingNcdReminders() {
       appointmentDate: dateStr,
       noticeType: is3DaysAhead ? 'เตือน 3 วันก่อนนัด' : 'เตือน 1 วันก่อนนัด',
       phone: r.phone || '-',
-      lineStatus: lineResult?.status || 'queued',
+      lineStatus: lineResult?.success ? 'sent' : 'queued',
     });
   }
 
