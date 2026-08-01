@@ -16,6 +16,7 @@ export function getHosxpPool() {
     user,
     password,
     database,
+    charset: 'tis620',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -23,9 +24,9 @@ export function getHosxpPool() {
 }
 
 /**
- * Get paginated patient list directly from HOSxP `patient` table
+ * Get paginated patient list directly from HOSxP `patient` table with Thai TIS-620 search support
  */
-export async function getHosxpPatientList(search = '', page = 1, limit = 20) {
+export async function getHosxpPatientList(search = '', page = 1, limit = 50) {
   try {
     const pool = getHosxpPool();
     const offset = (page - 1) * limit;
@@ -37,10 +38,15 @@ export async function getHosxpPatientList(search = '', page = 1, limit = 20) {
 
     if (search.trim()) {
       const searchPattern = `%${search.trim()}%`;
-      const cleanHn = search.trim().replace(/^HN-?/i, '');
-      sql += ` WHERE hn LIKE ? OR cid LIKE ? OR fname LIKE ? OR lname LIKE ?`;
-      countSql += ` WHERE hn LIKE ? OR cid LIKE ? OR fname LIKE ? OR lname LIKE ?`;
-      params.push(`%${cleanHn}%`, searchPattern, searchPattern, searchPattern);
+      const cleanHn = `%${search.trim().replace(/^HN-?/i, '')}%`;
+      const whereClause = ` WHERE hn LIKE ? 
+                             OR cid LIKE ? 
+                             OR CONVERT(fname USING utf8mb4) LIKE ? 
+                             OR CONVERT(lname USING utf8mb4) LIKE ? 
+                             OR CONVERT(CONCAT(COALESCE(pname,''), COALESCE(fname,''), ' ', COALESCE(lname,'')) USING utf8mb4) LIKE ?`;
+      sql += whereClause;
+      countSql += whereClause;
+      params.push(cleanHn, searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     sql += ` ORDER BY hn DESC LIMIT ? OFFSET ?`;
@@ -53,7 +59,7 @@ export async function getHosxpPatientList(search = '', page = 1, limit = 20) {
       hn: p.hn.startsWith('HN-') ? p.hn : `HN-${p.hn}`,
       rawHn: p.hn,
       name: `${p.pname || ''}${p.fname || ''} ${p.lname || ''}`.trim(),
-      cid: p.cid,
+      cid: p.cid || '-',
       birthday: p.birthday,
       sex: p.sex === '1' ? 'ชาย' : 'หญิง',
       phone: p.mobile_phone_number || p.hometel || p.informtel || '081-000-0000',

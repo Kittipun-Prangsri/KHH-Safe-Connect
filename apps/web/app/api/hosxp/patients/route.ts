@@ -10,8 +10,9 @@ function getHosxpPool() {
     user: process.env.HOSXP_DB_USER || 'Khos',
     password: process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh',
     database: process.env.HOSXP_DB_NAME || 'hos',
+    charset: 'tis620',
     waitForConnections: true,
-    connectionLimit: 5,
+    connectionLimit: 10,
   });
 }
 
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    const limit = Number(searchParams.get('limit')) || 30;
+    const limit = Number(searchParams.get('limit')) || 50;
 
     const pool = getHosxpPool();
     let sql = `SELECT hn, pname, fname, lname, birthday, sex, cid, mobile_phone_number, hometel, informtel 
@@ -27,10 +28,14 @@ export async function GET(request: Request) {
     const params: any[] = [];
 
     if (search.trim()) {
-      const cleanHn = search.trim().replace(/^HN-?/i, '');
+      const cleanHn = `%${search.trim().replace(/^HN-?/i, '')}%`;
       const searchPattern = `%${search.trim()}%`;
-      sql += ` WHERE hn LIKE ? OR cid LIKE ? OR fname LIKE ? OR lname LIKE ?`;
-      params.push(`%${cleanHn}%`, searchPattern, searchPattern, searchPattern);
+      sql += ` WHERE hn LIKE ? 
+                  OR cid LIKE ? 
+                  OR CONVERT(fname USING utf8mb4) LIKE ? 
+                  OR CONVERT(lname USING utf8mb4) LIKE ? 
+                  OR CONVERT(CONCAT(COALESCE(pname,''), COALESCE(fname,''), ' ', COALESCE(lname,'')) USING utf8mb4) LIKE ?`;
+      params.push(cleanHn, searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     sql += ` ORDER BY hn DESC LIMIT ?`;
@@ -43,7 +48,7 @@ export async function GET(request: Request) {
       hn: p.hn.startsWith('HN-') ? p.hn : `HN-${p.hn}`,
       rawHn: p.hn,
       name: `${p.pname || ''}${p.fname || ''} ${p.lname || ''}`.trim(),
-      cid: p.cid,
+      cid: p.cid || '-',
       birthday: p.birthday,
       sex: p.sex === '1' ? 'ชาย' : 'หญิง',
       phone: p.mobile_phone_number || p.hometel || p.informtel || '081-000-0000',
