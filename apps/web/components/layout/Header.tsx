@@ -1,14 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, LogOut, Settings, User } from 'lucide-react';
+import { Menu, LogOut, Settings, User, ShieldCheck } from 'lucide-react';
+import { PRESET_USERS, UserProfile } from '@/lib/rbac';
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const [user, setUser] = useState<UserProfile>(PRESET_USERS.nurse);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('khh_user_session');
+      if (saved) {
+        try {
+          setUser(JSON.parse(saved));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, []);
+
   return (
     <header className="bg-white border-b border-slate-200/80 px-4 py-3 lg:px-8 lg:py-4 flex items-center justify-between shadow-sm shrink-0 sticky top-0 z-40">
       <div className="flex items-center gap-3">
@@ -30,14 +46,16 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* User Card */}
+        {/* Active User RBAC Card */}
         <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
           <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-            กแก
+            {user.avatarInitials || 'พย'}
           </div>
           <div className="text-left hidden sm:block">
-            <span className="block text-xs font-bold text-slate-800 leading-tight">กิตติพงษ์ แก้วมณี</span>
-            <span className="block text-[9px] text-teal-600 font-semibold leading-none">พยาบาลวิชาชีพ (Nurse)</span>
+            <span className="block text-xs font-bold text-slate-800 leading-tight">{user.name}</span>
+            <span className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded border mt-0.5 ${user.badgeColor}`}>
+              {user.roleLabel}
+            </span>
           </div>
         </div>
 
@@ -45,7 +63,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <Link
           href="/settings"
           className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-teal-700 transition-all shadow-sm"
-          title="ตั้งค่าระบบ"
+          title="ตั้งค่าระบบและสิทธิ์ผู้ใช้งาน"
         >
           <Settings className="w-4 h-4" />
         </Link>
@@ -53,6 +71,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* Logout button */}
         <Link
           href="/"
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('khh_user_session');
+            }
+          }}
           className="p-2 rounded-xl border border-rose-100 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all"
           title="ออกจากระบบ"
         >
