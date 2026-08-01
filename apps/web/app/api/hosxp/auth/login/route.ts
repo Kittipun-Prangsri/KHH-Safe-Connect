@@ -1,59 +1,12 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getHosxpPool } from '@/lib/hosxpClient';
+import {
+  findDuplicatedUserProfile,
+  provisionHosxpUserToStore,
+} from '@/lib/userProvisioningService';
 
 export const dynamic = 'force-dynamic';
-
-const DEMO_USERS: Record<string, any> = {
-  '0816': {
-    id: '0816',
-    loginname: '0816',
-    name: 'พญ. สุภาพร ใจดี (Demo Doctor)',
-    doctorcode: '0816',
-    position: 'แพทย์ประจำคลินิก NCDs',
-    department: 'โรงพยาบาลคลองหาด',
-    role: 'doctor',
-    roleLabel: 'แพทย์ประจำคลินิก (Doctor)',
-    badgeColor: 'bg-sky-100 text-sky-700 border-sky-200',
-    avatarInitials: 'สุ',
-  },
-  admin: {
-    id: 'admin',
-    loginname: 'admin',
-    name: 'ผู้ดูแลระบบ IT (Demo Super Admin)',
-    doctorcode: '-',
-    position: 'นักวิชาการคอมพิวเตอร์ / สารสนเทศ',
-    department: 'กลุ่มงานสารสนเทศทางการแพทย์',
-    role: 'super_admin',
-    roleLabel: 'ผู้ดูแลระบบ (IT Super Admin)',
-    badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
-    avatarInitials: 'AD',
-  },
-  nurse: {
-    id: 'nurse',
-    loginname: 'nurse',
-    name: 'พยาบาลวิชาชีพ (Demo Nurse)',
-    doctorcode: '-',
-    position: 'พยาบาลวิชาชีพปฏิบัติการ',
-    department: 'คลินิกโรคเรื้อรัง NCDs',
-    role: 'nurse',
-    roleLabel: 'พยาบาลวิชาชีพ (Nurse)',
-    badgeColor: 'bg-teal-100 text-teal-700 border-teal-200',
-    avatarInitials: 'พย',
-  },
-  staff: {
-    id: 'staff',
-    loginname: 'staff',
-    name: 'เจ้าหน้าที่เวชระเบียน (Demo Staff)',
-    doctorcode: '-',
-    position: 'เจ้าหน้าที่เวชระเบียน',
-    department: 'งานเวชระเบียน',
-    role: 'staff',
-    roleLabel: 'เจ้าหน้าที่ (Staff)',
-    badgeColor: 'bg-amber-100 text-amber-700 border-amber-200',
-    avatarInitials: 'จน',
-  },
-};
 
 /**
  * Determine Role from HOSxP opduser entryposition, groupname, doctorcode
@@ -116,9 +69,21 @@ export async function POST(request: Request) {
     }
 
     cleanUsername = username.trim();
-    const pool = getHosxpPool();
 
-    // Query real opduser from HOSxP database with TIS-620 conversion
+    // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
+    const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
+    if (duplicatedProfile) {
+      return NextResponse.json({
+        success: true,
+        message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
+        user: duplicatedProfile,
+        isZeroDbAuth: true,
+        source: 'Supabase / Duplicated Store',
+      });
+    }
+
+    // 2. STEP 2: Fallback attempt to query real opduser from HOSxP database (and auto-provision)
+    const pool = getHosxpPool();
     let rows: any[] = [];
     try {
       const [dbRows]: any = await pool.execute(
@@ -136,54 +101,21 @@ export async function POST(request: Request) {
       );
       rows = dbRows;
     } catch (dbErr: any) {
-      const isConnectionError =
-        dbErr.code === 'ETIMEDOUT' ||
-        dbErr.code === 'ECONNREFUSED' ||
-        dbErr.code === 'ENOTFOUND' ||
-        dbErr.code === 'EHOSTUNREACH' ||
-        dbErr.syscall === 'connect';
+      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). User '${cleanUsername}' not found in DB.`);
 
-      if (isConnectionError) {
-        console.warn(`⚠️ HOSxP DB Connection Error (${dbErr.code || 'ETIMEDOUT'}). Checking demo user fallback for '${cleanUsername}'...`);
-
-        const demoKey = cleanUsername.toLowerCase();
-        const demoUser = DEMO_USERS[demoKey];
-
-        if (demoUser) {
-          return NextResponse.json({
-            success: true,
-            message: `⚡ เข้าสู่ระบบในโหมด Demo สำเร็จ! (เนื่องจากไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP 192.168.1.4 จากภายนอกได้)`,
-            user: demoUser,
-            isDemoMode: true,
-          });
-        }
-
-        return NextResponse.json(
-          {
-            success: false,
-            message: `❌ ไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP (192.168.1.4:3306) ได้ (Connection Timeout) - กรุณาตรวจสอบว่าท่านเชื่อมต่อวง LAN โรงพยาบาลหรือ VPN (หรือใช้ Username: 0816 หรือ admin เพื่อทดสอบโหมด Demo)`,
-            code: dbErr.code || 'ETIMEDOUT',
-          },
-          { status: 503 }
-        );
-      }
-      throw dbErr;
+      return NextResponse.json(
+        {
+          success: false,
+          message: `❌ ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ใน Supabase Profile Store และไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP 192.168.1.4 ได้ (Connection Timeout) - กรุณาใช้ Username: 0816 หรือ admin เพื่อเข้าสู่ระบบ`,
+          code: dbErr.code || 'ETIMEDOUT',
+        },
+        { status: 503 }
+      );
     }
 
     if (!rows || rows.length === 0) {
-      // Fallback check for demo accounts if user not found in DB
-      const demoKey = cleanUsername.toLowerCase();
-      if (DEMO_USERS[demoKey]) {
-        return NextResponse.json({
-          success: true,
-          message: `⚡ เข้าสู่ระบบสำเร็จ (Demo Account)! ยินดีต้อนรับ ${DEMO_USERS[demoKey].name}`,
-          user: DEMO_USERS[demoKey],
-          isDemoMode: true,
-        });
-      }
-
       return NextResponse.json(
-        { success: false, message: `ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ในระบบ HOSxP` },
+        { success: false, message: `ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ในระบบ HOSxP และ Supabase Store` },
         { status: 401 }
       );
     }
@@ -226,30 +158,31 @@ export async function POST(request: Request) {
     const roleInfo = mapHosxpRole(user);
     const fullName = user.name || cleanUsername;
 
-    const userSession = {
-      id: user.loginname,
+    // STEP 3: Auto-provision user into Supabase / Duplicated Store for future 0%-DB logins
+    const provisionedUser = await provisionHosxpUserToStore({
       loginname: user.loginname,
       name: fullName,
-      doctorcode: user.doctorcode || '-',
-      position: user.entryposition || 'เจ้าหน้าที่',
-      department: user.department || 'โรงพยาบาลคลองหาด',
+      entryposition: user.entryposition,
+      department: user.department,
+      doctorcode: user.doctorcode,
       role: roleInfo.role,
       roleLabel: roleInfo.roleLabel,
       badgeColor: roleInfo.badgeColor,
-      avatarInitials: fullName.slice(0, 2),
-    };
+    });
 
     return NextResponse.json({
       success: true,
-      message: `⚡ เข้าสู่ระบบ HOSxP สำเร็จ! ยินดีต้อนรับ ${fullName}`,
-      user: userSession,
+      message: `⚡ เข้าสู่ระบบ HOSxP สำเร็จ! (ทำการคัดลอกบัญชีลง Supabase Store เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
+      user: provisionedUser,
+      isAutoProvisioned: true,
     });
   } catch (error: any) {
     console.error('❌ HOSxP Login Auth Error:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์กับฐานข้อมูล HOSxP' },
+      { success: false, message: error.message || 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์กับระบบ' },
       { status: 500 }
     );
   }
 }
+
 
