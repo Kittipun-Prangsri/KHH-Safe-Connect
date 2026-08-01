@@ -37,7 +37,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-import hosxpRoutes from './routes/hosxpRoutes';
+import hosxpRoutes from './routes/hosxpRoutes.js';
 
 // 1. Health check endpoint (public)
 app.get('/api/v1/health', (_, res: Response) => {

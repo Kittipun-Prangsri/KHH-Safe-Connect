@@ -4,7 +4,7 @@ import {
   getHosxpPatientList,
   getHosxpPatientMedicalHistory,
   getHosxpAppointments,
-} from '../services/hosxpService';
+} from '../services/hosxpService.js';
 
 const router = Router();
 
