@@ -552,11 +552,30 @@ export function createContactStaffFlex() {
           },
           {
             type: 'text',
-            text: '📞 เบอร์โทรศัพท์ห้องคลินิก NCDs: 037-xxx-xxx (ในเวลาราชการ 08:30 - 16:30 น.)',
+            text: '📞 เบอร์โทรศัพท์ห้องคลินิก NCDs: 06-2271-0099 (ในเวลาราชการ 08:30 - 16:30 น.)',
             size: 'xs',
             color: '#64748B',
             wrap: true,
             margin: 'md',
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทรหาคลินิก NCDs (06-2271-0099)',
+              uri: 'tel:0622710099',
+            },
           },
         ],
       },
