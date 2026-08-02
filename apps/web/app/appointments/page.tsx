@@ -76,12 +76,12 @@ export default function AppointmentsPage() {
         const formatted = data.appointments.map((a: any) => ({
           id: a.id,
           hn: a.hn,
-          patientName: a.patientName,
+          patientName: a.patientName || 'ไม่ระบุชื่อ',
           disease: 'NCDs (HOSxP)',
-          date: a.appointmentDate,
-          time: a.appointmentTime,
-          clinic: a.clinic,
-          provider: a.doctor,
+          date: a.date || a.appointmentDate || 'วันนี้',
+          time: a.time || a.appointmentTime || '08:30 น.',
+          clinic: a.clinic || 'คลินิก NCDs',
+          provider: a.provider || a.doctor || 'แพทย์ผู้ตรวจ',
           status: 'confirmed' as const,
         }));
         setAppointments(formatted);
