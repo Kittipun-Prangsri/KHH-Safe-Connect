@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy": "wrangler pages deploy .next",
+    "deploy": "rm -rf .next/cache && wrangler pages deploy .next",
     "start": "next start",
     "lint": "next lint"
   },
