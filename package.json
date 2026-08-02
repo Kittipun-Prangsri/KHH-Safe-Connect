@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "pnpm --parallel dev",
     "build": "pnpm --filter @khh/web build",
-    "deploy": "rm -rf apps/web/.next/cache && wrangler pages deploy apps/web/.next --project-name khh-safe-connect",
+    "start": "pnpm --filter @khh/web start",
+    "deploy": "pnpm --filter @khh/web deploy",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
   },

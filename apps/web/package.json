@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy": "rm -rf .next/cache && wrangler pages deploy .next",
-    "start": "next start",
+    "deploy": "rm -rf .next/cache && wrangler pages deploy .next --project-name khh-safe-connect --commit-dirty=true",
+    "start": "next start -p 3000",
     "lint": "next lint"
   },
   "dependencies": {
