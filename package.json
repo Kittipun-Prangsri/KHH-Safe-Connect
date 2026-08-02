@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --parallel dev",
     "build": "pnpm --filter @khh/web build",
+    "deploy": "pnpm --filter @khh/web deploy",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
   },

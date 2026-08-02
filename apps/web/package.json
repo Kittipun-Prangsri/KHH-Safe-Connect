@@ -5,13 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "wrangler pages deploy .next",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
-    "@khh/types": "workspace:*",
-    "@khh/validation": "workspace:*",
+    "@khh/types": "file:../../packages/types",
+    "@khh/validation": "file:../../packages/validation",
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^5.22.2",
     "autoprefixer": "^10.4.17",

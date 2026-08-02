@@ -10,8 +10,8 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "@khh/types": "workspace:*",
-    "@khh/validation": "workspace:*",
+    "@khh/types": "file:../../packages/types",
+    "@khh/validation": "file:../../packages/validation",
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

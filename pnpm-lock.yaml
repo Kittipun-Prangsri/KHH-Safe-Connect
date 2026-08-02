@@ -18,10 +18,10 @@ importers:
   apps/api:
     dependencies:
       '@khh/types':
-        specifier: workspace:*
+        specifier: file:../../packages/types
         version: link:../../packages/types
       '@khh/validation':
-        specifier: workspace:*
+        specifier: file:../../packages/validation
         version: link:../../packages/validation
       '@supabase/supabase-js':
         specifier: ^2.39.0
@@ -82,10 +82,10 @@ importers:
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.83.0(react@18.3.1))
       '@khh/types':
-        specifier: workspace:*
+        specifier: file:../../packages/types
         version: link:../../packages/types
       '@khh/validation':
-        specifier: workspace:*
+        specifier: file:../../packages/validation
         version: link:../../packages/validation
       '@supabase/supabase-js':
         specifier: ^2.39.0
