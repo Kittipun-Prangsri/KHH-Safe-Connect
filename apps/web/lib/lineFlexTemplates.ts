@@ -573,7 +573,7 @@ export function createContactStaffFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📞 โทรหาคลินิก NCDs (06-2271-0099)',
+              label: '📞 โทรหาคลินิก NCDs',
               uri: 'tel:0622710099',
             },
           },
