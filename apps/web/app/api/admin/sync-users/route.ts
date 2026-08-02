@@ -30,24 +30,51 @@ export async function POST() {
   try {
     const pool = getHosxpPool();
 
-    // Query active users from HOSxP opduser
-    const [rows]: any = await pool.execute(`
-      SELECT loginname, 
-             CONVERT(name USING utf8mb4) AS name, 
-             CONVERT(entryposition USING utf8mb4) AS entryposition, 
-             CONVERT(department USING utf8mb4) AS department, 
-             doctorcode
-      FROM opduser 
-      WHERE (account_disable IS NULL OR account_disable != 'Y')
-      LIMIT 100
-    `);
+    let rows: any[] = [];
+    let isFromNcdTable = false;
+
+    // Try opduser_Ncd first
+    try {
+      const [ncdRows]: any = await pool.execute(`
+        SELECT loginname, 
+               CONVERT(name USING utf8mb4) AS name, 
+               CONVERT(entryposition USING utf8mb4) AS entryposition, 
+               CONVERT(department USING utf8mb4) AS department, 
+               doctorcode
+        FROM opduser_Ncd 
+        WHERE (account_disable IS NULL OR account_disable != 'Y')
+        LIMIT 100
+      `);
+      if (ncdRows && ncdRows.length > 0) {
+        rows = ncdRows;
+        isFromNcdTable = true;
+      }
+    } catch (err) {
+      // opduser_Ncd fallback quietly
+    }
+
+    if (!rows || rows.length === 0) {
+      // Fallback to standard opduser
+      const [dbRows]: any = await pool.execute(`
+        SELECT loginname, 
+               CONVERT(name USING utf8mb4) AS name, 
+               CONVERT(entryposition USING utf8mb4) AS entryposition, 
+               CONVERT(department USING utf8mb4) AS department, 
+               doctorcode
+        FROM opduser 
+        WHERE (account_disable IS NULL OR account_disable != 'Y')
+        LIMIT 100
+      `);
+      rows = dbRows;
+    }
 
     const result = await batchProvisionHosxpUsers(rows);
 
     return NextResponse.json({
       success: true,
-      message: `⚡ คัดลอกและ Sync บัญชี opduser จาก HOSxP เข้าสู่ Supabase Profile Store สำเร็จทั้งหมด ${result.count} บัญชี`,
+      message: `⚡ คัดลอกและ Sync บัญชี ${isFromNcdTable ? 'opduser_Ncd' : 'opduser'} จาก HOSxP เข้าสู่ Supabase Profile Store สำเร็จทั้งหมด ${result.count} บัญชี`,
       syncedCount: result.count,
+      isFromNcdTable,
       profiles: result.profiles,
     });
   } catch (error: any) {

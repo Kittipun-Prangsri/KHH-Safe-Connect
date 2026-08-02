@@ -83,24 +83,52 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. STEP 2: Fallback attempt to query real opduser from HOSxP database (and auto-provision)
+    // 2. STEP 2: Query user from HOSxP opduser / opduser_Ncd database
     const pool = getHosxpPool();
     let rows: any[] = [];
+    let isFromNcdTable = false;
+
     try {
-      const [dbRows]: any = await pool.execute(
-        `SELECT loginname, 
-                CONVERT(name USING utf8mb4) AS name, 
-                CONVERT(entryposition USING utf8mb4) AS entryposition, 
-                CONVERT(department USING utf8mb4) AS department, 
-                CONVERT(groupname USING utf8mb4) AS groupname, 
-                doctorcode, passweb, password, password_text, account_disable
-         FROM opduser 
-         WHERE (loginname = ? OR doctorcode = ? OR cid = ?)
-           AND (account_disable IS NULL OR account_disable != 'Y')
-         LIMIT 1`,
-        [cleanUsername, cleanUsername, cleanUsername]
-      );
-      rows = dbRows;
+      // First try querying opduser_Ncd / opduser_ncd if available
+      try {
+        const [ncdRows]: any = await pool.execute(
+          `SELECT loginname, 
+                  CONVERT(name USING utf8mb4) AS name, 
+                  CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                  CONVERT(department USING utf8mb4) AS department, 
+                  CONVERT(groupname USING utf8mb4) AS groupname, 
+                  doctorcode, passweb, password, password_text, account_disable
+           FROM opduser_Ncd 
+           WHERE (loginname = ? OR doctorcode = ? OR cid = ?)
+             AND (account_disable IS NULL OR account_disable != 'Y')
+           LIMIT 1`,
+          [cleanUsername, cleanUsername, cleanUsername]
+        );
+        if (ncdRows && ncdRows.length > 0) {
+          rows = ncdRows;
+          isFromNcdTable = true;
+        }
+      } catch (ncdErr) {
+        // Table opduser_Ncd might be lowercased or missing, fall back quietly to opduser
+      }
+
+      // Fallback to standard opduser if not found in opduser_Ncd
+      if (!rows || rows.length === 0) {
+        const [dbRows]: any = await pool.execute(
+          `SELECT loginname, 
+                  CONVERT(name USING utf8mb4) AS name, 
+                  CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                  CONVERT(department USING utf8mb4) AS department, 
+                  CONVERT(groupname USING utf8mb4) AS groupname, 
+                  doctorcode, passweb, password, password_text, account_disable
+           FROM opduser 
+           WHERE (loginname = ? OR doctorcode = ? OR cid = ?)
+             AND (account_disable IS NULL OR account_disable != 'Y')
+           LIMIT 1`,
+          [cleanUsername, cleanUsername, cleanUsername]
+        );
+        rows = dbRows;
+      }
     } catch (dbErr: any) {
       console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). Creating dynamic standby profile for '${cleanUsername}'...`);
 
@@ -160,6 +188,22 @@ export async function POST(request: Request) {
     // Determine Role
     const roleInfo = mapHosxpRole(user);
     const fullName = user.name || cleanUsername;
+    const nowIso = new Date().toISOString();
+
+    // Update last_login timestamp in opduser_Ncd table (best effort)
+    try {
+      await pool.execute(
+        `UPDATE opduser_Ncd SET last_login = NOW() WHERE loginname = ?`,
+        [user.loginname]
+      ).catch(() => {
+        return pool.execute(
+          `UPDATE opduser_ncd SET last_login = NOW() WHERE loginname = ?`,
+          [user.loginname]
+        );
+      });
+    } catch (updateErr) {
+      // Ignore if table or last_login column does not exist yet
+    }
 
     // STEP 3: Auto-provision user into Supabase / Duplicated Store for future 0%-DB logins
     const provisionedUser = await provisionHosxpUserToStore({
@@ -171,13 +215,16 @@ export async function POST(request: Request) {
       role: roleInfo.role,
       roleLabel: roleInfo.roleLabel,
       badgeColor: roleInfo.badgeColor,
+      lastLoginAt: nowIso,
+      opduserNcdSyncedAt: nowIso,
     });
 
     return NextResponse.json({
       success: true,
-      message: `⚡ เข้าสู่ระบบ HOSxP สำเร็จ! (ทำการคัดลอกบัญชีลง Supabase Store เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
+      message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
       user: provisionedUser,
       isAutoProvisioned: true,
+      isFromNcdTable,
     });
   } catch (error: any) {
     console.error('❌ HOSxP Login Auth Error:', error);

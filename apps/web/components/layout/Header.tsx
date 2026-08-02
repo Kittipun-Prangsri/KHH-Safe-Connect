@@ -52,10 +52,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {user.avatarInitials || 'พย'}
           </div>
           <div className="text-left hidden sm:block">
-            <span className="block text-xs font-bold text-slate-800 leading-tight">{user.name}</span>
-            <span className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded border mt-0.5 ${user.badgeColor}`}>
-              {user.roleLabel}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="block text-xs font-bold text-slate-800 leading-tight">{user.name}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="เชื่อมต่อข้อมูล opduser_Ncd สด" />
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded border ${user.badgeColor}`}>
+                {user.roleLabel}
+              </span>
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,8 @@ export interface UserSessionProfile {
   avatarInitials: string;
   isDuplicatedStore?: boolean;
   syncedAt?: string;
+  lastLoginAt?: string;
+  opduserNcdSyncedAt?: string;
 }
 
 // In-Memory Duplicated Profile Store (Serves as instant local replica & cache for Supabase)
@@ -198,6 +200,8 @@ export async function provisionHosxpUserToStore(hosxpUser: {
   role?: string;
   roleLabel?: string;
   badgeColor?: string;
+  lastLoginAt?: string;
+  opduserNcdSyncedAt?: string;
 }): Promise<UserSessionProfile> {
   const loginname = hosxpUser.loginname.trim();
   const key = loginname.toLowerCase();
@@ -216,6 +220,8 @@ export async function provisionHosxpUserToStore(hosxpUser: {
     avatarInitials: fullName.slice(0, 2),
     isDuplicatedStore: true,
     syncedAt: new Date().toISOString(),
+    lastLoginAt: hosxpUser.lastLoginAt || new Date().toISOString(),
+    opduserNcdSyncedAt: hosxpUser.opduserNcdSyncedAt || new Date().toISOString(),
   };
 
   // Save to local memory store
