@@ -29,6 +29,7 @@ interface Appointment {
   hn: string;
   patientName: string;
   disease: string;
+  rawDate?: string;
   date: string;
   time: string;
   clinic: string;
@@ -45,6 +46,11 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [sendingBatchLine, setSendingBatchLine] = useState(false);
   const [batchNoticeResult, setBatchNoticeResult] = useState<any | null>(null);
+
+  // Date Filter States
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [datePreset, setDatePreset] = useState<'all' | 'today' | 'tomorrow' | 'next7days' | 'thisMonth' | 'custom'>('all');
 
   // New Appointment Form State
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -66,11 +72,49 @@ export default function AppointmentsPage() {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
+  const applyDatePreset = (preset: 'all' | 'today' | 'tomorrow' | 'next7days' | 'thisMonth' | 'custom') => {
+    setDatePreset(preset);
+    const today = new Date();
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    if (preset === 'all') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'today') {
+      const todayStr = formatDate(today);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'tomorrow') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const tomStr = formatDate(tomorrow);
+      setStartDate(tomStr);
+      setEndDate(tomStr);
+    } else if (preset === 'next7days') {
+      const todayStr = formatDate(today);
+      const next7 = new Date(today);
+      next7.setDate(today.getDate() + 7);
+      setStartDate(todayStr);
+      setEndDate(formatDate(next7));
+    } else if (preset === 'thisMonth') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      setStartDate(formatDate(firstDay));
+      setEndDate(formatDate(lastDay));
+    }
+  };
+
   // Fetch Live Real Appointments from HOSxP Database
-  const fetchLiveHosxpAppointments = async () => {
+  const fetchLiveHosxpAppointments = async (start = startDate, end = endDate) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/hosxp/appointments');
+      let url = '/api/hosxp/appointments';
+      const params = new URLSearchParams();
+      if (start) params.append('startDate', start);
+      if (end) params.append('endDate', end);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success && Array.isArray(data.appointments)) {
         const formatted = data.appointments.map((a: any) => ({
@@ -78,6 +122,7 @@ export default function AppointmentsPage() {
           hn: a.hn,
           patientName: a.patientName || 'ไม่ระบุชื่อ',
           disease: 'NCDs (HOSxP)',
+          rawDate: a.rawDate || '',
           date: a.date || a.appointmentDate || 'วันนี้',
           time: a.time || a.appointmentTime || '08:30 น.',
           clinic: a.clinic || 'คลินิก NCDs',
@@ -94,8 +139,8 @@ export default function AppointmentsPage() {
   };
 
   useEffect(() => {
-    fetchLiveHosxpAppointments();
-  }, []);
+    fetchLiveHosxpAppointments(startDate, endDate);
+  }, [startDate, endDate]);
 
   // Search Live HOSxP Patient for New Appointment Form
   const handleSearchPatientForForm = async (query: string) => {
@@ -121,7 +166,17 @@ export default function AppointmentsPage() {
   const filteredAppointments = appointments.filter((app) => {
     const matchesSearch = app.patientName.includes(searchTerm) || app.hn.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || app.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+    
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const appDateStr = app.rawDate;
+      if (appDateStr) {
+        if (startDate && appDateStr < startDate) matchesDate = false;
+        if (endDate && appDateStr > endDate) matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   const getStatusBadge = (status: Appointment['status']) => {
@@ -261,7 +316,7 @@ export default function AppointmentsPage() {
               <span>{sendingBatchLine ? 'กำลังส่ง LINE เตือนนัด...' : '⚡ รันระบบส่ง LINE เตือนนัด 3วัน/1วัน สด'}</span>
             </button>
             <button
-              onClick={fetchLiveHosxpAppointments}
+              onClick={() => fetchLiveHosxpAppointments()}
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
@@ -309,41 +364,115 @@ export default function AppointmentsPage() {
         )}
 
         {/* Search & Filter Bar */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="ค้นหา HN หรือชื่อผู้ป่วยใน HOSxP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
-            />
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full md:w-96">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ค้นหา HN หรือชื่อผู้ป่วยใน HOSxP..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+              <span className="text-xs text-slate-500 font-semibold mr-1 flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5" /> สถานะ:
+              </span>
+              {[
+                { code: 'all', label: 'ทั้งหมด' },
+                { code: 'confirmed', label: 'ยืนยันแล้ว' },
+                { code: 'scheduled', label: 'รอยืนยัน' },
+                { code: 'rescheduled', label: 'ขอเลื่อน' },
+                { code: 'missed', label: 'ขาดนัด' },
+              ].map((s) => (
+                <button
+                  key={s.code}
+                  onClick={() => setSelectedStatus(s.code)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                    selectedStatus === s.code
+                      ? 'bg-teal-600 text-white shadow-sm font-bold'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-            <span className="text-xs text-slate-500 font-semibold mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> สถานะ:
-            </span>
-            {[
-              { code: 'all', label: 'ทั้งหมด' },
-              { code: 'confirmed', label: 'ยืนยันแล้ว' },
-              { code: 'scheduled', label: 'รอยืนยัน' },
-              { code: 'rescheduled', label: 'ขอเลื่อน' },
-              { code: 'missed', label: 'ขาดนัด' },
-            ].map((s) => (
-              <button
-                key={s.code}
-                onClick={() => setSelectedStatus(s.code)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                  selectedStatus === s.code
-                    ? 'bg-teal-600 text-white shadow-sm font-bold'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+          {/* Date Search Bar & Quick Presets */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-slate-500 font-semibold flex items-center gap-1 mr-1 shrink-0">
+                <CalendarIcon className="w-3.5 h-3.5 text-teal-600" />
+                <span>ช่วงวันที่:</span>
+              </span>
+              {[
+                { id: 'all', label: 'ทั้งหมด' },
+                { id: 'today', label: 'วันนี้' },
+                { id: 'tomorrow', label: 'พรุ่งนี้' },
+                { id: 'next7days', label: '7 วันข้างหน้า' },
+                { id: 'thisMonth', label: 'เดือนนี้' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => applyDatePreset(p.id as any)}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    datePreset === p.id
+                      ? 'bg-teal-50 text-teal-700 border border-teal-300 font-bold shadow-xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/70'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Date Pickers */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                <span className="text-slate-400 font-medium text-[10px]">เริ่ม:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setDatePreset('custom');
+                  }}
+                  className="bg-transparent text-slate-700 font-medium focus:outline-none cursor-pointer text-xs"
+                />
+              </div>
+
+              <span className="text-slate-400 text-xs">-</span>
+
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                <span className="text-slate-400 font-medium text-[10px]">ถึง:</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setDatePreset('custom');
+                  }}
+                  className="bg-transparent text-slate-700 font-medium focus:outline-none cursor-pointer text-xs"
+                />
+              </div>
+
+              {(startDate || endDate || datePreset !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => applyDatePreset('all')}
+                  className="px-2 py-1 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors font-semibold cursor-pointer text-xs"
+                  title="ล้างตัวกรองวันที่"
+                >
+                  ล้างวันที่
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
