@@ -6,7 +6,7 @@ import {
   getHosxpAppointments,
 } from '../services/hosxpService.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Test HOSxP Database Connection
 router.get('/test-connection', async (req, res) => {

@@ -13,8 +13,8 @@ export async function GET() {
     const cachedResult = await getOrFetchHosxpCache('hosxp:stats', STATS_CACHE_TTL_MS, async () => {
       const pool = getHosxpPool();
 
-      // 1. Total Patients in HOSxP
-      const [patientCount]: any = await pool.execute('SELECT COUNT(*) as total FROM patient');
+      // 1. Total Patients in Clinic Member (001, 002)
+      const [patientCount]: any = await pool.execute("SELECT COUNT(DISTINCT hn) as total FROM clinicmember WHERE clinic IN ('001', '002')");
 
       // 2. Appointments Today
       const [todayCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate = CURDATE()');

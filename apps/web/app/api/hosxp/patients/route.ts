@@ -10,26 +10,28 @@ export async function GET(request: Request) {
     const limit = Number(searchParams.get('limit')) || 50;
 
     const pool = getHosxpPool();
-    let sql = `SELECT hn, 
-                      CONVERT(pname USING utf8mb4) as pname, 
-                      CONVERT(fname USING utf8mb4) as fname, 
-                      CONVERT(lname USING utf8mb4) as lname, 
-                      birthday, sex, cid, mobile_phone_number, hometel, informtel 
-               FROM patient`;
+    let sql = `SELECT DISTINCT p.hn, 
+                      CONVERT(p.pname USING utf8mb4) as pname, 
+                      CONVERT(p.fname USING utf8mb4) as fname, 
+                      CONVERT(p.lname USING utf8mb4) as lname, 
+                      p.birthday, p.sex, p.cid, p.mobile_phone_number, p.hometel, p.informtel 
+               FROM patient p
+               INNER JOIN clinicmember cm ON p.hn = cm.hn
+               WHERE cm.clinic IN ('001', '002')`;
     const params: any[] = [];
 
     if (search.trim()) {
       const cleanHn = `%${search.trim().replace(/^HN-?/i, '')}%`;
       const searchPattern = `%${search.trim()}%`;
-      sql += ` WHERE hn LIKE ? 
-                  OR cid LIKE ? 
-                  OR CONVERT(fname USING utf8mb4) LIKE ? 
-                  OR CONVERT(lname USING utf8mb4) LIKE ? 
-                  OR CONVERT(CONCAT(COALESCE(pname,''), COALESCE(fname,''), ' ', COALESCE(lname,'')) USING utf8mb4) LIKE ?`;
+      sql += ` AND (p.hn LIKE ? 
+                  OR p.cid LIKE ? 
+                  OR CONVERT(p.fname USING utf8mb4) LIKE ? 
+                  OR CONVERT(p.lname USING utf8mb4) LIKE ? 
+                  OR CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) LIKE ?)`;
       params.push(cleanHn, searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
-    sql += ` ORDER BY hn DESC LIMIT ?`;
+    sql += ` ORDER BY p.hn DESC LIMIT ?`;
     params.push(limit);
 
     const [rows]: any = await pool.execute(sql, params);

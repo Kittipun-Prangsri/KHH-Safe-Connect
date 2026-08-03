@@ -15,7 +15,14 @@ app.use(express.json());
 // Enable CORS
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      // In development mode, allow all origins
+      if (!origin || config.nodeEnv === 'development' || origin === config.corsOrigin) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true
   })
 );

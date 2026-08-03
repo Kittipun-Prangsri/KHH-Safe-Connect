@@ -32,25 +32,30 @@ export async function getHosxpPatientList(search = '', page = 1, limit = 50) {
     const pool = getHosxpPool();
     const offset = (page - 1) * limit;
 
-    let sql = `SELECT hn, pname, fname, lname, birthday, sex, cid, mobile_phone_number, hometel, informtel 
-               FROM patient`;
-    let countSql = `SELECT COUNT(*) as total FROM patient`;
+    let sql = `SELECT DISTINCT p.hn, p.pname, p.fname, p.lname, p.birthday, p.sex, p.cid, p.mobile_phone_number, p.hometel, p.informtel 
+               FROM patient p
+               INNER JOIN clinicmember cm ON p.hn = cm.hn
+               WHERE cm.clinic IN ('001', '002')`;
+    let countSql = `SELECT COUNT(DISTINCT p.hn) as total 
+                    FROM patient p
+                    INNER JOIN clinicmember cm ON p.hn = cm.hn
+                    WHERE cm.clinic IN ('001', '002')`;
     const params: any[] = [];
 
     if (search.trim()) {
       const searchPattern = `%${search.trim()}%`;
       const cleanHn = `%${search.trim().replace(/^HN-?/i, '')}%`;
-      const whereClause = ` WHERE hn LIKE ? 
-                             OR cid LIKE ? 
-                             OR CONVERT(fname USING utf8mb4) LIKE ? 
-                             OR CONVERT(lname USING utf8mb4) LIKE ? 
-                             OR CONVERT(CONCAT(COALESCE(pname,''), COALESCE(fname,''), ' ', COALESCE(lname,'')) USING utf8mb4) LIKE ?`;
+      const whereClause = ` AND (p.hn LIKE ? 
+                             OR p.cid LIKE ? 
+                             OR CONVERT(p.fname USING utf8mb4) LIKE ? 
+                             OR CONVERT(p.lname USING utf8mb4) LIKE ? 
+                             OR CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) LIKE ?)`;
       sql += whereClause;
       countSql += whereClause;
       params.push(cleanHn, searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
-    sql += ` ORDER BY hn DESC LIMIT ? OFFSET ?`;
+    sql += ` ORDER BY p.hn DESC LIMIT ? OFFSET ?`;
 
     const [rows]: any = await pool.execute(sql, [...params, limit, offset]);
     const [countRows]: any = await pool.execute(countSql, params);
