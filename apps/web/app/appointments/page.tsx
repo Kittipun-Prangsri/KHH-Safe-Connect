@@ -58,11 +58,18 @@ export default function AppointmentsPage() {
   const [searchingPatient, setSearchingPatient] = useState(false);
   const [selectedPatientForAdd, setSelectedPatientForAdd] = useState<any | null>(null);
 
+  const getLocalDateString = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [newAppointment, setNewAppointment] = useState({
     hn: '',
     patientName: '',
     phone: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     time: '08:30',
     clinic: 'ตรวจโรคทั่วไป (000)',
     doctor: 'แพทย์หญิงนิศานาถ เจริญเดชธนกิจ',
@@ -75,7 +82,7 @@ export default function AppointmentsPage() {
   const applyDatePreset = (preset: 'all' | 'today' | 'tomorrow' | 'next7days' | 'thisMonth' | 'custom') => {
     setDatePreset(preset);
     const today = new Date();
-    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    const formatDate = (d: Date) => getLocalDateString(d);
 
     if (preset === 'all') {
       setStartDate('');

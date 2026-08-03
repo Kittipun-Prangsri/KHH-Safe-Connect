@@ -29,20 +29,21 @@ export async function GET(request: Request) {
          FROM oapp o
          LEFT JOIN patient p ON o.hn = p.hn
          LEFT JOIN clinic c ON o.clinic = c.clinic
-         LEFT JOIN doctor d ON o.doctor = d.code`;
+         LEFT JOIN doctor d ON o.doctor = d.code
+         WHERE o.clinic IN ('001', '002')`;
       
       const params: any[] = [];
       if (startDate && endDate) {
-        query += ` WHERE o.nextdate BETWEEN ? AND ?`;
+        query += ` AND o.nextdate BETWEEN ? AND ?`;
         params.push(startDate, endDate);
       } else if (startDate) {
-        query += ` WHERE o.nextdate >= ?`;
+        query += ` AND o.nextdate >= ?`;
         params.push(startDate);
       } else if (endDate) {
-        query += ` WHERE o.nextdate <= ?`;
+        query += ` AND o.nextdate <= ?`;
         params.push(endDate);
       } else {
-        query += ` WHERE o.nextdate >= CURDATE()`;
+        query += ` AND o.nextdate >= CURDATE()`;
       }
 
       query += ` ORDER BY o.nextdate ASC, o.nexttime ASC LIMIT 100`;
@@ -50,7 +51,14 @@ export async function GET(request: Request) {
       const [rows]: any = await pool.execute(query, params);
 
       const appointments = rows.map((r: any) => {
-        const rawDate = r.nextdate ? new Date(r.nextdate).toISOString().split('T')[0] : '';
+        let rawDate = '';
+        if (r.nextdate) {
+          const d = new Date(r.nextdate);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          rawDate = `${year}-${month}-${day}`;
+        }
         return {
           id: String(r.oapp_id),
           hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',

@@ -41,7 +41,13 @@ export default function FollowUpsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLogModal, setShowLogModal] = useState<FollowUpTask | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<FollowUpTask | null>(null);
-  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newDate, setNewDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<FollowUpTask[]>([]);

@@ -17,14 +17,14 @@ export async function GET() {
       const [patientCount]: any = await pool.execute("SELECT COUNT(DISTINCT hn) as total FROM clinicmember WHERE clinic IN ('001', '002')");
 
       // 2. Appointments Today
-      const [todayCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate = CURDATE()');
+      const [todayCount]: any = await pool.execute("SELECT COUNT(*) as total FROM oapp WHERE nextdate = CURDATE() AND clinic IN ('001', '002')");
 
       // 3. Upcoming Appointments
-      const [upcomingCount]: any = await pool.execute('SELECT COUNT(*) as total FROM oapp WHERE nextdate > CURDATE()');
+      const [upcomingCount]: any = await pool.execute("SELECT COUNT(*) as total FROM oapp WHERE nextdate > CURDATE() AND clinic IN ('001', '002')");
 
       // 4. Missed Appointments (Follow-ups needed in past 30 days)
       const [missedCount]: any = await pool.execute(
-        'SELECT COUNT(*) as total FROM oapp WHERE nextdate < CURDATE() AND nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)'
+        "SELECT COUNT(*) as total FROM oapp WHERE nextdate < CURDATE() AND nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND clinic IN ('001', '002')"
       );
 
       // 5. Recent Appointments List (Convert TIS-620 Thai strings to utf8mb4)
@@ -39,7 +39,7 @@ export async function GET() {
         LEFT JOIN patient p ON o.hn = p.hn
         LEFT JOIN clinic c ON o.clinic = c.clinic
         LEFT JOIN doctor d ON o.doctor = d.code
-        WHERE o.nextdate >= CURDATE()
+        WHERE o.nextdate >= CURDATE() AND o.clinic IN ('001', '002')
         ORDER BY o.nextdate ASC, o.nexttime ASC
         LIMIT 6
       `);
