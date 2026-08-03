@@ -53,6 +53,7 @@ export async function GET() {
       const tasks = rows.map((r: any, idx: number) => {
         const overdueDays = Number(r.overdue_days) || 0;
         const dateStr = r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'เมื่อวาน';
+        const timeStr = r.nexttime ? `${String(r.nexttime).slice(0, 5)} น.` : '08:30 น.';
 
         let priority: 'urgent' | 'high' | 'normal' = 'normal';
         let overdueStatusText = '';
@@ -117,4 +118,3 @@ export async function GET() {
     });
   }
 }
-

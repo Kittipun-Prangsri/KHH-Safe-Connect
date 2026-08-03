@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
+import Link from 'next/link';
 import {
   Users,
   Plus,
@@ -23,6 +24,7 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  UserCircle,
 } from 'lucide-react';
 import { maskCid, maskPhone, maskName } from '@/lib/pdpaMasking';
 
@@ -306,14 +308,23 @@ export default function PatientsPage() {
                         {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid)}
                       </td>
                       <td className="py-4 text-right">
-                        <button
-                          onClick={() => handleSelectPatient(patient)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white font-bold rounded-lg transition-all text-xs cursor-pointer border border-teal-200 shadow-sm"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>ดูประวัติการรักษาจริง HOSxP</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/patients/${patient.rawHn || patient.hn}`}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold rounded-lg transition-all text-xs cursor-pointer border border-indigo-200 shadow-sm"
+                          >
+                            <UserCircle className="w-3.5 h-3.5" />
+                            <span>โปรไฟล์ผู้ป่วย</span>
+                          </Link>
+                          <button
+                            onClick={() => handleSelectPatient(patient)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white font-bold rounded-lg transition-all text-xs cursor-pointer border border-teal-200 shadow-sm"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>HOSxP</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
