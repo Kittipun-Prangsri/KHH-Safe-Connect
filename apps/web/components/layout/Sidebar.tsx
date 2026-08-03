@@ -31,6 +31,7 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
 
   const navItems = [
     { href: '/dashboard', label: 'ภาพรวมระบบ (Dashboard)', icon: LayoutDashboard },
+    { href: '/registry', label: 'ทะเบียน & ติดตามการรักษา', icon: Database },
     { href: '/patients', label: 'ทะเบียนผู้ป่วย NCDs', icon: Users },
     { href: '/appointments', label: 'รายการนัดหมาย', icon: Calendar },
     { href: '/follow-ups', label: 'งานติดตามผู้ป่วย', icon: PhoneCall },

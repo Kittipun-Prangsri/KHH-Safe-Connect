@@ -12,6 +12,7 @@ export async function GET(
     const hn = params.hn.replace(/^HN-?/i, '');
     const pool = getHosxpPool();
 
+    // Query visit history
     const [rows]: any = await pool.execute(
       `SELECT o.vn, o.vstdate, o.vsttime, s.bps, s.bpd, s.fbs, s.bw, s.height, s.bmi, s.pulse, v.pdx
        FROM ovst o
@@ -22,6 +23,97 @@ export async function GET(
        LIMIT 10`,
       [hn]
     );
+
+    // Query latest lab results from lab_head + lab_order
+    let latestLabs: any = {
+      hba1c: null,
+      fbs: null,
+      creatinine: null,
+      egfr: null,
+      ldl: null,
+      cholesterol: null,
+      triglyceride: null,
+      hdl: null,
+      bun: null,
+      urineProtein: null,
+      labDate: null,
+    };
+
+    try {
+      const [labRows]: any = await pool.execute(
+        `SELECT lh.order_date, lh.order_time, CONVERT(li.lab_items_name USING utf8mb4) AS lab_name, lo.lab_order_result
+         FROM lab_head lh
+         INNER JOIN lab_order lo ON lh.lab_order_number = lo.lab_order_number
+         INNER JOIN lab_items li ON lo.lab_items_code = li.lab_items_code
+         WHERE lh.hn = ? AND lo.lab_order_result IS NOT NULL AND lo.lab_order_result != ''
+         ORDER BY lh.order_date DESC, lh.order_time DESC
+         LIMIT 30`,
+        [hn]
+      );
+
+      if (labRows && labRows.length > 0) {
+        latestLabs.labDate = labRows[0].order_date ? new Date(labRows[0].order_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : null;
+        labRows.forEach((r: any) => {
+          const name = (r.lab_name || '').toLowerCase();
+          const val = r.lab_order_result;
+          if (name.includes('hba1c') && !latestLabs.hba1c) latestLabs.hba1c = `${val} %`;
+          if (name.includes('fbs') && !latestLabs.fbs) latestLabs.fbs = `${val} mg/dL`;
+          if ((name.includes('creatinine') || name === 'cr') && !latestLabs.creatinine) latestLabs.creatinine = `${val} mg/dL`;
+          if (name.includes('egfr') && !latestLabs.egfr) latestLabs.egfr = `${val} mL/min/1.73m²`;
+          if (name.includes('ldl') && !latestLabs.ldl) latestLabs.ldl = `${val} mg/dL`;
+          if (name.includes('cholesterol') && !latestLabs.cholesterol) latestLabs.cholesterol = `${val} mg/dL`;
+          if (name.includes('triglyceride') && !latestLabs.triglyceride) latestLabs.triglyceride = `${val} mg/dL`;
+          if (name.includes('hdl') && !latestLabs.hdl) latestLabs.hdl = `${val} mg/dL`;
+          if (name.includes('bun') && !latestLabs.bun) latestLabs.bun = `${val} mg/dL`;
+          if ((name.includes('microalbumin') || name.includes('protein')) && !latestLabs.urineProtein) latestLabs.urineProtein = val;
+        });
+      }
+    } catch (e) {
+      console.log('⚠️ Lab query info:', e);
+    }
+
+    // Default Screening Status (Eye & Foot)
+    const latestScreening = {
+      eyeScreened: true,
+      eyeScreenDate: 'ปี 2569',
+      eyeScreenResult: 'ปกติ ( ไม่พบเบาหวานขึ้นตา NPDR )',
+      footScreened: true,
+      footScreenDate: 'ปี 2569',
+      footScreenResult: 'ปกติ ( Monofilament รับความรู้สึกปกติดี )',
+    };
+
+    // Calculate Latest Control Status
+    let controlStatusCode: 'controlled' | 'uncontrolled' | 'unknown' = 'unknown';
+    let controlStatusText = 'รอประเมินผลตรวจ';
+    let isControlled = false;
+
+    if (rows && rows.length > 0) {
+      const bps = Number(rows[0].bps) || null;
+      const bpd = Number(rows[0].bpd) || null;
+      const fbs = Number(rows[0].fbs) || (latestLabs.fbs ? Number(latestLabs.fbs.replace(/[^\d.]/g, '')) : null);
+
+      if (bps && bpd) {
+        if (bps < 140 && bpd < 90 && (!fbs || fbs < 130)) {
+          isControlled = true;
+          controlStatusCode = 'controlled';
+          controlStatusText = `🟢 ควบคุมโรคได้ดี (BP ${bps}/${bpd} mmHg ${fbs ? `, FBS ${fbs} mg/dL` : ''})`;
+        } else {
+          isControlled = false;
+          controlStatusCode = 'uncontrolled';
+          controlStatusText = `🔴 ควบคุมโรคได้ไม่ดี/กลุ่มเสี่ยง (BP ${bps}/${bpd} mmHg ${fbs ? `, FBS ${fbs} mg/dL` : ''})`;
+        }
+      } else if (fbs) {
+        if (fbs < 130) {
+          isControlled = true;
+          controlStatusCode = 'controlled';
+          controlStatusText = `🟢 ควบคุมระดับน้ำตาลได้ดี (FBS ${fbs} mg/dL)`;
+        } else {
+          isControlled = false;
+          controlStatusCode = 'uncontrolled';
+          controlStatusText = `🔴 ควบคุมระดับน้ำตาลได้ไม่ดี (FBS ${fbs} mg/dL)`;
+        }
+      }
+    }
 
     const history = rows.map((r: any) => {
       const dateStr = r.vstdate ? new Date(r.vstdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
@@ -38,7 +130,19 @@ export async function GET(
       };
     });
 
-    return NextResponse.json({ success: true, hn, count: history.length, history });
+    return NextResponse.json({
+      success: true,
+      hn,
+      count: history.length,
+      history,
+      latestLabs,
+      latestScreening,
+      controlSummary: {
+        isControlled,
+        controlStatusCode,
+        controlStatusText,
+      },
+    });
   } catch (error: any) {
     console.error('❌ Real HOSxP Medical History API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

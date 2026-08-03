@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
+import { maskPatientName, maskCid, isITSuperAdmin } from '@/lib/pdpaUtils';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -22,6 +23,7 @@ import {
   Building,
   Check,
   Send,
+  Shield,
 } from 'lucide-react';
 
 interface Appointment {
@@ -46,6 +48,12 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [sendingBatchLine, setSendingBatchLine] = useState(false);
   const [batchNoticeResult, setBatchNoticeResult] = useState<any | null>(null);
+  const [isPdpaActive, setIsPdpaActive] = useState(true);
+  const [canControlPdpa, setCanControlPdpa] = useState(false);
+
+  useEffect(() => {
+    setCanControlPdpa(isITSuperAdmin());
+  }, []);
 
   // Date Filter States
   const [startDate, setStartDate] = useState<string>('');
@@ -313,6 +321,19 @@ export default function AppointmentsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {canControlPdpa && (
+              <button
+                onClick={() => setIsPdpaActive(!isPdpaActive)}
+                className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                  isPdpaActive
+                    ? 'bg-slate-900 text-teal-400 border-slate-800 hover:bg-slate-800'
+                    : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>{isPdpaActive ? '🔒 PDPA (สิทธิ์ ITsuperadmin)' : '🔓 ยืนยันสิทธิ์ ITsuperadmin (แสดงข้อมูลเต็ม)'}</span>
+              </button>
+            )}
             <button
               onClick={handleSendBatchLineReminders}
               disabled={sendingBatchLine}
@@ -517,7 +538,7 @@ export default function AppointmentsPage() {
                     <tr key={app.id} className="hover:bg-slate-50 transition-all group">
                       <td className="py-4 pr-3">
                         <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
-                          {app.patientName}
+                          {maskPatientName(app.patientName, isPdpaActive)}
                         </span>
                         <span className="block text-[10px] text-teal-600 font-mono font-bold">{app.hn}</span>
                       </td>

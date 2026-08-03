@@ -3,13 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HeartHandshake, LayoutDashboard, Users, Calendar, PhoneCall, MessageSquare, BookOpen, BarChart3, Upload, Settings, LogOut } from 'lucide-react';
+import { HeartHandshake, LayoutDashboard, Database, Users, Calendar, PhoneCall, MessageSquare, BookOpen, BarChart3, Upload, Settings, LogOut } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
     { href: '/dashboard', label: 'หน้าแรก', icon: LayoutDashboard },
+    { href: '/registry', label: 'ทะเบียน & ติดตาม', icon: Database },
     { href: '/patients', label: 'ทะเบียนผู้ป่วย', icon: Users },
     { href: '/appointments', label: 'นัดหมาย', icon: Calendar },
     { href: '/follow-ups', label: 'งานติดตาม', icon: PhoneCall },

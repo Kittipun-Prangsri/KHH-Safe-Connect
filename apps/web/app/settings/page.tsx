@@ -106,6 +106,26 @@ export default function SettingsPage() {
     }, 600);
   };
 
+  // User Role & PDPA State
+  const [currentUserRole, setCurrentUserRoleState] = useState<string>('nurse');
+
+  useEffect(() => {
+    try {
+      const savedRole = localStorage.getItem('khh_user_role');
+      if (savedRole) {
+        setCurrentUserRoleState(savedRole);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleRoleChange = (newRole: string) => {
+    setCurrentUserRoleState(newRole);
+    try {
+      localStorage.setItem('khh_user_role', newRole);
+    } catch (e) {}
+    alert(`✅ สลับสิทธิ์ผู้ใช้งานเป็น "${newRole === 'ITsuperadmin' ? 'ITsuperadmin (ผู้ดูแลระบบ)' : 'พยาบาล/เจ้าหน้าที่ทั่วไป'}" เรียบร้อยแล้ว!`);
+  };
+
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
@@ -117,7 +137,7 @@ export default function SettingsPage() {
               <span>การตั้งค่าระบบ (Settings)</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              จัดการการเชื่อมต่อฐานข้อมูล HOSxP, LINE Messaging API และ Google Sheets
+              จัดการสิทธิ์การเข้าถึง PDPA, การเชื่อมต่อฐานข้อมูล HOSxP และ LINE API
             </p>
           </div>
           <button
@@ -130,6 +150,72 @@ export default function SettingsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
             <span>รีเฟรช</span>
           </button>
+        </div>
+
+        {/* Card 0: User Role & PDPA Control Settings */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          <div className="border-l-4 border-l-slate-900 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-slate-900 text-teal-400 border border-slate-800">
+                <Activity className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">สิทธิ์ผู้ใช้งานและการควบคุมโหมด PDPA (PDPA Role Control)</p>
+                <p className="text-xs text-slate-400 mt-0.5">เฉพาะสิทธิ์ ITsuperadmin เท่านั้นที่สามารถสลับโหมดเปิดแสดงข้อมูลเต็มได้</p>
+              </div>
+            </div>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full border ${
+              currentUserRole === 'ITsuperadmin'
+                ? 'bg-slate-900 text-teal-400 border-slate-800'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            }`}>
+              {currentUserRole === 'ITsuperadmin' ? '🛡️ ITsuperadmin Mode' : '👤 General Staff Mode'}
+            </span>
+          </div>
+
+          <div className="p-6 space-y-4 text-xs">
+            <label className="block font-bold text-slate-700">เลือกสิทธิ์การทดสอบใช้งานของผู้ใช้ (User Role Permission):</label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Option 1: General Staff (Nurse) */}
+              <div
+                onClick={() => handleRoleChange('nurse')}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  currentUserRole !== 'ITsuperadmin'
+                    ? 'border-teal-600 bg-teal-50/60 shadow-md'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-slate-800 text-sm">1. พยาบาล / เจ้าหน้าที่ทั่วไป (General Staff)</span>
+                  {currentUserRole !== 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
+                </div>
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  🔒 ข้อมูลผู้ป่วยจะถูก **ซ่อนตามกฎหมาย PDPA เสมอ** (ชื่อ-นามสกุล, CID, Phone ถูกเซ็นเซอร์) และ **ไม่เห็นปุ่มปลดล็อก**
+                </p>
+              </div>
+
+              {/* Option 2: ITsuperadmin */}
+              <div
+                onClick={() => handleRoleChange('ITsuperadmin')}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  currentUserRole === 'ITsuperadmin'
+                    ? 'border-slate-900 bg-slate-900 text-white shadow-xl'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`font-extrabold text-sm ${currentUserRole === 'ITsuperadmin' ? 'text-teal-400' : 'text-slate-800'}`}>
+                    2. ITsuperadmin (ผู้ดูแลระบบสูงสุด)
+                  </span>
+                  {currentUserRole === 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-400" />}
+                </div>
+                <p className={`${currentUserRole === 'ITsuperadmin' ? 'text-slate-300' : 'text-slate-600'} text-xs leading-relaxed`}>
+                  🔓 สิทธิ์ระดับแอดมินสูงสุด สามารถมองเห็นและสลับปุ่ม **`[🔒 PDPA (สิทธิ์ ITsuperadmin)]`** เพื่อเปิดดูข้อมูลเต็มได้
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Card 1: HOSxP Database Connection (REAL HOSXP DB) */}

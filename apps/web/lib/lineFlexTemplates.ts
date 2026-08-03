@@ -727,9 +727,9 @@ export function createHealthEducationMenuFlex() {
             color: '#0D9488',
             height: 'sm',
             action: {
-              type: 'message',
+              type: 'uri',
               label: '🧘 2. ความเครียดและการนอน',
-              text: 'คำแนะนำการนอนและการคลายเครียด',
+              uri: 'https://checkin.dmh.go.th/main/index.php?type=1',
             },
           },
           {
@@ -741,6 +741,17 @@ export function createHealthEducationMenuFlex() {
               type: 'message',
               label: '💊 3. การใช้ยาและข้อควรระวัง',
               text: 'คำแนะนำการใช้ยา',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#7C3AED',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🧠 4. ประเมินสุขภาพจิต',
+              uri: 'https://docs.google.com/forms/d/e/1FAIpQLSddhwdT8RDyYBQ1AaTJfUVQXhJfXhyyJUASIfSSLk2z-JwVzg/viewform',
             },
           },
         ],

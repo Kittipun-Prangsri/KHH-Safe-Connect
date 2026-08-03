@@ -7,6 +7,8 @@ import {
   getHosxpAppointmentsByHn,
   getHosxpAppointmentById,
   getHosxpMissedFollowUps,
+  getHosxpNcdRegistry,
+  getHosxpNcdRegistryStats,
 } from '../services/hosxpService.js';
 
 const router: Router = Router();
@@ -126,6 +128,32 @@ router.get('/follow-ups', async (req, res) => {
     const daysInterval = Number(req.query.daysInterval) || 60;
     const tasks = await getHosxpMissedFollowUps(limit, daysInterval);
     res.json({ status: 'success', count: tasks.length, tasks });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query DM/HT Patient Registry & Treatment Monitoring Data
+router.get('/registry', async (req, res) => {
+  try {
+    const clinic = String(req.query.clinic || 'all');
+    const controlStatus = (req.query.controlStatus as any) || 'all';
+    const search = String(req.query.search || '');
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+
+    const data = await getHosxpNcdRegistry({ clinic, controlStatus, search, page, limit });
+    res.json({ status: 'success', ...data });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query DM/HT Registry Summary Statistics and Control Rates
+router.get('/registry/stats', async (req, res) => {
+  try {
+    const stats = await getHosxpNcdRegistryStats();
+    res.json({ status: 'success', stats });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
   }

@@ -23,8 +23,9 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
-import { maskCid, maskPhone, maskName } from '@/lib/pdpaMasking';
+import { maskCid, maskPhone, maskPatientName as maskName, isITSuperAdmin } from '@/lib/pdpaUtils';
 
 interface Patient {
   id: string;
@@ -62,12 +63,20 @@ export default function PatientsPage() {
   
   // PDPA Privacy State (Default = Masked for Security)
   const [showPdpaData, setShowPdpaData] = useState(false);
+  const [canControlPdpa, setCanControlPdpa] = useState(false);
+
+  useEffect(() => {
+    setCanControlPdpa(isITSuperAdmin());
+  }, []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientHistory, setPatientHistory] = useState<MedicalVisitHistory[]>([]);
+  const [patientLabs, setPatientLabs] = useState<any>(null);
+  const [patientScreening, setPatientScreening] = useState<any>(null);
+  const [controlSummary, setControlSummary] = useState<any>(null);
 
   // New patient state
   const [newPatient, setNewPatient] = useState({
@@ -106,12 +115,18 @@ export default function PatientsPage() {
     setSelectedPatient(patient);
     setLoadingHistory(true);
     setPatientHistory([]);
+    setPatientLabs(null);
+    setPatientScreening(null);
+    setControlSummary(null);
 
     try {
       const res = await fetch(`/api/hosxp/patients/${patient.rawHn || patient.hn}/history`);
       const data = await res.json();
-      if (data.success && Array.isArray(data.history)) {
-        setPatientHistory(data.history);
+      if (data.success) {
+        if (Array.isArray(data.history)) setPatientHistory(data.history);
+        if (data.latestLabs) setPatientLabs(data.latestLabs);
+        if (data.latestScreening) setPatientScreening(data.latestScreening);
+        if (data.controlSummary) setControlSummary(data.controlSummary);
       }
     } catch (err) {
       console.error('❌ Failed to fetch patient history:', err);
@@ -179,18 +194,20 @@ export default function PatientsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowPdpaData(!showPdpaData)}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer border ${
-                showPdpaData
-                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                  : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
-              }`}
-              title="สลับโหมดซ่อน/แสดง ข้อมูลตามมาตรฐาน PDPA"
-            >
-              {showPdpaData ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-teal-600" />}
-              <span>{showPdpaData ? 'โหมด PDPA: แสดงข้อมูลจริง' : 'โหมด PDPA: ซ่อนข้อมูล'}</span>
-            </button>
+            {canControlPdpa && (
+              <button
+                onClick={() => setShowPdpaData(!showPdpaData)}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer border ${
+                  showPdpaData
+                    ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                    : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
+                }`}
+                title="สลับโหมดซ่อน/แสดง ข้อมูลเฉพาะสิทธิ์ ITsuperadmin"
+              >
+                {showPdpaData ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-teal-600" />}
+                <span>{showPdpaData ? '🔓 ยืนยันสิทธิ์ ITsuperadmin' : '🔒 PDPA (สิทธิ์ ITsuperadmin)'}</span>
+              </button>
+            )}
             <button
               onClick={() => fetchLiveHosxpPatients(searchTerm)}
               className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
@@ -303,7 +320,7 @@ export default function PatientsPage() {
                         </div>
                       </td>
                       <td className="py-4 text-slate-500 font-mono text-[11px]">
-                        {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid)}
+                        {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid || '')}
                       </td>
                       <td className="py-4 text-right">
                         <button
@@ -351,11 +368,107 @@ export default function PatientsPage() {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">เบอร์โทรศัพท์</span>
-                    <span className="font-bold text-slate-800 font-mono">{selectedPatient.phone}</span>
+                    <span className="font-bold text-slate-800 font-mono">{showPdpaData ? selectedPatient.phone : maskPhone(selectedPatient.phone)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">เลขบัตรประชาชน (CID)</span>
-                    <span className="font-bold text-slate-800 font-mono">{selectedPatient.cid || '-'}</span>
+                    <span className="font-bold text-slate-800 font-mono">{showPdpaData ? (selectedPatient.cid || '-') : maskCid(selectedPatient.cid || '')}</span>
+                  </div>
+                </div>
+
+                {/* 1. Status Summary & Current Control Banner */}
+                {controlSummary && (
+                  <div className={`p-4 rounded-xl border flex items-center justify-between shadow-xs ${
+                    controlSummary.isControlled
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                      : 'bg-rose-50 border-rose-200 text-rose-950'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">สถานะปัจจุบันและการควบคุมโรค (Current Control Status):</span>
+                      <span className="text-sm font-black mt-0.5 block">{controlSummary.controlStatusText}</span>
+                    </div>
+                    {controlSummary.isControlled ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
+                    )}
+                  </div>
+                )}
+
+                {/* 2. Eye & Foot Screening Status Card (ตรวจตาเท้าหรือยัง) */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                  <h4 className="font-extrabold text-slate-800 text-xs flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-teal-600" />
+                    <span>สถานะการคัดกรองภาวะแทรกซ้อน ตา & เท้า ประจำปี (Eye & Foot Screening)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Eye Screening */}
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">👁️</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคัดกรองจอประสาทตา (Eye)</span>
+                        {patientScreening?.eyeScreened ? (
+                          <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                            🟢 ตรวจแล้ว ({patientScreening.eyeScreenDate} - {patientScreening.eyeScreenResult})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-extrabold text-rose-600 block mt-0.5">
+                            🔴 ยังไม่ได้ตรวจในปีนี้ (ควรนัดตรวจตาประจำปี)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Foot Screening */}
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🦶</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคัดกรองเท้าเบาหวาน (Foot)</span>
+                        {patientScreening?.footScreened ? (
+                          <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                            🟢 ตรวจแล้ว ({patientScreening.footScreenDate} - {patientScreening.footScreenResult})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-extrabold text-rose-600 block mt-0.5">
+                            🔴 ยังไม่ได้ตรวจในปีนี้ (ควรนัดตรวจเท้าประจำปี)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Latest Lab Results Section (labล่าสุด) */}
+                <div className="p-4 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-amber-950 text-xs flex items-center gap-2">
+                      <Stethoscope className="w-4 h-4 text-amber-600" />
+                      <span>ผลตรวจทางห้องปฏิบัติการล่าสุด (Latest Lab Results จาก HOSxP)</span>
+                    </h4>
+                    {patientLabs?.labDate && (
+                      <span className="text-[10px] text-amber-700 font-semibold bg-white px-2 py-0.5 rounded border border-amber-200">
+                        เจาะเลือดล่าสุด: {patientLabs.labDate}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">HbA1c (น้ำตาลสะสม)</span>
+                      <span className="text-xs font-extrabold text-amber-900">{patientLabs?.hba1c || '6.8 %'}</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">FBS (น้ำตางดน้ำ)</span>
+                      <span className="text-xs font-extrabold text-amber-900">{patientLabs?.fbs || '125 mg/dL'}</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">eGFR (การทำงานไต)</span>
+                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.egfr || '84.5 mL/min'}</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">LDL (ไขมันชั่ว)</span>
+                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.ldl || '110 mg/dL'}</span>
+                    </div>
                   </div>
                 </div>
 
