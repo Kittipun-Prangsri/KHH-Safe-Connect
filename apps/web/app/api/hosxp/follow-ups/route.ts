@@ -13,7 +13,7 @@ export async function GET() {
     const cachedResult = await getOrFetchHosxpCache('hosxp:follow-ups', FOLLOWUPS_CACHE_TTL_MS, async () => {
       const pool = getHosxpPool();
 
-      // Filter ONLY NCDs Clinics (001:เบาหวาน, 002:ความดัน, 030:CKD, 011:COPD, 012:ASHMA, 026:Stroke, 018:B10866, 003:หัวใจ)
+      // Filter ONLY NCDs Clinics and check for true overdue (not visited after nextdate and no newer appointment)
       const [rows]: any = await pool.execute(
         `SELECT o.oapp_id, o.hn, 
                 CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
@@ -22,13 +22,14 @@ export async function GET() {
                 CONVERT(c.name USING utf8mb4) AS clinic_name, 
                 o.doctor, 
                 CONVERT(d.name USING utf8mb4) AS doctor_name, 
-                CONVERT(o.app_cause USING utf8mb4) AS app_cause
+                CONVERT(o.app_cause USING utf8mb4) AS app_cause,
+                DATEDIFF(CURDATE(), o.nextdate) AS overdue_days
          FROM oapp o
          LEFT JOIN patient p ON o.hn = p.hn
          LEFT JOIN clinic c ON o.clinic = c.clinic
          LEFT JOIN doctor d ON o.doctor = d.code
          WHERE o.nextdate < CURDATE() 
-           AND o.nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+           AND o.nextdate >= DATE_SUB(CURDATE(), INTERVAL 60 DAY)
            AND (
              o.clinic IN ('001', '002', '030', '011', '012', '026', '018', '003')
              OR CONVERT(c.name USING utf8mb4) LIKE '%เบาหวาน%'
@@ -39,22 +40,36 @@ export async function GET() {
              OR CONVERT(c.name USING utf8mb4) LIKE '%ASHMA%'
              OR CONVERT(c.name USING utf8mb4) LIKE '%Stroke%'
            )
-         ORDER BY o.nextdate DESC
+           AND NOT EXISTS (
+             SELECT 1 FROM ovst v WHERE v.hn = o.hn AND v.vstdate >= o.nextdate
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM oapp o2 WHERE o2.hn = o.hn AND o2.nextdate > o.nextdate
+           )
+         ORDER BY o.nextdate ASC
          LIMIT 50`
       );
 
       const tasks = rows.map((r: any, idx: number) => {
+        const overdueDays = Number(r.overdue_days) || 0;
         const dateStr = r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'เมื่อวาน';
 
-        // Calculate days missed
-        const missedDate = new Date(r.nextdate);
-        const today = new Date();
-        const diffTime = Math.abs(today.getTime() - missedDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
         let priority: 'urgent' | 'high' | 'normal' = 'normal';
-        if (diffDays >= 7) priority = 'urgent';
-        else if (diffDays >= 2) priority = 'high';
+        let overdueStatusText = '';
+
+        if (overdueDays >= 14) {
+          priority = 'urgent';
+          overdueStatusText = `🔴 เลยกำหนด ${overdueDays} วัน (เกิน 2 สัปดาห์ - ด่วนที่สุด)`;
+        } else if (overdueDays >= 7) {
+          priority = 'urgent';
+          overdueStatusText = `🔴 เลยกำหนด ${overdueDays} วัน (เกิน 1 สัปดาห์ - ด่วนที่สุด)`;
+        } else if (overdueDays >= 3) {
+          priority = 'high';
+          overdueStatusText = `🟡 เลยกำหนด ${overdueDays} วัน (ด่วน)`;
+        } else {
+          priority = 'normal';
+          overdueStatusText = `🟢 เลยกำหนด ${overdueDays} วัน (ปกติ)`;
+        }
 
         return {
           id: String(r.oapp_id),
@@ -63,7 +78,10 @@ export async function GET() {
           phone: r.phone || '081-234-5678',
           taskType: 'ติดตามขาดนัด NCDs',
           assignedTo: 'พยาบาล NCDs (โรงพยาบาลคลองหาด)',
-          dueDate: `ขาดนัดเมื่อ ${dateStr} (${diffDays} วันที่แล้ว)`,
+          missedDate: r.nextdate,
+          overdueDays,
+          overdueStatusText,
+          dueDate: `ขาดนัดเมื่อ ${dateStr} (${overdueDays} วันที่แล้ว)`,
           priority,
           status: 'todo',
           clinic: r.clinic_name || 'คลินิก NCDs',

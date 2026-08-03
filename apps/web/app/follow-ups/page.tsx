@@ -33,6 +33,8 @@ interface FollowUpTask {
   status: 'todo' | 'in_progress' | 'completed';
   clinic?: string;
   doctor?: string;
+  overdueDays?: number;
+  overdueStatusText?: string;
 }
 
 export default function FollowUpsPage() {
@@ -311,8 +313,8 @@ export default function FollowUpsPage() {
                     <span className="text-slate-700 font-medium">{task.clinic || 'ตรวจโรคทั่วไป'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">กำหนดติดตาม:</span>
-                    <span className="text-rose-600 font-bold">{task.dueDate}</span>
+                    <span className="text-slate-400">สถานะเลยกำหนด:</span>
+                    <span className="text-rose-600 font-extrabold">{task.overdueStatusText || task.dueDate}</span>
                   </div>
                 </div>
 

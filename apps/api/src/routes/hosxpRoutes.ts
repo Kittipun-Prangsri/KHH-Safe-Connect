@@ -4,6 +4,9 @@ import {
   getHosxpPatientList,
   getHosxpPatientMedicalHistory,
   getHosxpAppointments,
+  getHosxpAppointmentsByHn,
+  getHosxpAppointmentById,
+  getHosxpMissedFollowUps,
 } from '../services/hosxpService.js';
 
 const router: Router = Router();
@@ -12,10 +15,11 @@ const router: Router = Router();
 router.get('/test-connection', async (req, res) => {
   try {
     const appointments = await getHosxpAppointments(5);
+    const count = Array.isArray(appointments) ? appointments.length : appointments.appointments.length;
     res.json({
       status: 'success',
       message: '⚡ เชื่อมต่อฐานข้อมูล HOSxP สำเร็จ!',
-      sampleAppointmentsCount: appointments.length,
+      sampleAppointmentsCount: count,
       sampleAppointments: appointments,
     });
   } catch (error: any) {
@@ -66,11 +70,62 @@ router.get('/patients/:hn/history', async (req, res) => {
   }
 });
 
-// Query Upcoming Appointments from HOSxP `oapp`
+// Get Appointments for a specific patient by HN from HOSxP `oapp`
+router.get('/patients/:hn/appointments', async (req, res) => {
+  try {
+    const { hn } = req.params;
+    const limit = Number(req.query.limit) || 20;
+    const data: any = await getHosxpAppointmentsByHn(hn, limit);
+    const appointments = Array.isArray(data) ? data : data.appointments;
+    res.json({ status: 'success', hn, count: appointments.length, appointments });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query Appointments from HOSxP `oapp`
 router.get('/appointments', async (req, res) => {
   try {
-    const appointments = await getHosxpAppointments(50);
-    res.json({ status: 'success', count: appointments.length, appointments });
+    const search = String(req.query.search || '');
+    const startDate = String(req.query.startDate || '');
+    const endDate = String(req.query.endDate || '');
+    const hn = String(req.query.hn || '');
+    const clinic = req.query.clinic !== undefined ? String(req.query.clinic) : undefined;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+
+    const data = await getHosxpAppointments({ search, startDate, endDate, hn, clinic, page, limit });
+    if (Array.isArray(data)) {
+      res.json({ status: 'success', count: data.length, appointments: data });
+    } else {
+      res.json({ status: 'success', ...data });
+    }
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query Single Appointment Detail by ID from HOSxP `oapp`
+router.get('/appointments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const appointment = await getHosxpAppointmentById(id);
+    if (!appointment) {
+      return res.status(404).json({ status: 'not_found', message: `ไม่พบนัดหมาย ID: ${id}` });
+    }
+    res.json({ status: 'success', appointment });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Query NCDs Missed Follow-ups and calculate overdue days from HOSxP
+router.get('/follow-ups', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 50;
+    const daysInterval = Number(req.query.daysInterval) || 60;
+    const tasks = await getHosxpMissedFollowUps(limit, daysInterval);
+    res.json({ status: 'success', count: tasks.length, tasks });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
   }

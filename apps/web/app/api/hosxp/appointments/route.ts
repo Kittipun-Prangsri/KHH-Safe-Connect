@@ -27,6 +27,12 @@ export async function GET(request: Request) {
                 CONVERT(d.name USING utf8mb4) AS doctor_name, 
                 CONVERT(o.app_cause USING utf8mb4) AS app_cause
          FROM oapp o
+         INNER JOIN (
+            SELECT hn, MAX(nextdate) AS max_nextdate
+            FROM oapp
+            WHERE nextdate >= CURDATE()
+            GROUP BY hn
+         ) latest ON o.hn = latest.hn AND o.nextdate = latest.max_nextdate
          LEFT JOIN patient p ON o.hn = p.hn
          LEFT JOIN clinic c ON o.clinic = c.clinic
          LEFT JOIN doctor d ON o.doctor = d.code
@@ -42,11 +48,9 @@ export async function GET(request: Request) {
       } else if (endDate) {
         query += ` AND o.nextdate <= ?`;
         params.push(endDate);
-      } else {
-        query += ` AND o.nextdate >= CURDATE()`;
       }
 
-      query += ` ORDER BY o.nextdate ASC, o.nexttime ASC LIMIT 100`;
+      query += ` GROUP BY o.oapp_id ORDER BY o.nextdate DESC, o.nexttime DESC LIMIT 100`;
 
       const [rows]: any = await pool.execute(query, params);
 
