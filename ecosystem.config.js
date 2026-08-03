@@ -7,7 +7,7 @@ module.exports = {
       args: '--filter @khh/web start',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 5188,
       },
     },
   ],
