@@ -1,66 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getHosxpPool } from '@/lib/hosxpClient';
+import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const pool = getHosxpPool();
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search')?.trim() || '';
 
-    // Query real HOSxP patients with upcoming/missed appointments in NCDs clinics
-    const [rows]: any = await pool.execute(`
-      SELECT o.oapp_id, o.hn, 
-             CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
-             COALESCE(p.mobile_phone_number, p.hometel, p.informtel) AS phone,
-             o.nextdate, o.nexttime, o.clinic, 
-             CONVERT(c.name USING utf8mb4) AS clinic_name, 
-             CONVERT(o.app_cause USING utf8mb4) AS app_cause
-      FROM oapp o
-      LEFT JOIN patient p ON o.hn = p.hn
-      LEFT JOIN clinic c ON o.clinic = c.clinic
-      WHERE o.nextdate >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-        AND (
-          o.clinic IN ('001', '002', '030', '011', '012', '026', '018', '003')
-          OR CONVERT(c.name USING utf8mb4) LIKE '%เบาหวาน%'
-          OR CONVERT(c.name USING utf8mb4) LIKE '%ความดัน%'
-          OR CONVERT(c.name USING utf8mb4) LIKE '%CKD%'
-        )
-      ORDER BY o.nextdate DESC
-      LIMIT 20
-    `);
+    let conversations: any[] = [];
 
-    const conversations = rows.map((r: any, idx: number) => {
-      const hnFormatted = r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : `HN-00${idx}`;
-      const clinicName = r.clinic_name || 'คลินิก NCDs';
-      const cause = r.app_cause || 'ตรวจติดตามอาการ';
-      const nextDateStr = r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }) : 'วันนี้';
+    // 1. Try querying HOSxP MySQL first
+    try {
+      const pool = getHosxpPool();
 
-      return {
-        id: `conv-${r.oapp_id}`,
-        hn: hnFormatted,
-        patientName: r.patient_name || 'ไม่ระบุชื่อ',
-        phone: r.phone || '-',
-        subject: `[HOSxP] นัดตรวจ ${clinicName} (${nextDateStr}) - ${cause}`,
-        category: clinicName.includes('เบาหวาน') ? 'ขอเลื่อนนัด' : clinicName.includes('ความดัน') ? 'สอบถามการใช้ยา' : 'ติดตามอาการ NCDs',
-        priority: idx < 3 ? 'urgent' : idx < 8 ? 'high' : 'normal',
-        unreadCount: idx < 4 ? 1 : 0,
-        lastMessageTime: `${10 - (idx % 5)}:${15 + (idx * 3 % 40)} น.`,
-        messages: [
-          {
-            id: `msg-${r.oapp_id}-1`,
-            sender: 'patient',
-            senderName: r.patient_name || 'ผู้ป่วย',
-            text: `สวัสดีค่ะ/ครับ รบกวนสอบถามเกี่ยวกับวันนัด ${clinicName} วันที่ ${nextDateStr} (${cause})`,
-            time: '10:00 น.',
-          },
-        ],
-      };
-    });
+      let sql = `
+        SELECT o.oapp_id, o.hn, 
+               CONVERT(CONCAT(COALESCE(p.pname,''), COALESCE(p.fname,''), ' ', COALESCE(p.lname,'')) USING utf8mb4) AS patient_name,
+               COALESCE(p.mobile_phone_number, p.hometel, p.informtel) AS phone,
+               p.cid,
+               o.nextdate, o.nexttime, o.clinic, 
+               CONVERT(c.name USING utf8mb4) AS clinic_name, 
+               CONVERT(o.app_cause USING utf8mb4) AS app_cause
+        FROM oapp o
+        LEFT JOIN patient p ON o.hn = p.hn
+        LEFT JOIN clinic c ON o.clinic = c.clinic
+      `;
 
-    return NextResponse.json({ success: true, count: conversations.length, conversations });
+      const params: any[] = [];
+
+      if (search) {
+        const cleanQuery = search.replace(/^HN-/i, '');
+        sql += ` WHERE (p.fname LIKE ? OR p.lname LIKE ? OR o.hn LIKE ? OR o.hn = ? OR p.cid LIKE ? OR p.mobile_phone_number LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`, `%${cleanQuery}%`, cleanQuery, `%${search}%`, `%${search}%`);
+      } else {
+        sql += ` WHERE o.nextdate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
+      }
+
+      sql += ` ORDER BY o.nextdate DESC LIMIT 50`;
+
+      const [rows]: any = await pool.execute(sql, params);
+
+      if (rows && rows.length > 0) {
+        conversations = rows.map((r: any, idx: number) => {
+          const hnFormatted = r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : `HN-00${idx}`;
+          const clinicName = r.clinic_name || 'คลินิก NCDs';
+          const cause = r.app_cause || 'ตรวจติดตามอาการ';
+          const nextDateStr = r.nextdate ? new Date(r.nextdate).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }) : 'วันนี้';
+
+          return {
+            id: `conv-${r.oapp_id || idx}`,
+            hn: hnFormatted,
+            patientName: r.patient_name || 'ไม่ระบุชื่อ',
+            phone: r.phone || '-',
+            cid: r.cid || '-',
+            subject: `[HOSxP] นัดตรวจ ${clinicName} (${nextDateStr}) - ${cause}`,
+            category: clinicName.includes('เบาหวาน') ? 'ขอเลื่อนนัด' : clinicName.includes('ความดัน') ? 'สอบถามการใช้ยา' : 'ติดตามอาการ NCDs',
+            priority: idx < 3 ? 'urgent' : idx < 8 ? 'high' : 'normal',
+            unreadCount: idx < 4 ? 1 : 0,
+            lastMessageTime: `${10 - (idx % 5)}:${15 + ((idx * 3) % 40)} น.`,
+            messages: [
+              {
+                id: `msg-${r.oapp_id || idx}-1`,
+                sender: 'patient',
+                senderName: r.patient_name || 'ผู้ป่วย',
+                text: `สวัสดีค่ะ/ครับ รบกวนสอบถามเกี่ยวกับวันนัด ${clinicName} วันที่ ${nextDateStr} (${cause})`,
+                time: '10:00 น.',
+              },
+            ],
+          };
+        });
+
+        return NextResponse.json({ success: true, count: conversations.length, source: 'hosxp', conversations });
+      }
+    } catch (hosxpError) {
+      console.warn('⚠️ HOSxP MySQL unavailable for conversations API, falling back to Supabase:', (hosxpError as Error).message);
+    }
+
+    // 2. Fallback to Supabase PostgreSQL patients & appointments tables
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseAdminClient();
+        let query = supabase.from('patients').select('*');
+
+        if (search) {
+          const cleanQuery = search.replace(/^HN-/i, '');
+          query = query.or(`patient_name.ilike.%${search}%,hn.ilike.%${search}%,raw_hn.eq.${cleanQuery},cid.ilike.%${search}%,phone.ilike.%${search}%`);
+        }
+
+        const { data, error } = await query.order('last_vst_date', { ascending: false }).limit(50);
+
+        if (data && !error && data.length > 0) {
+          conversations = data.map((r: any, idx: number) => {
+            const hnFormatted = r.hn || (r.raw_hn ? `HN-${r.raw_hn}` : `HN-00${idx}`);
+            const clinicName = r.clinic_name || r.disease_type || 'คลินิก NCDs';
+            const nextDateStr = r.next_date ? new Date(r.next_date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }) : 'วันนี้';
+
+            return {
+              id: `conv-sb-${r.id || idx}`,
+              hn: hnFormatted,
+              patientName: r.patient_name || 'ไม่ระบุชื่อ',
+              phone: r.phone || '-',
+              cid: r.cid || '-',
+              subject: `[Supabase Registry] นัดตรวจ ${clinicName} (${nextDateStr}) - ${r.control_status_text || 'ตรวจติดตามอาการ'}`,
+              category: clinicName.includes('เบาหวาน') ? 'ขอเลื่อนนัด' : clinicName.includes('ความดัน') ? 'สอบถามการใช้ยา' : 'ติดตามอาการ NCDs',
+              priority: r.is_controlled === false ? 'urgent' : 'normal',
+              unreadCount: 0,
+              lastMessageTime: 'วันนี้',
+              messages: [
+                {
+                  id: `msg-sb-${r.id}-1`,
+                  sender: 'patient',
+                  senderName: r.patient_name || 'ผู้ป่วย',
+                  text: `สวัสดีค่ะ/ครับ รบกวนสอบถามเกี่ยวกับวันนัด ${clinicName} (${nextDateStr})`,
+                  time: '10:00 น.',
+                },
+              ],
+            };
+          });
+
+          return NextResponse.json({ success: true, count: conversations.length, source: 'supabase', conversations });
+        }
+      } catch (sbError) {
+        console.warn('⚠️ Error fetching conversations from Supabase:', sbError);
+      }
+    }
+
+    return NextResponse.json({ success: true, count: 0, conversations: [] });
   } catch (error: any) {
-    console.error('❌ Real HOSxP Conversations API Error:', error);
+    console.error('❌ Conversations API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

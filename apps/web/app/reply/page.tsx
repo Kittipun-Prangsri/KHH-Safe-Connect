@@ -155,11 +155,15 @@ export default function ReplyPage() {
     ],
   };
 
-  // Fetch real HOSxP patient messaging conversations
-  const fetchLiveHosxpConversations = async () => {
+  // Fetch real HOSxP & Supabase registry patients
+  const fetchLiveHosxpConversations = async (searchQuery: string = '') => {
     setLoading(true);
     try {
-      const res = await fetch('/api/hosxp/conversations');
+      const url = searchQuery
+        ? `/api/hosxp/conversations?search=${encodeURIComponent(searchQuery)}`
+        : '/api/hosxp/conversations';
+
+      const res = await fetch(url);
       const data = await res.json();
 
       if (data.success && Array.isArray(data.conversations) && data.conversations.length > 0) {
@@ -175,7 +179,9 @@ export default function ReplyPage() {
         });
 
         setConversations(tagged);
-        setActiveChat(tagged[0]);
+        if (!activeChat || !tagged.some((item) => item.id === activeChat.id)) {
+          setActiveChat(tagged[0]);
+        }
       } else {
         setConversations([]);
         setActiveChat(null);
@@ -188,8 +194,12 @@ export default function ReplyPage() {
   };
 
   useEffect(() => {
-    fetchLiveHosxpConversations();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchLiveHosxpConversations(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const currentRoleConfig = staffRoles.find((r) => r.id === selectedRole) || staffRoles[0];
 
@@ -228,12 +238,17 @@ export default function ReplyPage() {
 
         const data = await res.json();
         if (data.status === 'success') {
-          setSendSuccessToast(`ส่งข้อความหาคุณ ${activeChat.patientName} ผ่าน LINE สำเร็จแล้ว!`);
-          setTimeout(() => setSendSuccessToast(null), 4000);
+          setSendSuccessToast(`💬 ส่งข้อความถึงคุณ ${activeChat.patientName} (${activeChat.hn}) ผ่าน LINE เรียบร้อยแล้ว!`);
+        } else {
+          setSendSuccessToast(data.message || `⚠️ ผู้ป่วยยังไม่ได้ผูกบัญชี LINE (บันทึกแชตไว้ในระบบเรียบร้อย)`);
         }
+        setTimeout(() => setSendSuccessToast(null), 5000);
       } catch (err) {
         console.error('Error pushing LINE message:', err);
       }
+    } else {
+      setSendSuccessToast(`🔒 บันทึกโน้ตภายในเฉพาะเจ้าหน้าที่เรียบร้อยแล้ว`);
+      setTimeout(() => setSendSuccessToast(null), 3000);
     }
 
     const updated = conversations.map((c) => {
@@ -284,7 +299,7 @@ export default function ReplyPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchLiveHosxpConversations}
+              onClick={() => fetchLiveHosxpConversations(searchTerm)}
               className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-200"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
