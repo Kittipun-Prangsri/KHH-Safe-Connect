@@ -75,6 +75,8 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientHistory, setPatientHistory] = useState<MedicalVisitHistory[]>([]);
   const [patientLabs, setPatientLabs] = useState<any>(null);
+  const [labOrdersGrouped, setLabOrdersGrouped] = useState<any[]>([]);
+  const [showLabModal, setShowLabModal] = useState<boolean>(false);
   const [patientScreening, setPatientScreening] = useState<any>(null);
   const [controlSummary, setControlSummary] = useState<any>(null);
 
@@ -82,6 +84,14 @@ export default function PatientsPage() {
   const [newPatient, setNewPatient] = useState({
     hn: '',
     name: '',
+    age: '',
+    gender: 'ชาย',
+    phone: '',
+    diseases: ['DM'],
+    caregiver: '',
+    contactConsent: true,
+  });
+
   // Fetch Live Real Patients from HOSxP Database
   const fetchLiveHosxpPatients = async (query = '') => {
     setLoading(true);
@@ -710,6 +720,8 @@ export default function PatientsPage() {
                 </div>
               </form>
             </div>
+          </div>
+        )}
         {/* Lab Orders History & Report Modal */}
         {showLabModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
