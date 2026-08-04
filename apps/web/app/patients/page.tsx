@@ -474,18 +474,27 @@ export default function PatientsPage() {
                     {/* CVD Risk Score */}
                     <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
                       <span className="text-lg">🫀</span>
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-800 text-xs block">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (Thai CVD Risk)</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-slate-800 text-xs block mb-1">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (RAMA CVD Risk)</span>
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
                           {patientScreening?.cvdRiskStage && (
                             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                               {patientScreening.cvdRiskStage}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] font-extrabold text-teal-800 block mt-0.5">
+                        <span className="text-[11px] font-extrabold text-teal-800 block mb-2">
                           {patientScreening?.cvdRiskText || '🟠 ระยะที่ 2: เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด'}
                         </span>
+                        <a
+                          href="/cvd-risk"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 active:scale-95 text-white text-[11px] font-extrabold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer select-none"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 2-2 3 4"/>
+                          </svg>
+                          <span>คำนวณ RAMA CVD Risk</span>
+                        </a>
                       </div>
                     </div>
 

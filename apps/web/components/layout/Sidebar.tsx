@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -28,6 +28,37 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarProps) {
   const pathname = usePathname();
+  const [replyUnreadCount, setReplyUnreadCount] = useState<number>(0);
+
+  // Fetch real unread count from HOSxP/Supabase
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch('/api/hosxp/conversations/unread-count', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && typeof data.count === 'number') {
+          setReplyUnreadCount(data.count);
+        }
+      }
+    } catch {
+      // Silently ignore — don't break the sidebar on network error
+    }
+  };
+
+  useEffect(() => {
+    // When user is on /reply, reset badge to 0 (they've seen the messages)
+    if (pathname?.startsWith('/reply')) {
+      setReplyUnreadCount(0);
+      return;
+    }
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Poll every 60 seconds
+    const interval = setInterval(fetchUnreadCount, 60_000);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   const navItems = [
     { href: '/dashboard', label: 'ภาพรวมระบบ (Dashboard)', icon: LayoutDashboard },
@@ -35,7 +66,13 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     { href: '/patients', label: 'ทะเบียนผู้ป่วย NCDs', icon: Users },
     { href: '/appointments', label: 'รายการนัดหมาย', icon: Calendar },
     { href: '/follow-ups', label: 'งานติดตามผู้ป่วย', icon: PhoneCall },
-    { href: '/reply', label: 'กล่องข้อความ Reply', icon: MessageSquare, badge: '3' },
+    {
+      href: '/reply',
+      label: 'กล่องข้อความ Reply',
+      icon: MessageSquare,
+      // Dynamic badge from real data
+      badge: replyUnreadCount > 0 ? (replyUnreadCount > 99 ? '99+' : String(replyUnreadCount)) : undefined,
+    },
     { href: '/education', label: 'คำแนะนำสุขภาพ', icon: BookOpen },
     { href: '/reports', label: 'พิมพ์รายงาน PDF', icon: BarChart3 },
     { href: '/imports', label: 'นำเข้า Excel / CSV', icon: Upload },
@@ -92,7 +129,7 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse">
+                  <span className="bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse min-w-[18px] text-center">
                     {item.badge}
                   </span>
                 )}
@@ -147,3 +184,4 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     </>
   );
 }
+

@@ -208,7 +208,7 @@ export async function GET(request: Request) {
           discontinuedReason = 'แพทย์พิจารณาหยุดยา / ลดยา (คุม HbA1c/FBS ได้ดีเยี่ยม)';
         }
 
-        // Calculate Thai CVD Risk Score (ประเมินความเสี่ยงโรคหลอดเลือดหัวใจและสมอง 10 ปี)
+        // Calculate RAMA CVD Risk Score (ประเมินความเสี่ยงโรคหลอดเลือดหัวใจและสมอง 10 ปี)
         let cvdRiskPercent = 8;
         let cvdRiskLevel: 'low' | 'moderate' | 'high' | 'very_high' = 'low';
         let cvdRiskText = '🟢 เสี่ยงต่ำ (<10%)';
