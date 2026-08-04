@@ -59,10 +59,19 @@ export async function POST(req: NextRequest) {
           const binding = await getLineUserBinding(lineUserId);
 
           if (binding) {
-            // Patient already linked -> Fetch real HOSxP appointments for their HN
+            // Patient already linked -> Fetch real HOSxP/Supabase appointments for their HN
             const appointments = await fetchPatientUpcomingAppointmentsFromHosxp(binding.hn);
-            const flex = createMyAppointmentsFlex(binding.patientName, binding.hn, appointments);
-            await sendLineReplyMessage(replyToken, [flex]);
+            if (appointments && appointments.length > 0) {
+              const flex = createMyAppointmentsFlex(binding.patientName, binding.hn, appointments);
+              await sendLineReplyMessage(replyToken, [flex]);
+            } else {
+              await sendLineReplyMessage(replyToken, [
+                {
+                  type: 'text',
+                  text: `🗓️ คุณ${binding.patientName} (${binding.hn})\nท่านยังไม่มีรายการนัดหมายตรวจติดตามถัดไปในระบบโรงพยาบาลคลองหาด ณ ขณะนี้ค่ะ\n\nหากต้องการสอบถาม หรือนัดหมายเพิ่มเติม กรุณากดปุ่ม [ติดต่อเจ้าหน้าที่] ได้เลยค่ะ`,
+                },
+              ]);
+            }
           } else {
             // Unregistered patient -> Prompt registration card
             const promptFlex = createPatientRegistrationPromptFlex();

@@ -1,17 +1,9 @@
 import { getHosxpPool } from './hosxpClient';
+import { getSupabaseAdminClient, isSupabaseConfigured } from './supabaseClient';
 
 // Store in-memory bindings map for fast lookup
 // key: lineUserId, value: { hn: string, patientName: string, boundAt: string }
 const lineUserBindingStore = new Map<string, { hn: string; patientName: string; boundAt: string }>();
-
-// Pre-seed test LINE User ID if configured in env
-if (process.env.TEST_LINE_USER_ID) {
-  lineUserBindingStore.set(process.env.TEST_LINE_USER_ID, {
-    hn: 'HN-98302',
-    patientName: 'กิตติพงษ์ แก้วมณี',
-    boundAt: new Date().toISOString(),
-  });
-}
 
 export interface PatientAppointmentInfo {
   oappId: string;
@@ -26,42 +18,85 @@ export interface PatientAppointmentInfo {
 }
 
 /**
- * Get patient HN binding for a given LINE User ID
+ * Get patient HN binding for a given LINE User ID (Checking In-Memory & Supabase)
  */
 export async function getLineUserBinding(lineUserId: string) {
   if (!lineUserId) return null;
 
-  // Check in-memory store first
+  // 1. Check in-memory store
   if (lineUserBindingStore.has(lineUserId)) {
     return lineUserBindingStore.get(lineUserId)!;
+  }
+
+  // 2. Check Supabase patient_line_users table if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('patient_line_users')
+        .select('hn, patient_name, created_at')
+        .eq('line_user_id', lineUserId)
+        .maybeSingle();
+
+      if (data && !error) {
+        const binding = {
+          hn: data.hn,
+          patientName: data.patient_name || 'ผู้ป่วย รพ.คลองหาด',
+          boundAt: data.created_at || new Date().toISOString(),
+        };
+        lineUserBindingStore.set(lineUserId, binding);
+        return binding;
+      }
+    } catch (err) {
+      console.warn('⚠️ Error fetching LINE user binding from Supabase:', err);
+    }
   }
 
   return null;
 }
 
 /**
- * Bind a LINE User ID to a specific HOSxP HN
+ * Bind a LINE User ID to a specific HOSxP HN (Saving to In-Memory & Supabase)
  */
 export async function bindLineUserToHn(lineUserId: string, hn: string, patientName: string) {
   if (!lineUserId || !hn) return false;
 
   const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
-
-  lineUserBindingStore.set(lineUserId, {
+  const binding = {
     hn: formattedHn,
     patientName,
     boundAt: new Date().toISOString(),
-  });
+  };
+
+  lineUserBindingStore.set(lineUserId, binding);
+
+  // Persist to Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      await supabase.from('patient_line_users').upsert({
+        line_user_id: lineUserId,
+        hn: formattedHn,
+        patient_name: patientName,
+        created_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn('⚠️ Error persisting LINE user binding to Supabase:', err);
+    }
+  }
 
   return true;
 }
 
 /**
  * Search HOSxP patient database by HN or 13-digit Citizen ID (CID)
+ * Checks HOSxP MySQL first, with fallback to Supabase PostgreSQL patients table.
  */
 export async function findPatientByHnOrCidInHosxp(queryStr: string) {
   const cleanQuery = queryStr.trim().replace(/^HN-/i, '');
+  const formattedHn = `HN-${cleanQuery}`;
 
+  // 1. Query HOSxP MySQL
   try {
     const pool = getHosxpPool();
 
@@ -90,30 +125,48 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       };
     }
   } catch (error) {
-    console.error('❌ Error searching patient in HOSxP:', error);
+    console.warn('⚠️ HOSxP MySQL unavailable for patient search, falling back to Supabase:', (error as Error).message);
   }
 
-  // Fallback match for demo/testing
-  if (cleanQuery.includes('98302') || cleanQuery === '3100900123456') {
-    return {
-      found: true,
-      hn: 'HN-98302',
-      rawHn: '98302',
-      patientName: 'กิตติพงษ์ แก้วมณี',
-      phone: '081-234-5678',
-      cid: '3100900123456',
-    };
+  // 2. Fallback to Supabase PostgreSQL `patients` table
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .or(`hn.eq.${formattedHn},raw_hn.eq.${cleanQuery},cid.eq.${cleanQuery}`)
+        .maybeSingle();
+
+      if (data && !error) {
+        return {
+          found: true,
+          hn: data.hn || formattedHn,
+          rawHn: data.raw_hn || cleanQuery,
+          patientName: data.patient_name || 'ผู้ป่วย รพ.คลองหาด',
+          phone: data.phone || '-',
+          cid: data.cid || '-',
+        };
+      }
+    } catch (err) {
+      console.warn('⚠️ Error searching patient in Supabase:', err);
+    }
   }
 
   return { found: false, hn: '', patientName: '' };
 }
 
 /**
- * Fetch real upcoming appointments from HOSxP for a specific patient HN
+ * Fetch REAL upcoming appointments for a specific patient HN
+ * Checks HOSxP MySQL first, with fallback to Supabase PostgreSQL appointments table.
+ * Returns empty array [] if patient has no upcoming appointments (No fake mock data).
  */
 export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Promise<PatientAppointmentInfo[]> {
   const cleanHn = hn.trim().replace(/^HN-/i, '');
+  const formattedHn = `HN-${cleanHn}`;
 
+  // 1. Query HOSxP MySQL
   try {
     const pool = getHosxpPool();
 
@@ -145,7 +198,7 @@ export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Pro
         const clinicStr = r.clinic_name || 'คลินิก NCDs';
         const causeStr = r.app_cause || 'ตรวจติดตามอาการประจำปี';
 
-        let prep = 'โปรดนำบัตรประชาชน สมุดประจำตัว NCDs และยาประจำตัวมาด้วย';
+        let prep = 'โปรดนำบัตรประชาชน สมุดประจำตัว NCDs และยาประจำตัวมาด้วยทุกครั้ง';
         if (clinicStr.includes('เบาหวาน') || causeStr.includes('เจาะเลือด') || causeStr.includes('ดม')) {
           prep = '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ';
         }
@@ -164,21 +217,52 @@ export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Pro
       });
     }
   } catch (error) {
-    console.error('❌ Error fetching patient appointments from HOSxP:', error);
+    console.warn('⚠️ HOSxP MySQL unavailable for appointments query, falling back to Supabase:', (error as Error).message);
   }
 
-  // Fallback demo appointment if DB query returns empty
-  return [
-    {
-      oappId: 'oapp-fallback-1',
-      hn: hn.startsWith('HN-') ? hn : `HN-${hn}`,
-      patientName: 'กิตติพงษ์ แก้วมณี',
-      appointmentDate: '15 สิงหาคม 2026',
-      appointmentTime: '08:30 น.',
-      clinicName: 'คลินิกโรคเบาหวานและความดันโลหิตสูง (NCDs)',
-      doctorName: 'พญ. วรรณภา จิตดี',
-      cause: 'ตรวจติดตามระดับน้ำตาลสะสม HbA1c และรับยาประจำตัว',
-      preparationNotes: '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ',
-    },
-  ];
+  // 2. Fallback to Supabase PostgreSQL `appointments` table
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
+        .gte('next_date', new Date().toISOString().split('T')[0])
+        .order('next_date', { ascending: true })
+        .limit(5);
+
+      if (data && !error && data.length > 0) {
+        return data.map((r: any) => {
+          const nextDate = new Date(r.next_date);
+          const dateStr = nextDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+          const timeStr = r.next_time ? `${r.next_time} น.` : '08:30 น.';
+          const clinicStr = r.clinic_name || 'คลินิก NCDs';
+          const causeStr = r.app_cause || 'ตรวจติดตามอาการประจำปี';
+
+          let prep = 'โปรดนำบัตรประชาชน สมุดประจำตัว NCDs และยาประจำตัวมาด้วยทุกครั้ง';
+          if (clinicStr.includes('เบาหวาน') || causeStr.includes('เจาะเลือด')) {
+            prep = '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ';
+          }
+
+          return {
+            oappId: `oapp-${r.oapp_id || r.id}`,
+            hn: r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`,
+            patientName: r.patient_name || 'ผู้ป่วย NCDs',
+            appointmentDate: dateStr,
+            appointmentTime: timeStr,
+            clinicName: clinicStr,
+            doctorName: r.doctor_name || 'แพทย์ประจำคลินิก',
+            cause: causeStr,
+            preparationNotes: prep,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('⚠️ Error fetching patient appointments from Supabase:', err);
+    }
+  }
+
+  // Return empty array if patient has no upcoming appointments (No fake mock data)
+  return [];
 }
