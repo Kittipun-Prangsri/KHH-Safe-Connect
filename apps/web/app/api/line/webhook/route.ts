@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendLineReplyMessage } from '@/lib/lineMessagingService';
 import {
+  getLineUserBinding,
+  bindLineUserToHn,
+  findPatientByHnOrCidInHosxp,
+  fetchPatientUpcomingAppointmentsFromHosxp,
+} from '@/lib/lineUserService';
+import {
   createRoleSelectionFlexMessage,
   createPatientRegistrationPromptFlex,
   createStaffRegistrationPromptFlex,
@@ -48,16 +54,34 @@ export async function POST(req: NextRequest) {
         // --------------------------------------------------------
         // Rich Menu 6 Tile Interactions
         // --------------------------------------------------------
-        // Tile 1: "นัดหมายของฉัน"
+        // Tile 1: "นัดหมายของฉัน" -> Dynamic HOSxP Lookup by lineUserId
         if (text === 'นัดหมายของฉัน' || text.includes('เช็คนัด') || text.includes('วันนัด')) {
-          const flex = createMyAppointmentsFlex('กิตติพงษ์ แก้วมณี', 'HN-98302');
-          await sendLineReplyMessage(replyToken, [flex]);
+          const binding = await getLineUserBinding(lineUserId);
+
+          if (binding) {
+            // Patient already linked -> Fetch real HOSxP appointments for their HN
+            const appointments = await fetchPatientUpcomingAppointmentsFromHosxp(binding.hn);
+            const flex = createMyAppointmentsFlex(binding.patientName, binding.hn, appointments);
+            await sendLineReplyMessage(replyToken, [flex]);
+          } else {
+            // Unregistered patient -> Prompt registration card
+            const promptFlex = createPatientRegistrationPromptFlex();
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: '⚠️ ยังไม่พบข้อมูลลงทะเบียนในระบบ กรุณากดลงทะเบียนระบุ HN หรือเลขบัตรประชาชนก่อนเพื่อความปลอดภัย 100% ค่ะ',
+              },
+              promptFlex,
+            ]);
+          }
           continue;
         }
 
         // Tile 2: "ยืนยันนัด"
         if (text === 'ยืนยันนัด' || text.includes('ยืนยันมาตามนัด')) {
-          const flex = createConfirmSuccessFlex('กิตติพงษ์ แก้วมณี', '1 สิงหาคม 2026');
+          const binding = await getLineUserBinding(lineUserId);
+          const pName = binding ? binding.patientName : 'กิตติพงษ์ แก้วมณี';
+          const flex = createConfirmSuccessFlex(pName, '15 สิงหาคม 2026');
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
@@ -91,7 +115,7 @@ export async function POST(req: NextRequest) {
         }
 
         // --------------------------------------------------------
-        // Registration Flow
+        // Registration Flow & Account Binding
         // --------------------------------------------------------
         if (
           text === 'ลงทะเบียนผู้ป่วย' ||
@@ -112,18 +136,34 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Patient Registration matching HN format (HN-XXXXX)
-        if (text.toUpperCase().startsWith('HN-') || text.match(/^[0-9]{13}$/)) {
-          const hnCode = text.toUpperCase();
-          const patientName = 'กิตติพงษ์ แก้วมณี';
+        // Patient Registration matching HN format (HN-XXXXX) or 13-digit CID
+        if (text.toUpperCase().startsWith('HN-') || text.match(/^[0-9]{13}$/) || text.match(/^[0-9]{4,8}$/)) {
+          const patientMatch = await findPatientByHnOrCidInHosxp(text);
 
-          const successFlex = createRegistrationSuccessFlex(
-            'patient',
-            patientName,
-            hnCode,
-            lineUserId
-          );
-          await sendLineReplyMessage(replyToken, [successFlex]);
+          if (patientMatch.found) {
+            // Bind LINE User ID to matched HOSxP HN
+            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName);
+
+            const successFlex = createRegistrationSuccessFlex(
+              'patient',
+              patientMatch.patientName,
+              patientMatch.hn,
+              lineUserId
+            );
+
+            // Immediately send registration success + their appointments card
+            const appointments = await fetchPatientUpcomingAppointmentsFromHosxp(patientMatch.hn);
+            const appFlex = createMyAppointmentsFlex(patientMatch.patientName, patientMatch.hn, appointments);
+
+            await sendLineReplyMessage(replyToken, [successFlex, appFlex]);
+          } else {
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: `⚠️ ไม่พบข้อมูลรหัส "${text}" ในระบบผู้ป่วยโรงพยาบาลคลองหาด กรุณาตรวจสอบ HN หรือเลขบัตรประชาชนอีกครั้งค่ะ`,
+              },
+            ]);
+          }
           continue;
         }
 

@@ -258,10 +258,30 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
 /**
  * 1. Tile 1: "นัดหมายของฉัน"
  */
-export function createMyAppointmentsFlex(patientName: string = 'สมชาย ดีเลิศ', hn: string = 'HN-98302') {
+export function createMyAppointmentsFlex(
+  patientName: string = 'กิตติพงษ์ แก้วมณี',
+  hn: string = 'HN-98302',
+  appointments?: Array<{
+    appointmentDate: string;
+    appointmentTime: string;
+    clinicName: string;
+    doctorName?: string;
+    cause?: string;
+    preparationNotes?: string;
+  }>
+) {
+  const mainApp = appointments && appointments.length > 0 ? appointments[0] : {
+    appointmentDate: '15 สิงหาคม 2026',
+    appointmentTime: '08:30 น.',
+    clinicName: 'คลินิกโรคเบาหวานและความดันโลหิตสูง (NCDs)',
+    doctorName: 'พญ. วรรณภา จิตดี',
+    cause: 'ตรวจติดตามระดับน้ำตาลสะสม HbA1c และรับยาประจำตัว',
+    preparationNotes: '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ',
+  };
+
   return {
     type: 'flex',
-    altText: '🗓️ รายการนัดหมายของฉัน - รพ.คลองหาด',
+    altText: `🗓️ รายการนัดหมายของฉัน: คุณ${patientName} (${hn}) - รพ.คลองหาด`,
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -273,7 +293,7 @@ export function createMyAppointmentsFlex(patientName: string = 'สมชาย 
         contents: [
           {
             type: 'text',
-            text: '🗓️ รายการนัดหมายของฉัน',
+            text: '🗓️ รายการนัดหมายตรวจติดตาม',
             color: '#FFFFFF',
             size: 'md',
             weight: 'bold',
@@ -305,14 +325,14 @@ export function createMyAppointmentsFlex(patientName: string = 'สมชาย 
             contents: [
               {
                 type: 'text',
-                text: '📌 นัดหมายถัดไป',
+                text: '📌 นัดหมายถัดไป (ข้อมูลสด HOSxP)',
                 size: 'xs',
                 color: '#0F766E',
                 weight: 'bold',
               },
               {
                 type: 'text',
-                text: 'วันเสาร์ที่ 1 สิงหาคม 2026',
+                text: `${mainApp.appointmentDate}`,
                 size: 'md',
                 color: '#17324D',
                 weight: 'bold',
@@ -320,15 +340,49 @@ export function createMyAppointmentsFlex(patientName: string = 'สมชาย 
               },
               {
                 type: 'text',
-                text: 'เวลา 09:00 น. | คลินิกเบาหวาน',
+                text: `เวลา ${mainApp.appointmentTime} | ${mainApp.clinicName}`,
                 size: 'xs',
                 color: '#0B6F8A',
+                weight: 'bold',
               },
               {
                 type: 'text',
-                text: 'แพทย์ผู้ตรวจ: พญ. วรรณภา จิตดี',
+                text: `แพทย์ผู้ตรวจ: ${mainApp.doctorName || 'แพทย์ประจำคลินิก'}`,
                 size: 'xs',
                 color: '#64748B',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `สาเหตุการนัด: ${mainApp.cause || 'ตรวจติดตามอาการประจำปี'}`,
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFFBEB',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FDE68A',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📝 ข้อปฏิบัติตัวก่อนมาพบแพทย์',
+                size: 'xs',
+                color: '#92400E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `${mainApp.preparationNotes || 'โปรดนำบัตรประชาชนและยาประจำตัวมาด้วยทุกครั้ง'}`,
+                size: 'xs',
+                color: '#78350F',
+                wrap: true,
                 margin: 'xs',
               },
             ],

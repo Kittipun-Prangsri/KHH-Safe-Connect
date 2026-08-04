@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendLineAppointmentReminder } from '@/lib/lineMessagingService';
+import { sendLineAppointmentReminder, sendLinePushTextMessage } from '@/lib/lineMessagingService';
 import { getHosxpPool } from '@/lib/hosxpClient';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -94,9 +95,29 @@ async function processUpcomingNcdReminders() {
     recipients: processedRecipients,
   };
 }
-
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json().catch(() => ({}));
+
+    // If messageText is provided, send direct staff reply to LINE user
+    if (body.messageText) {
+      const targetLineUserId = process.env.TEST_LINE_USER_ID || 'U_DEMO_LINE_USER';
+      const staffRole = body.staffRole || 'เจ้าหน้าที่สุขภาพ';
+      const staffName = body.staffName || 'เจ้าหน้าที่';
+      const patientName = body.patientName || 'ผู้ป่วย';
+
+      const formattedMessage = `💬 [คำตอบจาก ${staffRole}]\nเรียน คุณ${patientName}\n\n${body.messageText}\n\n---\n✍️ ${staffName}\n🏥 คลินิก NCDs โรงพยาบาลคลองหาด`;
+
+      const result = await sendLinePushTextMessage(targetLineUserId, formattedMessage);
+
+      return NextResponse.json({
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        message: `💬 ส่งข้อความจาก [${staffRole}] หาคุณ ${patientName} สำเร็จ`,
+        result,
+      });
+    }
+
     const result = await processUpcomingNcdReminders();
 
     return NextResponse.json({

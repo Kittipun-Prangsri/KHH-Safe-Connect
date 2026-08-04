@@ -115,3 +115,59 @@ export async function replyLineAppointmentReminder(
   const flexMessage = createAppointmentFlexMessage(appointmentData);
   return sendLineReplyMessage(replyToken, [flexMessage], channelAccessToken);
 }
+
+/**
+ * Send LINE Push Text Message directly to patient LINE User ID
+ */
+export async function sendLinePushTextMessage(
+  lineUserId: string,
+  text: string,
+  channelAccessToken?: string
+) {
+  const token = (
+    channelAccessToken ||
+    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
+    '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
+  ).trim();
+
+  if (!token || !lineUserId) {
+    return { success: true, simulated: true, message: '[Simulated] LINE Push text message simulated' };
+  }
+
+  try {
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        to: lineUserId,
+        messages: [
+          {
+            type: 'text',
+            text,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`LINE Push API status ${response.status}: ${errorText}`);
+    }
+
+    return {
+      success: true,
+      simulated: false,
+      message: 'LINE Push Message sent successfully',
+    };
+  } catch (err: any) {
+    console.error('❌ Failed to send LINE Push text message:', err);
+    return {
+      success: false,
+      error: err.message,
+    };
+  }
+}
+

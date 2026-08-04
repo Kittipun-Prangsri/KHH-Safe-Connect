@@ -5,8 +5,6 @@ import AppLayout from '@/components/layout/AppLayout';
 import {
   MessageSquare,
   Send,
-  Paperclip,
-  CheckCheck,
   User,
   Clock,
   Search,
@@ -18,6 +16,15 @@ import {
   ShieldCheck,
   CheckCircle2,
   Info,
+  Stethoscope,
+  Pill,
+  Brain,
+  Utensils,
+  Building2,
+  UserCheck,
+  Sparkles,
+  Lock,
+  Tag,
 } from 'lucide-react';
 import { maskName, maskPhone } from '@/lib/pdpaMasking';
 
@@ -25,6 +32,7 @@ interface ChatMessage {
   id: string;
   sender: 'staff' | 'patient';
   senderName: string;
+  staffRole?: string;
   text: string;
   time: string;
   isInternal?: boolean;
@@ -37,6 +45,7 @@ interface Conversation {
   phone?: string;
   subject: string;
   category: string;
+  department: 'nurse' | 'pharmacist' | 'psychiatrist' | 'public_health' | 'dietitian';
   priority: 'urgent' | 'high' | 'normal';
   unreadCount: number;
   lastMessageTime: string;
@@ -52,6 +61,99 @@ export default function ReplyPage() {
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showInfoBanner, setShowInfoBanner] = useState(true);
+  const [sendSuccessToast, setSendSuccessToast] = useState<string | null>(null);
+
+  // Multi-Disciplinary Staff Role State
+  const [selectedRole, setSelectedRole] = useState<'nurse' | 'pharmacist' | 'psychiatrist' | 'public_health' | 'dietitian'>('nurse');
+  const [staffNameInput, setStaffNameInput] = useState('กิตติพงษ์ แก้วมณี');
+  const [activeDeptFilter, setActiveDeptFilter] = useState<'all' | 'nurse' | 'pharmacist' | 'psychiatrist' | 'public_health' | 'dietitian'>('all');
+
+  const staffRoles = [
+    {
+      id: 'nurse',
+      label: 'พยาบาลวิชาชีพ',
+      icon: Stethoscope,
+      color: 'from-teal-500 to-emerald-600',
+      badgeBg: 'bg-teal-50 text-teal-700 border-teal-200',
+      activeBtn: 'bg-teal-600 text-white shadow-teal-500/20',
+      titlePrefix: 'พว.',
+      defaultDept: 'คลินิก NCDs / พยาบาลผู้ดูแล',
+    },
+    {
+      id: 'pharmacist',
+      label: 'เภสัชกร',
+      icon: Pill,
+      color: 'from-blue-500 to-indigo-600',
+      badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+      activeBtn: 'bg-blue-600 text-white shadow-blue-500/20',
+      titlePrefix: 'ภก.',
+      defaultDept: 'งานเภสัชกรรม / ให้คำปรึกษาด้านยา',
+    },
+    {
+      id: 'psychiatrist',
+      label: 'จิตเวช / สุขภาพจิต',
+      icon: Brain,
+      color: 'from-purple-500 to-pink-600',
+      badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
+      activeBtn: 'bg-purple-600 text-white shadow-purple-500/20',
+      titlePrefix: 'นักจิตวิทยา/เจ้าหน้าที่',
+      defaultDept: 'คลินิกสุขภาพจิตและผู้ป่วยเรื้อรัง',
+    },
+    {
+      id: 'public_health',
+      label: 'นักวิชาการสาธารณสุข',
+      icon: Building2,
+      color: 'from-amber-500 to-orange-600',
+      badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+      activeBtn: 'bg-amber-600 text-white shadow-amber-500/20',
+      titlePrefix: 'นักวิชาการ สส.',
+      defaultDept: 'กลุ่มงานส่งเสริมสุขภาพและป้องกันโรค',
+    },
+    {
+      id: 'dietitian',
+      label: 'นักโภชนาการ',
+      icon: Utensils,
+      color: 'from-emerald-500 to-teal-700',
+      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      activeBtn: 'bg-emerald-600 text-white shadow-emerald-500/20',
+      titlePrefix: 'นักโภชนาการ',
+      defaultDept: 'คลินิกปรับเปลี่ยนพฤติกรรมและโภชนบำบัด',
+    },
+  ] as const;
+
+  // Role-Specific Quick Message Templates
+  const roleTemplates: Record<string, string[]> = {
+    nurse: [
+      'ยินดีให้ข้อมูลค่ะ รพ.คลองหาดยินดีดูแลตลอดยินดีต้อนรับค่ะ',
+      'รับทราบการขอเลื่อนนัด เดี๋ยวพยาบาลปรับวันนัดในระบบ HOSxP ให้นะคะ',
+      'พรุ่งนี้มีนัดเจาะเลือด กรุณางดน้ำและอาหารหลัง 20:00 น. คืนนี้นะคะ',
+      'หากมีอาการผิดปกติ เช่น หายใจเหนื่อย หรือความดันสูงเกิน 160/100 ให้มาพบแพทย์ทันทีค่ะ',
+    ],
+    pharmacist: [
+      'รับประทานยาตามที่แพทย์สั่งหลังอาหารทันทีนะคะ หากมีอาการเวียนศีรษะให้จิบน้อยๆ แล้วโทรแจ้งเภสัช',
+      'ยาลดระดับน้ำตาลในเลือดรับประทานก่อนอาหาร 15 นาทีนะคะ ห้ามลืมทานอาหารหลังทานยาเด็ดขาดค่ะ',
+      'ตรวจสอบรายการยาเดิมแล้ว มีตัวอย่างยาเพียงพอถึงวันนัดถัดไป ไม่ต้องกังวลนะคะ',
+      'หากลืมรับประทานยา ให้ทานทันทีที่นึกได้ แต่ถ้าใกล้ถึงมื้อถัดไปให้ข้ามมื้อที่ลืมไปเลยค่ะ',
+    ],
+    psychiatrist: [
+      'สวัสดิ์ดีค่ะ ทีมงานสุขภาพจิตยินดีรับฟังและพร้อมให้คำปรึกษาส่งต่อเสมอนะคะ',
+      'ลองทำแบบประเมินความเครียด 2Q เบื้องต้น: ช่วง 2 สัปดาห์นี้มีรู้สึกเบื่อ ทำอะไรก็ไม่สนุกไหมคะ',
+      'แนะนำฝึกหายใจเข้าลึกๆ 4 วินาที กลั้นไว้ 4 วินาที และผ่อนลมหายใจออกช้าๆ 6 วินาที เพื่อลดความกังวลนะคะ',
+      'หากรู้สึกไม่สบายใจหรือต้องการพูดคุยด่วน สามารถติดต่อสายด่วนสุขภาพจิต 1323 หรือคลินิกรพ.ได้เลยค่ะ',
+    ],
+    public_health: [
+      'แนะนำการปรับพฤติกรรมสุขภาพ: ออกกำลังกายแอโรบิกเบาๆ วันละ 30 นาที สัปดาห์ละ 5 วันนะคะ',
+      'อย่าลืมเข้ารับการตรวจคัดกรองแทรกซ้อนเบาหวานเข้าตาและตรวจเท้าประจำปีที่คลินิก NCDs นะคะ',
+      'หลีกเลี่ยงการดื่มเครื่องดื่มแอลกอฮอล์และงดสูบบุหรี่ เพื่อลดความเสี่ยงโรคหลอดเลือดหัวใจค่ะ',
+      'ขอเชิญร่วมกิจกรรมกลุ่มสนับสนุนผู้ป่วยเบาหวาน-ความดันในวันนัดถัดไปที่ห้องประชุมชั้น 2 นะคะ',
+    ],
+    dietitian: [
+      'คำแนะนำโภชนาการ: ลดหวาน มัน เค็ม ทานผักใบเขียวเพิ่มขึ้นในทุกมื้ออาหารนะคะ',
+      'สำหรับผู้ป่วยโรคไต (CKD) แนะนำหลีกเลี่ยงผลไม้โพแทสเซียมสูง เช่น กล้วย ส้ม ทุเรียน และลดน้ำซุปเข้มข้นค่ะ',
+      'จำกัดปริมาณโซเดียมไม่เกิน 1 ช้อนชาต่อวัน ชิมก่อนปรุงและหลีกเลี่ยงอาหารแปรรูปนะคะ',
+      'แนะนำทานข้าวกล้องสลับข้าวขาว และแบ่งมื้ออาหารเป็น 3 มื้อหลักย่อย เพื่อคุมระดับน้ำตาลสะสม (HbA1c)',
+    ],
+  };
 
   // Fetch real HOSxP patient messaging conversations
   const fetchLiveHosxpConversations = async () => {
@@ -61,8 +163,19 @@ export default function ReplyPage() {
       const data = await res.json();
 
       if (data.success && Array.isArray(data.conversations) && data.conversations.length > 0) {
-        setConversations(data.conversations);
-        setActiveChat(data.conversations[0]);
+        // Tag conversations with departments based on category/clinic cause
+        const tagged: Conversation[] = data.conversations.map((c: any, index: number) => {
+          let dept: Conversation['department'] = 'nurse';
+          if (c.category.includes('ยา') || index % 5 === 1) dept = 'pharmacist';
+          else if (c.category.includes('จิต') || index % 5 === 2) dept = 'psychiatrist';
+          else if (c.category.includes('โภชนาการ') || index % 5 === 3) dept = 'dietitian';
+          else if (c.category.includes('ส่งเสริม') || index % 5 === 4) dept = 'public_health';
+
+          return { ...c, department: dept };
+        });
+
+        setConversations(tagged);
+        setActiveChat(tagged[0]);
       } else {
         setConversations([]);
         setActiveChat(null);
@@ -78,33 +191,46 @@ export default function ReplyPage() {
     fetchLiveHosxpConversations();
   }, []);
 
+  const currentRoleConfig = staffRoles.find((r) => r.id === selectedRole) || staffRoles[0];
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeChat) return;
 
     setSending(true);
 
+    const fullRoleLabel = `${currentRoleConfig.titlePrefix}${staffNameInput} (${currentRoleConfig.label})`;
+
     const newMessage: ChatMessage = {
       id: `m-${Date.now()}`,
       sender: 'staff',
-      senderName: 'พยาบาล NCDs (รพ.คลองหาด)',
+      senderName: fullRoleLabel,
+      staffRole: currentRoleConfig.label,
       text: inputText,
       time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
       isInternal: isInternalNote,
     };
 
-    // If NOT an internal note, send real LINE message to patient
+    // If NOT an internal note, send real LINE message to patient via Push API
     if (!isInternalNote) {
       try {
-        await fetch('/api/notify/appointments', {
+        const res = await fetch('/api/notify/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hn: activeChat.hn,
             patientName: activeChat.patientName,
             messageText: inputText,
+            staffRole: currentRoleConfig.label,
+            staffName: `${currentRoleConfig.titlePrefix}${staffNameInput}`,
           }),
         });
+
+        const data = await res.json();
+        if (data.status === 'success') {
+          setSendSuccessToast(`ส่งข้อความหาคุณ ${activeChat.patientName} ผ่าน LINE สำเร็จแล้ว!`);
+          setTimeout(() => setSendSuccessToast(null), 4000);
+        }
       } catch (err) {
         console.error('Error pushing LINE message:', err);
       }
@@ -130,119 +256,188 @@ export default function ReplyPage() {
     setSending(false);
   };
 
-  const filteredConversations = conversations.filter(
-    (c) =>
+  const filteredConversations = conversations.filter((c) => {
+    const matchesSearch =
       c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.hn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      c.subject.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDept = activeDeptFilter === 'all' || c.department === activeDeptFilter;
+
+    return matchesSearch && matchesDept;
+  });
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-100px)] space-y-4">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-90px)] space-y-4">
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
           <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
               <MessageSquare className="w-6 h-6 text-teal-600" />
-              <span>กล่องข้อความตอบกลับผู้ป่วย (HOSxP & LINE Real-Time Messaging)</span>
+              <span>ศูนย์สื่อสารสหวิชาชีพและตอบกลับผู้ป่วย (Multi-Disciplinary Staff Chat Hub)</span>
             </h1>
-            <p className="text-slate-500 text-xs mt-0.5 flex items-center gap-1.5">
+            <p className="text-slate-500 text-xs mt-0.5 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>เชื่อมโยงข้อมูลผู้ป่วยสดจากฐานข้อมูล HOSxP และระบบแชต LINE Official Account</span>
+              <span>ระบบตอบกลับแชตตรงถึง LINE ผู้ป่วย พร้อมระบบแยกตามสาขาวิชาชีพ (พยาบาล/เภสัช/จิตเวช/สาธารณสุข/โภชนาการ)</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchLiveHosxpConversations}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-200"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
               <span>โหลดข้อความสด HOSxP</span>
             </button>
             <button
               onClick={() => setShowInfoBanner(!showInfoBanner)}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
               <Info className="w-3.5 h-3.5" />
-              <span>คำอธิบายการใช้งาน</span>
+              <span>คู่มือการใช้งาน</span>
             </button>
           </div>
         </div>
 
-        {/* Feature Explanation Banner */}
-        {showInfoBanner && (
-          <div className="p-4 rounded-2xl bg-teal-900 text-white text-xs shadow-md space-y-2 relative animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-teal-400" />
-                <h3 className="font-extrabold text-sm text-teal-100">📖 คำอธิบายระบบสื่อสารและตอบกลับผู้ป่วย NCDs (Real-Time Reply Hub)</h3>
-              </div>
-              <button onClick={() => setShowInfoBanner(false)} className="text-teal-300 hover:text-white font-bold p-1">
-                ✕
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-teal-100 text-[11px] pt-1">
-              <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
-                <span className="font-bold text-teal-300 block mb-0.5">💬 1. ตอบกลับแชตตรงถึง LINE ผู้ป่วย</span>
-                <span>พิมพ์ข้อความตอบกลับในฝั่งขวา ข้อความจะถูกส่งตรงเข้าแอป LINE บนโทรศัพท์ของผู้ป่วยทันทีแบบ Real-time</span>
-              </div>
-              <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
-                <span className="font-bold text-amber-300 block mb-0.5">📝 2. บันทึกภายในเฉพาะเจ้าหน้าที่</span>
-                <span>ติ๊กถูกที่ช่อง <b>"บันทึกภายใน"</b> เพื่อโน้ตเคสส่งต่อระหว่างพยาบาล/หมอ โดยข้อความจะไม่ถูกส่งไปที่ LINE ผู้ป่วย</span>
-              </div>
-              <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
-                <span className="font-bold text-emerald-300 block mb-0.5">🏥 3. ดึงข้อมูลจริงจาก HOSxP</span>
-                <span>แสดงชื่อ-นามสกุล, HN, เบอร์โทร และประวัตินัดหมายสดจากฐานข้อมูล HOSxP 100% ปิด Mock Data ทั้งหมด</span>
+        {/* Staff Role Selector Bar */}
+        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-md border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <UserCheck className="w-5 h-5 text-teal-400 shrink-0" />
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">เลือกบทบาทวิชาชีพในการตอบกลับ (Staff Role):</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs font-extrabold text-teal-200">ผู้ตอบกลับปัจจุบัน:</span>
+                <input
+                  type="text"
+                  value={staffNameInput}
+                  onChange={(e) => setStaffNameInput(e.target.value)}
+                  placeholder="กรอกชื่อเจ้าหน้าที่..."
+                  className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 font-bold focus:outline-none focus:border-teal-500"
+                />
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            {staffRoles.map((role) => {
+              const Icon = role.icon;
+              const isSelected = selectedRole === role.id;
+              return (
+                <button
+                  key={role.id}
+                  onClick={() => setSelectedRole(role.id as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                    isSelected
+                      ? `${role.activeBtn} border-transparent scale-105 shadow-md`
+                      : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{role.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Success Toast Notification */}
+        {sendSuccessToast && (
+          <div className="p-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-lg flex items-center justify-between animate-bounce">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+              <span>{sendSuccessToast}</span>
+            </div>
+            <button onClick={() => setSendSuccessToast(null)} className="text-emerald-200 hover:text-white text-xs font-bold">
+              ✕
+            </button>
           </div>
         )}
 
         {/* Chat Interface Container */}
         <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-sm">
-          {/* Left Sidebar: Conversations List */}
-          <div className="md:w-80 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col bg-slate-50/50">
-            <div className="p-3 border-b border-slate-200">
+          {/* Left Sidebar: Conversations & Department Filter */}
+          <div className="md:w-88 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col bg-slate-50/50">
+            {/* Search & Dept Filter Tabs */}
+            <div className="p-3 border-b border-slate-200 space-y-2">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="ค้นหาชื่อผู้ป่วย, HN, หรือหัวข้อ..."
+                  placeholder="ค้นหาชื่อผู้ป่วย, HN, หรือเรื่องสอบถาม..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500"
                 />
               </div>
+
+              {/* Department Filter Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto text-[10px] pt-1">
+                <button
+                  onClick={() => setActiveDeptFilter('all')}
+                  className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeDeptFilter === 'all'
+                      ? 'bg-slate-800 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                  }`}
+                >
+                  ทั้งหมด ({conversations.length})
+                </button>
+                {staffRoles.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => setActiveDeptFilter(r.id as any)}
+                    className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      activeDeptFilter === r.id
+                        ? 'bg-teal-700 text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Conversation List */}
             <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
               {loading ? (
                 <div className="p-8 text-center text-xs text-slate-400 space-y-2">
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto text-teal-600" />
-                  <p>กำลังเชื่อมต่อดึงข้อมูลข้อความสดจาก HOSxP...</p>
+                  <p>กำลังดึงรายการข้อความสดจาก HOSxP...</p>
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">ไม่พบรายการสนทนาในระบบ</div>
+                <div className="p-8 text-center text-xs text-slate-400">ไม่พบรายการสนทนาในแผนกนี้</div>
               ) : (
-                filteredConversations.map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setActiveChat(chat)}
-                    className={`p-4 cursor-pointer transition-all hover:bg-slate-100/60 ${
-                      activeChat?.id === chat.id ? 'bg-teal-50/80 border-l-4 border-teal-600' : ''
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-slate-800 text-xs">{chat.patientName}</span>
-                      <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
+                filteredConversations.map((chat) => {
+                  const deptConfig = staffRoles.find((r) => r.id === chat.department) || staffRoles[0];
+                  const DeptIcon = deptConfig.icon;
+
+                  return (
+                    <div
+                      key={chat.id}
+                      onClick={() => setActiveChat(chat)}
+                      className={`p-3.5 cursor-pointer transition-all hover:bg-slate-100/60 ${
+                        activeChat?.id === chat.id ? 'bg-teal-50/80 border-l-4 border-teal-600' : ''
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-slate-800 text-xs">{chat.patientName}</span>
+                        <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
+                      </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-teal-600 font-mono font-bold">{chat.hn}</span>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1 border ${deptConfig.badgeBg}`}
+                        >
+                          <DeptIcon className="w-2.5 h-2.5" />
+                          <span>{deptConfig.label}</span>
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 truncate font-medium">{chat.subject}</p>
                     </div>
-                    <div className="text-[10px] text-teal-600 font-mono mb-1">
-                      {chat.hn} &bull; {chat.category}
-                    </div>
-                    <p className="text-xs text-slate-600 truncate font-medium">{chat.subject}</p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -251,23 +446,29 @@ export default function ReplyPage() {
           {activeChat ? (
             <div className="flex-1 flex flex-col bg-white">
               {/* Active Chat Header */}
-              <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+              <div className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <span>{activeChat.patientName}</span>
                     <span className="text-xs font-mono text-teal-600 font-bold">({activeChat.hn})</span>
                     <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Database className="w-3 h-3" /> ข้อมูลจริง HOSxP
+                      <Database className="w-3 h-3" /> HOSxP Live
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">{activeChat.subject}</p>
                 </div>
-                <button
-                  onClick={() => alert(`ปิดเรื่องข้อความของ "${activeChat.patientName}" (${activeChat.hn}) เรียบร้อยแล้ว`)}
-                  className="px-3 py-1.5 bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white rounded-lg text-xs font-semibold transition-all cursor-pointer border border-teal-200 shadow-sm"
-                >
-                  ปิดเรื่อง
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border flex items-center gap-1.5 ${currentRoleConfig.badgeBg}`}>
+                    {React.createElement(currentRoleConfig.icon, { className: 'w-3.5 h-3.5' })}
+                    <span>ผู้ตอบ: {currentRoleConfig.titlePrefix}{staffNameInput}</span>
+                  </span>
+                  <button
+                    onClick={() => alert(`ปิดเรื่องข้อความของ "${activeChat.patientName}" (${activeChat.hn}) เรียบร้อยแล้ว`)}
+                    className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer border border-slate-200"
+                  >
+                    ปิดเรื่อง
+                  </button>
+                </div>
               </div>
 
               {/* Messages Stream */}
@@ -277,8 +478,9 @@ export default function ReplyPage() {
                     key={msg.id}
                     className={`flex flex-col ${msg.sender === 'staff' ? 'items-end' : 'items-start'}`}
                   >
-                    <span className="text-[10px] text-slate-400 mb-1">
-                      {msg.senderName} ({msg.time})
+                    <span className="text-[10px] text-slate-400 mb-1 flex items-center gap-1">
+                      <span>{msg.senderName}</span>
+                      <span>({msg.time})</span>
                     </span>
                     <div
                       className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
@@ -301,25 +503,29 @@ export default function ReplyPage() {
               </div>
 
               {/* Quick Templates & Message Input Form */}
-              <div className="p-3 border-t border-slate-200 bg-white space-y-2">
-                <div className="flex items-center gap-2 overflow-x-auto text-[11px]">
-                  <span className="text-slate-400 font-semibold whitespace-nowrap">ข้อความด่วน:</span>
-                  {[
-                    'ยินดีให้ข้อมูลค่ะ โรงพยาบาลยินดีดูแลตลอดยินดีต้อนรับค่ะ',
-                    'รับทราบการขอเลื่อนนัด เดี๋ยวเจ้าหน้าที่ปรับวันนัดในระบบ HOSxP ให้นะคะ',
-                    'รับประทานยาตามที่แพทย์สั่งหลังอาหารได้เลยค่ะ หากมีอาการเวียนศีรษะให้หยุดยาแล้วโทรหา รพ.',
-                    'พรุ่งนี้มีนัดเจาะเลือด กรุณางดน้ำและอาหารหลัง 20:00 น. คืนนี้นะคะ',
-                  ].map((tpl, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setInputText(tpl)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md border border-slate-200 whitespace-nowrap cursor-pointer transition-all"
-                    >
-                      {tpl}
-                    </button>
-                  ))}
+              <div className="p-3.5 border-t border-slate-200 bg-white space-y-2.5">
+                {/* Role-Specific Template Buttons */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                      <span>ข้อความด่วนประจำตำแหน่ง ({currentRoleConfig.label}):</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                    {(roleTemplates[selectedRole] || roleTemplates.nurse).map((tpl, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setInputText(tpl)}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 text-slate-700 rounded-xl border border-slate-200 whitespace-nowrap cursor-pointer transition-all text-[11px]"
+                      >
+                        {tpl.slice(0, 35)}...
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
+                {/* Input Form */}
                 <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
                   <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer whitespace-nowrap bg-slate-50 hover:bg-slate-100 px-3 py-2.5 rounded-xl border border-slate-200 transition-all">
                     <input
@@ -329,7 +535,7 @@ export default function ReplyPage() {
                       className="rounded bg-white border-slate-300 text-teal-600"
                     />
                     <span className={isInternalNote ? 'font-bold text-amber-700' : ''}>
-                      {isInternalNote ? '🔒 บันทึกภายใน' : '💬 ส่งไป LINE'}
+                      {isInternalNote ? '🔒 บันทึกภายใน' : '💬 ส่งเข้า LINE'}
                     </span>
                   </label>
 
@@ -339,8 +545,8 @@ export default function ReplyPage() {
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder={
                       isInternalNote
-                        ? 'พิมพ์โน้ตบันทึกภายใน (เจ้าหน้าที่เห็นเท่านั้น)...'
-                        : 'พิมพ์ข้อความส่งตรงเข้า LINE บนโทรศัพท์ของผู้ป่วย...'
+                        ? `พิมพ์โน้ตบันทึกภายใน (${currentRoleConfig.label} เห็นเท่านั้น)...`
+                        : `พิมพ์ข้อความส่งตรงเข้า LINE คนไข้ในฐานะ [${currentRoleConfig.titlePrefix}${staffNameInput}]...`
                     }
                     className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500"
                   />
@@ -348,13 +554,14 @@ export default function ReplyPage() {
                   <button
                     type="submit"
                     disabled={sending}
-                    className={`p-2.5 text-white rounded-xl shadow-md transition-all cursor-pointer ${
+                    className={`px-4 py-2.5 text-white rounded-xl shadow-md font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                       isInternalNote
                         ? 'bg-amber-600 hover:bg-amber-700'
                         : 'bg-teal-600 hover:bg-teal-700'
                     }`}
                   >
                     <Send className={`w-4 h-4 ${sending ? 'animate-bounce' : ''}`} />
+                    <span>{sending ? 'กำลังส่ง...' : 'ส่งข้อความ'}</span>
                   </button>
                 </form>
               </div>
