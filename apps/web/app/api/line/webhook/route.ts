@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendLineReplyMessage } from '@/lib/lineMessagingService';
 import {
   createRoleSelectionFlexMessage,
   createPatientRegistrationPromptFlex,
@@ -11,45 +12,6 @@ import {
   createPreparationGuideFlex,
   createHealthEducationMenuFlex,
 } from '@/lib/lineFlexTemplates';
-
-// Helper to reply via LINE Messaging API
-async function replyLineMessage(replyToken: string, messages: any[]) {
-  // Ignore LINE dummy verification tokens
-  if (
-    !replyToken ||
-    replyToken === '00000000000000000000000000000000' ||
-    replyToken === '11111111111111111111111111111111'
-  ) {
-    return;
-  }
-
-  // Token with fallback to guarantee Vercel Production replies
-  const token = (
-    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
-    '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
-  ).trim();
-
-  try {
-    const res = await fetch('https://api.line.me/v2/bot/message/reply', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        replyToken,
-        messages,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('❌ LINE Reply API status:', res.status, errText);
-    }
-  } catch (err) {
-    console.error('❌ LINE Reply error:', err);
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,7 +27,7 @@ export async function POST(req: NextRequest) {
       // Handle Follow event (When user adds LINE OA)
       if (event.type === 'follow') {
         const flexMsg = createRoleSelectionFlexMessage();
-        await replyLineMessage(replyToken, [flexMsg]);
+        await sendLineReplyMessage(replyToken, [flexMsg]);
         continue;
       }
 
@@ -79,42 +41,42 @@ export async function POST(req: NextRequest) {
         // Tile 1: "นัดหมายของฉัน"
         if (text === 'นัดหมายของฉัน' || text.includes('เช็คนัด') || text.includes('วันนัด')) {
           const flex = createMyAppointmentsFlex('กิตติพงษ์ แก้วมณี', 'HN-98302');
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
         // Tile 2: "ยืนยันนัด"
         if (text === 'ยืนยันนัด' || text.includes('ยืนยันมาตามนัด')) {
           const flex = createConfirmSuccessFlex('กิตติพงษ์ แก้วมณี', '1 สิงหาคม 2026');
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
         // Tile 3: "ขอเลื่อนนัด"
         if (text === 'ขอเลื่อนนัด' || text.includes('เลื่อนวันนัด')) {
           const flex = createRescheduleRequestFlex();
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
         // Tile 4: "ติดต่อเจ้าหน้าที่"
         if (text === 'ติดต่อเจ้าหน้าที่' || text.includes('คุยกับพยาบาล') || text.includes('พยาบาล')) {
           const flex = createContactStaffFlex();
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
         // Tile 5: "การเตรียมตัวก่อนพบแพทย์"
         if (text === 'การเตรียมตัวก่อนพบแพทย์' || text.includes('เตรียมตัว') || text.includes('งดน้ำ')) {
           const flex = createPreparationGuideFlex();
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
         // Tile 6: "คำแนะนำสุขภาพ"
         if (text === 'คำแนะนำสุขภาพ' || text.includes('ความรู้') || text.includes('คำแนะนำ')) {
           const flex = createHealthEducationMenuFlex();
-          await replyLineMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
@@ -127,7 +89,7 @@ export async function POST(req: NextRequest) {
           text.includes('ญาติ')
         ) {
           const promptFlex = createPatientRegistrationPromptFlex();
-          await replyLineMessage(replyToken, [promptFlex]);
+          await sendLineReplyMessage(replyToken, [promptFlex]);
           continue;
         }
 
@@ -136,7 +98,7 @@ export async function POST(req: NextRequest) {
           text.includes('เจ้าหน้าที่')
         ) {
           const promptFlex = createStaffRegistrationPromptFlex();
-          await replyLineMessage(replyToken, [promptFlex]);
+          await sendLineReplyMessage(replyToken, [promptFlex]);
           continue;
         }
 
@@ -151,7 +113,7 @@ export async function POST(req: NextRequest) {
             hnCode,
             lineUserId
           );
-          await replyLineMessage(replyToken, [successFlex]);
+          await sendLineReplyMessage(replyToken, [successFlex]);
           continue;
         }
 
@@ -170,13 +132,13 @@ export async function POST(req: NextRequest) {
             staffCode,
             lineUserId
           );
-          await replyLineMessage(replyToken, [successFlex]);
+          await sendLineReplyMessage(replyToken, [successFlex]);
           continue;
         }
 
         // Default fallback to Role Selection / Welcome Card
         const menuFlex = createRoleSelectionFlexMessage();
-        await replyLineMessage(replyToken, [menuFlex]);
+        await sendLineReplyMessage(replyToken, [menuFlex]);
       }
     }
 
