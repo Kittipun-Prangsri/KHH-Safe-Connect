@@ -239,9 +239,16 @@ export async function syncHosxpToSupabase(): Promise<{ success: boolean; syncedP
       syncedAppointmentsCount: formattedAppointments.length,
     };
   } catch (error: any) {
-    console.error('❌ HOSxP -> Supabase Sync Error:', error);
-    await updateSyncConfig({ status: 'error', error_message: error.message });
-    return { success: false, syncedPatientsCount: 0, syncedAppointmentsCount: 0, error: error.message };
+    let friendlyError = error.message;
+    if (error.code === 'ETIMEDOUT' || error.message.includes('ETIMEDOUT')) {
+      friendlyError = '⚠️ ไม่สามารถเชื่อมต่อกับเครื่องเซิร์ฟเวอร์ HOSxP LAN (192.168.1.4:3306) ได้เนื่องจาก Connection Timeout กรุณาตรวจสอบว่าคอมพิวเตอร์อยู่ในเครือข่าย LAN โรงพยาบาล หรือเครื่อง HOSxP เปิดอยู่';
+    } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
+      friendlyError = '⚠️ พอร์ต 3306 ของเครื่องเซิร์ฟเวอร์ HOSxP LAN (192.168.1.4) ปิดอยู่ หรือถูกปฏิเสธการเชื่อมต่อ (ECONNREFUSED)';
+    }
+
+    console.error('❌ HOSxP -> Supabase Sync Error:', friendlyError);
+    await updateSyncConfig({ status: 'error', error_message: friendlyError });
+    return { success: false, syncedPatientsCount: 0, syncedAppointmentsCount: 0, error: friendlyError };
   }
 }
 

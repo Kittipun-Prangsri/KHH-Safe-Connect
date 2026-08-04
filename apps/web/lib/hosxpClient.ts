@@ -22,7 +22,7 @@ export function getHosxpPool(): mysql.Pool {
       charset: 'tis620',
       waitForConnections: true,
       connectionLimit: 10,
-      connectTimeout: 3000, // 3 seconds timeout
+      connectTimeout: 1500, // 1.5 seconds timeout for rapid offline fallback
       enableKeepAlive: true,
     });
   }
