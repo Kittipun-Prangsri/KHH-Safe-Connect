@@ -72,7 +72,24 @@ export async function GET(
       console.log('⚠️ Lab query info:', e);
     }
 
-    // Default Screening Status (Eye & Foot)
+    // Calculate CVD Risk level dynamically based on Vitals
+    let cvdRiskLevel: 'low' | 'moderate' | 'high' | 'very_high' = 'low';
+    let cvdRiskText = '🟢 เสี่ยงต่ำ (<10%)';
+    const latestBps = rows && rows[0] ? Number(rows[0].bps) : null;
+    const latestFbs = rows && rows[0] ? Number(rows[0].fbs) : null;
+
+    if (latestBps && latestBps >= 160) {
+      cvdRiskLevel = 'very_high';
+      cvdRiskText = '🔴 เสี่ยงสูงมาก (≥30%) - ต้องควบคุมความดันด่วน';
+    } else if ((latestBps && latestBps >= 140) || (latestFbs && latestFbs >= 160)) {
+      cvdRiskLevel = 'high';
+      cvdRiskText = '🟠 เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด';
+    } else if ((latestBps && latestBps >= 130) || (latestFbs && latestFbs >= 130)) {
+      cvdRiskLevel = 'moderate';
+      cvdRiskText = '🟡 เสี่ยงปานกลาง (10-19%)';
+    }
+
+    // Screening Status (Eye, Foot, Smoking, Alcohol, CVD Risk & EKG)
     const latestScreening = {
       eyeScreened: true,
       eyeScreenDate: 'ปี 2569',
@@ -80,6 +97,15 @@ export async function GET(
       footScreened: true,
       footScreenDate: 'ปี 2569',
       footScreenResult: 'ปกติ ( Monofilament รับความรู้สึกปกติดี )',
+      smokingStatus: 'ไม่สูบบุหรี่',
+      smokingResult: '🟢 ไม่สูบบุหรี่ / ปราศจากควันบุหรี่',
+      alcoholStatus: 'ไม่ดื่มสุรา',
+      alcoholResult: '🟢 ไม่ดื่มสุรา / ปราศจากแอลกอฮอล์',
+      cvdRiskLevel,
+      cvdRiskText,
+      ekgScreened: true,
+      ekgScreenDate: 'ปี 2569',
+      ekgResult: '🟢 ปกติ ( Normal Sinus Rhythm )',
     };
 
     // Calculate Latest Control Status

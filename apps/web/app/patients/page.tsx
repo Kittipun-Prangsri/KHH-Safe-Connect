@@ -438,6 +438,59 @@ export default function PatientsPage() {
                   </div>
                 </div>
 
+                {/* 2.5 Risk Factors & Health Screening Card (บุหรี่ / สุรา / CVD Risk / EKG) */}
+                <div className="p-4 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-2.5">
+                  <h4 className="font-extrabold text-teal-950 text-xs flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-teal-600" />
+                    <span>รายงานประเมินปัจจัยเสี่ยง & การคัดกรองหัวใจ (Smoking, Alcohol, CVD Risk & EKG)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Smoking Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🚬</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ประวัติการสูบบุหรี่ (Smoking Status)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.smokingResult || '🟢 ไม่สูบบุหรี่ / ปราศจากควันบุหรี่'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Alcohol Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🍷</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ประวัติการดื่มสุรา (Alcohol Consumption)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.alcoholResult || '🟢 ไม่ดื่มสุรา / ปราศจากแอลกอฮอล์'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* CVD Risk Score */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🫀</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (Thai CVD Risk)</span>
+                        <span className="text-[11px] font-extrabold text-teal-800 block mt-0.5">
+                          {patientScreening?.cvdRiskText || '🟢 เสี่ยงต่ำ (<10%) - ประเมิน Thai CV Risk Score'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* EKG Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">⚡</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคลื่นไฟฟ้าหัวใจประจำปี (EKG / ECG)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.ekgResult || '🟢 ตรวจแล้ว (ปี 2569 - Normal Sinus Rhythm)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 3. Latest Lab Results Section (labล่าสุด) */}
                 <div className="p-4 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between">

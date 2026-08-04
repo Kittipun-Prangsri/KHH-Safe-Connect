@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getOrFetchHosxpCache } from '@/lib/hosxpCache';
-import { getSnapshotStatsFallback } from '@/lib/hosxpSyncService';
+import { getSnapshotStatsFallback, getSupabaseFallbackAppointments } from '@/lib/hosxpSyncService';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,15 +76,18 @@ export async function GET() {
       },
     });
   } catch (error: any) {
-    console.warn('⚠️ Real HOSxP Stats DB Query Error/Timeout. Serving Freeze Snapshot Fallback:', error.message);
+    console.warn('⚠️ Real HOSxP Stats DB Query Error/Timeout. Serving Supabase Offline Fallback:', error.message);
+    const supabaseFallback = await getSupabaseFallbackAppointments();
     const snapshot = getSnapshotStatsFallback();
+
     return NextResponse.json({
       success: true,
-      ...snapshot,
+      stats: snapshot.stats,
+      recentAppointments: supabaseFallback.appointments.slice(0, 6),
       cacheInfo: {
         isCached: true,
-        isSnapshotFallback: true,
-        notice: 'ดึงข้อมูลสแนปชอตสำรอง (Freeze Snapshot) เนื่องจากไม่พบการเชื่อมต่อ HOSxP 192.168.1.4',
+        isSupabaseFallback: true,
+        notice: '📡 อ่านข้อมูลสำรองจาก Supabase PostgreSQL เนื่องจากไม่สามารถเชื่อมต่อเครื่องเซิร์ฟเวอร์ HOSxP LAN (192.168.1.4)',
       },
     });
   }

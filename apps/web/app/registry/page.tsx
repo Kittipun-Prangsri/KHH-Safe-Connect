@@ -25,6 +25,7 @@ import {
   Eye,
   EyeOff,
   Home,
+  Download,
 } from 'lucide-react';
 
 interface RegistryPatient {
@@ -204,6 +205,34 @@ export default function RegistryPage() {
     setCustomNoteText('');
   };
 
+  const handleExportCsv = () => {
+    if (patients.length === 0) {
+      alert('⚠️ ไม่พบข้อมูลสำหรับส่งออก CSV');
+      return;
+    }
+    const headers = ['HN', 'ชื่อ-นามสกุล', 'เพศ', 'โรค', 'BP (mmHg)', 'FBS (mg/dL)', 'CVD Risk', 'สถานะการควบคุม', 'วันนัดถัดไป'];
+    const rows = patients.map((p) => [
+      p.hn,
+      `"${maskPatientName(p.patientName, isPdpaActive)}"`,
+      `"${p.sex || '-'}"`,
+      `"${p.diseaseType}"`,
+      `"${p.vitals.bp}"`,
+      `"${p.vitals.fbs}"`,
+      `"${p.cvdRiskText || '-'}"`,
+      `"${p.controlStatusText.replace(/[\u1F600-\u1F64F]/g, '')}"`,
+      `"${p.nextDateFormatted}"`,
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `NCD_Registry_KHH_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -218,7 +247,7 @@ export default function RegistryPage() {
               ระบบทะเบียนผู้ป่วยโรคเรื้อรัง (NCDs Registry) และประเมินเป้าหมายการควบคุมระดับน้ำตาลและความดันโลหิตแบบ Real-time จาก HOSxP
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {canControlPdpa && (
               <button
                 onClick={() => setIsPdpaActive(!isPdpaActive)}
@@ -232,6 +261,14 @@ export default function RegistryPage() {
                 <span>{isPdpaActive ? '🔒 PDPA (สิทธิ์ ITsuperadmin)' : '🔓 ยืนยันสิทธิ์ ITsuperadmin (แสดงข้อมูลเต็ม)'}</span>
               </button>
             )}
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-50 border border-teal-200 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+              title="ดาวน์โหลดรายงานทะเบียนเป็นไฟล์ CSV"
+            >
+              <Download className="w-4 h-4 text-teal-600" />
+              <span>ส่งออก CSV</span>
+            </button>
             <button
               onClick={() => {
                 fetchStats();

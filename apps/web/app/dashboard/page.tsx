@@ -143,6 +143,45 @@ export default function Dashboard() {
 
           {/* Quick Actions & Connection Status */}
           <div className="space-y-6">
+            {/* Quick Action Shortcuts */}
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
+              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-teal-600" />
+                <span>เมนูด่วนสำหรับเจ้าหน้าที่ NCDs</span>
+              </h3>
+              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                <Link
+                  href="/registry"
+                  className="p-3 bg-teal-50/80 hover:bg-teal-100/80 border border-teal-200 rounded-xl font-bold text-teal-900 transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer"
+                >
+                  <Users className="w-5 h-5 text-teal-600" />
+                  <span>ทะเบียน NCDs</span>
+                </Link>
+                <Link
+                  href="/missed-followups"
+                  className="p-3 bg-rose-50/80 hover:bg-rose-100/80 border border-rose-200 rounded-xl font-bold text-rose-900 transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer"
+                >
+                  <AlertCircle className="w-5 h-5 text-rose-600" />
+                  <span>ผู้ป่วยขาดนัด</span>
+                </Link>
+                <Link
+                  href="/line-flex-test"
+                  className="p-3 bg-emerald-50/80 hover:bg-emerald-100/80 border border-emerald-200 rounded-xl font-bold text-emerald-900 transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer"
+                >
+                  <MessageSquare className="w-5 h-5 text-emerald-600" />
+                  <span>LINE Flex Cards</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer"
+                >
+                  <Database className="w-5 h-5 text-slate-600" />
+                  <span>ตั้งค่าระบบ</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Connection Status */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
               <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
                 <Database className="w-5 h-5 text-teal-600" />
@@ -152,7 +191,7 @@ export default function Dashboard() {
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
                   <span className="font-bold text-emerald-800 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    HOSxP Database
+                    HOSxP Database (192.168.1.4)
                   </span>
                   <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">ACTIVE</span>
                 </div>

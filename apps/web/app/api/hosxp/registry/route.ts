@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getOrFetchHosxpCache } from '@/lib/hosxpCache';
+import { getSupabaseFallbackPatients } from '@/lib/hosxpSyncService';
 
 export const dynamic = 'force-dynamic';
 
@@ -323,7 +324,17 @@ export async function GET(request: Request) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Real HOSxP Registry API Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.warn('⚠️ Real HOSxP Registry API Error/Timeout. Serving Supabase Offline Fallback:', error.message);
+    const fallback = await getSupabaseFallbackPatients();
+    return NextResponse.json({
+      success: true,
+      count: fallback.patients.length,
+      patients: fallback.patients,
+      cacheInfo: {
+        isCached: true,
+        isSupabaseFallback: true,
+        notice: '📡 อ่านข้อมูลทะเบียนผู้ป่วยสำรองจาก Supabase PostgreSQL (กรณี HOSxP LAN ไม่สามารถเชื่อมต่อได้)',
+      },
+    });
   }
 }

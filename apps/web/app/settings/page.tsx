@@ -48,6 +48,84 @@ export default function SettingsPage() {
     database: 'hos',
   });
 
+  // Superadmin Sync State (HOSxP -> Supabase Daily Sync)
+  const [syncConfig, setSyncConfig] = useState({
+    daily_sync_time: '02:00',
+    auto_sync_enabled: true,
+    last_synced_at: null as string | null,
+    synced_count: 0,
+    status: 'idle' as 'idle' | 'syncing' | 'success' | 'error',
+    error_message: undefined as string | undefined,
+  });
+  const [triggeringSync, setTriggeringSync] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const fetchSyncConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/sync-hosxp');
+      const data = await res.json();
+      if (data.success && data.config) {
+        setSyncConfig(data.config);
+      }
+    } catch (e) {
+      console.error('Failed to fetch sync config:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSyncConfig();
+  }, []);
+
+  const handleManualSyncNow = async () => {
+    setTriggeringSync(true);
+    setSyncFeedback(null);
+    try {
+      const res = await fetch('/api/admin/sync-hosxp', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSyncFeedback({
+          success: true,
+          message: data.message || 'ซิงก์ข้อมูลจาก HOSxP เข้าสู่ Supabase เรียบร้อยแล้ว!',
+        });
+        if (data.config) setSyncConfig(data.config);
+      } else {
+        setSyncFeedback({
+          success: false,
+          message: data.error || 'เกิดข้อผิดพลาดในการซิงก์ข้อมูล',
+        });
+      }
+    } catch (err: any) {
+      setSyncFeedback({ success: false, message: 'ไม่สามารถเชื่อมต่อระบบซิงก์ได้' });
+    } finally {
+      setTriggeringSync(false);
+    }
+  };
+
+  const handleSaveSyncSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSchedule(true);
+    try {
+      const res = await fetch('/api/admin/sync-hosxp', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          daily_sync_time: syncConfig.daily_sync_time,
+          auto_sync_enabled: syncConfig.auto_sync_enabled,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message || '💾 บันทึกเวลาซิงก์ข้อมูลประจำวันเรียบร้อยแล้ว!');
+        if (data.config) setSyncConfig(data.config);
+      }
+    } catch (err) {
+      alert('❌ เกิดข้อผิดพลาดในการบันทึกเวลาซิงก์');
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
   // Uptime Counter
   const [uptimeSeconds, setUptimeSeconds] = useState(8420);
 
@@ -343,6 +421,119 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+        </div>
+
+        {/* Card 1.5: Superadmin Daily Sync & Offline Backup Control Card */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          <div className="border-l-4 border-l-emerald-600 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <RefreshCw className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">การซิงก์ข้อมูลอัตโนมัติประจำวัน (HOSxP ➔ Supabase Daily Sync)</p>
+                <p className="text-xs text-slate-400 mt-0.5">สำรองข้อมูลผู้ป่วย NCDs และนัดหมายเข้า Supabase สำหรับใช้กรณีออฟไลน์/เซิร์ฟเวอร์ LAN ปิด</p>
+              </div>
+            </div>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full border ${
+              syncConfig.auto_sync_enabled
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-amber-50 text-amber-800 border-amber-200'
+            }`}>
+              {syncConfig.auto_sync_enabled ? '🟢 เปิดใช้งาน Auto-Sync' : '⏸️ ปิด Auto-Sync'}
+            </span>
+          </div>
+
+          <div className="p-6 space-y-5 text-xs">
+            {/* Last Sync Status Banner */}
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">สถานะการซิงก์ล่าสุด (Last Synced Status)</span>
+                <span className="text-sm font-extrabold text-slate-800 mt-0.5 block">
+                  {syncConfig.last_synced_at
+                    ? `อัปเดตล่าสุดเมื่อ ${new Date(syncConfig.last_synced_at).toLocaleString('th-TH')}`
+                    : 'ยังไม่มีประวัติการซิงก์ข้อมูล'}
+                </span>
+                {syncConfig.synced_count > 0 && (
+                  <span className="text-xs text-teal-700 font-bold mt-0.5 block">
+                    ซิงก์สำเร็จรวม {syncConfig.synced_count} รายการ
+                  </span>
+                )}
+              </div>
+
+              {/* Instant Manual Sync Button */}
+              <button
+                type="button"
+                onClick={handleManualSyncNow}
+                disabled={triggeringSync}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <RefreshCw className={`w-4 h-4 ${triggeringSync ? 'animate-spin' : ''}`} />
+                <span>{triggeringSync ? 'กำลังซิงก์ข้อมูล...' : '⚡ ซิงก์ข้อมูลเข้า Supabase ทันที (Sync Now)'}</span>
+              </button>
+            </div>
+
+            {/* Sync Feedback Message */}
+            {syncFeedback && (
+              <div
+                className={`p-3.5 rounded-xl text-xs font-bold border flex items-center gap-2 ${
+                  syncFeedback.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}
+              >
+                {syncFeedback.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+                <span>{syncFeedback.message}</span>
+              </div>
+            )}
+
+            {/* Superadmin Schedule Controls Form */}
+            <form onSubmit={handleSaveSyncSchedule} className="pt-2 border-t border-slate-100 space-y-4">
+              <h4 className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-teal-600" />
+                <span>กำหนดเวลาการซิงก์ข้อมูลประจำวัน (Superadmin Schedule Controls)</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">เลือกเวลาซิงก์ข้อมูลประจำวัน (Daily Sync Time)</label>
+                  <input
+                    type="time"
+                    value={syncConfig.daily_sync_time}
+                    onChange={(e) => setSyncConfig({ ...syncConfig, daily_sync_time: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-1 block">ช่วงเวลาแนะนำ: 02:00 - 04:00 น. (ช่วงภาระงานเซิร์ฟเวอร์ต่ำสุด)</span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">สวิตช์เปิด/ปิดการซิงก์อัตโนมัติ (Auto-Sync Toggle)</label>
+                  <div className="flex items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setSyncConfig({ ...syncConfig, auto_sync_enabled: !syncConfig.auto_sync_enabled })}
+                      className={`px-4 py-2.5 rounded-xl font-bold transition-all border cursor-pointer ${
+                        syncConfig.auto_sync_enabled
+                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                          : 'bg-slate-200 text-slate-700 border-slate-300'
+                      }`}
+                    >
+                      {syncConfig.auto_sync_enabled ? '🟢 เปิดการซิงก์อัตโนมัติ' : '🔴 ปิดการซิงก์อัตโนมัติ'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  disabled={savingSchedule}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-teal-400 font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {savingSchedule ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>บันทึกตั้งเวลา Daily Sync</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Card 2: Google Sheets Connection */}
