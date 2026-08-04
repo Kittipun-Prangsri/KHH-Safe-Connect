@@ -23,16 +23,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ok', message: 'LINE Webhook endpoint verified successfully' }, { status: 200 });
     }
 
+    console.log(`📩 LINE Webhook Received ${events.length} event(s)`);
+
     for (const event of events) {
       const lineUserId = event.source?.userId;
       const replyToken = event.replyToken;
+
+      console.log(`💬 Event type: ${event.type}, userId: ${lineUserId}, text: ${event.message?.text}`);
 
       if (!replyToken || !lineUserId) continue;
 
       // Handle Follow event (When user adds LINE OA)
       if (event.type === 'follow') {
         const flexMsg = createRoleSelectionFlexMessage();
-        await sendLineReplyMessage(replyToken, [flexMsg]);
+        const res = await sendLineReplyMessage(replyToken, [flexMsg]);
+        console.log('📤 Reply follow result:', res);
         continue;
       }
 
@@ -143,7 +148,8 @@ export async function POST(req: NextRequest) {
 
         // Default fallback to Role Selection / Welcome Card
         const menuFlex = createRoleSelectionFlexMessage();
-        await sendLineReplyMessage(replyToken, [menuFlex]);
+        const res = await sendLineReplyMessage(replyToken, [menuFlex]);
+        console.log('📤 Reply message result:', res);
       }
     }
 

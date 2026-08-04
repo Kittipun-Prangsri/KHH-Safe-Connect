@@ -3,7 +3,8 @@ module.exports = {
     {
       name: 'khh-web',
       script: 'pnpm',
-      args: '--filter @khh/web start',
+      args: 'start',
+      cwd: './apps/web',
       env: {
         NODE_ENV: 'production',
         PORT: 5188,
@@ -12,7 +13,8 @@ module.exports = {
     {
       name: 'khh-api',
       script: 'pnpm',
-      args: '--filter @khh/api start',
+      args: 'start',
+      cwd: './apps/api',
       env: {
         NODE_ENV: 'production',
         PORT: 5003,
@@ -20,3 +22,4 @@ module.exports = {
     },
   ],
 };
+
