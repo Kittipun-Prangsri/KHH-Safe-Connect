@@ -89,9 +89,30 @@ export async function POST(req: NextRequest) {
         // Tile 2: "ยืนยันนัด"
         if (text === 'ยืนยันนัด' || text.includes('ยืนยันมาตามนัด')) {
           const binding = await getLineUserBinding(lineUserId);
-          const pName = binding ? binding.patientName : 'กิตติพงษ์ แก้วมณี';
-          const flex = createConfirmSuccessFlex(pName, '15 สิงหาคม 2026');
-          await sendLineReplyMessage(replyToken, [flex]);
+          if (binding) {
+            const appointments = await fetchPatientUpcomingAppointmentsFromHosxp(binding.hn);
+            if (appointments && appointments.length > 0) {
+              const realDate = appointments[0].appointmentDate;
+              const flex = createConfirmSuccessFlex(binding.patientName, realDate);
+              await sendLineReplyMessage(replyToken, [flex]);
+            } else {
+              await sendLineReplyMessage(replyToken, [
+                {
+                  type: 'text',
+                  text: `🗓️ คุณ${binding.patientName} (${binding.hn})\nท่านยังไม่มีรายการนัดหมายคงเหลือในระบบให้ยืนยันนัด ณ ขณะนี้ค่ะ`,
+                },
+              ]);
+            }
+          } else {
+            const promptFlex = createPatientRegistrationPromptFlex();
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: '⚠️ ยังไม่พบข้อมูลลงทะเบียนในระบบ กรุณากดลงทะเบียนระบุ HN หรือเลขบัตรประชาชนก่อนค่ะ',
+              },
+              promptFlex,
+            ]);
+          }
           continue;
         }
 

@@ -259,8 +259,8 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
  * 1. Tile 1: "นัดหมายของฉัน"
  */
 export function createMyAppointmentsFlex(
-  patientName: string = 'กิตติพงษ์ แก้วมณี',
-  hn: string = 'HN-98302',
+  patientName: string = 'ผู้ป่วย NCDs',
+  hn: string = 'HN-00000',
   appointments?: Array<{
     appointmentDate: string;
     appointmentTime: string;
@@ -270,14 +270,107 @@ export function createMyAppointmentsFlex(
     preparationNotes?: string;
   }>
 ) {
-  const mainApp = appointments && appointments.length > 0 ? appointments[0] : {
-    appointmentDate: '15 สิงหาคม 2026',
-    appointmentTime: '08:30 น.',
-    clinicName: 'คลินิกโรคเบาหวานและความดันโลหิตสูง (NCDs)',
-    doctorName: 'พญ. วรรณภา จิตดี',
-    cause: 'ตรวจติดตามระดับน้ำตาลสะสม HbA1c และรับยาประจำตัว',
-    preparationNotes: '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ',
-  };
+  // If NO active appointments exist in database for this patient, render 'No Appointments Found' Flex Card
+  if (!appointments || appointments.length === 0) {
+    return {
+      type: 'flex',
+      altText: `🗓️ รายการนัดหมาย: คุณ${patientName} (${hn}) - ยังไม่มีรายการนัดหมาย`,
+      contents: {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#0F766E',
+          paddingAll: 'lg',
+          contents: [
+            {
+              type: 'text',
+              text: '🗓️ รายการนัดหมายตรวจติดตาม',
+              color: '#FFFFFF',
+              size: 'md',
+              weight: 'bold',
+            },
+            {
+              type: 'text',
+              text: `คุณ${patientName} (${hn})`,
+              color: '#99F6E4',
+              size: 'xs',
+              weight: 'bold',
+              margin: 'xs',
+            },
+          ],
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          paddingAll: 'lg',
+          spacing: 'md',
+          contents: [
+            {
+              type: 'box',
+              layout: 'vertical',
+              backgroundColor: '#F8FAFC',
+              cornerRadius: 'md',
+              paddingAll: 'lg',
+              borderColor: '#E2E8F0',
+              borderWidth: '1px',
+              alignItems: 'center',
+              contents: [
+                {
+                  type: 'text',
+                  text: 'ℹ️ ไม่พบรายการนัดหมายถัดไป',
+                  size: 'sm',
+                  color: '#475569',
+                  weight: 'bold',
+                },
+                {
+                  type: 'text',
+                  text: `ขณะนี้ท่านยังไม่มีรายการนัดหมายตรวจติดตามในระบบ HOSxP ของโรงพยาบาลคลองหาดค่ะ`,
+                  size: 'xs',
+                  color: '#64748B',
+                  margin: 'md',
+                  wrap: true,
+                  align: 'center',
+                },
+                {
+                  type: 'text',
+                  text: `หากต้องการขอเลื่อนนัด หรือนัดหมายเพิ่มเติม สามารถกดปุ่ม [ติดต่อเจ้าหน้าที่] ด้านล่างได้เลยค่ะ`,
+                  size: 'xs',
+                  color: '#0F766E',
+                  margin: 'sm',
+                  wrap: true,
+                  align: 'center',
+                },
+              ],
+            },
+          ],
+        },
+        footer: {
+          type: 'box',
+          layout: 'horizontal',
+          spacing: 'sm',
+          paddingAll: 'md',
+          contents: [
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#0D9488',
+              height: 'sm',
+              action: {
+                type: 'message',
+                label: '💬 ติดต่อเจ้าหน้าที่',
+                text: 'ติดต่อเจ้าหน้าที่',
+              },
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  // Active appointment exists -> Render real appointment card
+  const mainApp = appointments[0];
 
   return {
     type: 'flex',
