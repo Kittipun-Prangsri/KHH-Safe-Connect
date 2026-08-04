@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendLineAppointmentReminder, sendLinePushTextMessage } from '@/lib/lineMessagingService';
 import { getHosxpPool } from '@/lib/hosxpClient';
-
+import { getLineUserIdByHn } from '@/lib/lineUserService';
 
 export const dynamic = 'force-dynamic';
-
 
 /**
  * Helper to process and send LINE Flex Message Reminders for upcoming NCDs appointments
@@ -38,6 +37,8 @@ async function processUpcomingNcdReminders() {
 
   let count3Days = 0;
   let count1Day = 0;
+  let sentCount = 0;
+  let unlinkedCount = 0;
   const processedRecipients: any[] = [];
 
   const today = new Date();
@@ -54,7 +55,6 @@ async function processUpcomingNcdReminders() {
     const dateStr = nextDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = r.nexttime ? `${r.nexttime} น.` : '08:30 น.';
 
-    // Generate prep notes
     let prepNotes = 'โปรดนำบัตรประชาชน สมุดประจำตัว NCDs และยาที่รับประทานประจำมาด้วยทุกครั้ง';
     const causeStr = (r.app_cause || '').toLowerCase();
     const clinicStr = (r.clinic_name || '').toLowerCase();
@@ -63,8 +63,9 @@ async function processUpcomingNcdReminders() {
       prepNotes = '⚠️ โปรดงดน้ำและอาหารทุกชนิดหลัง 20:00 น. คืนก่อนวันตรวจ (จิบน้ำบริสุทธิ์ได้เล็กน้อย) นำยาประจำตัวมาทานหลังเจาะเลือดเสร็จ';
     }
 
+    const hnFormatted = r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000';
     const patientData = {
-      hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
+      hn: hnFormatted,
       patientName: r.patient_name || 'ผู้ป่วย NCDs',
       appointmentDate: `${dateStr} (${is3DaysAhead ? 'เตือนล่วงหน้า 3 วัน' : 'เตือนล่วงหน้า 1 วัน'})`,
       appointmentTime: timeStr,
@@ -73,9 +74,21 @@ async function processUpcomingNcdReminders() {
       preparationNotes: prepNotes,
     };
 
-    // Send LINE Message (Use TEST_LINE_USER_ID or mock if user not linked)
-    const targetLineUserId = process.env.TEST_LINE_USER_ID || 'U_DEMO_LINE_USER';
-    const lineResult = await sendLineAppointmentReminder(targetLineUserId, patientData);
+    // Strict Filter: Find real LINE User ID bound to this patient's HN
+    const targetLineUserId = await getLineUserIdByHn(hnFormatted);
+
+    let lineStatus = 'unlinked_skipped';
+    if (targetLineUserId) {
+      const lineResult = await sendLineAppointmentReminder(targetLineUserId, patientData);
+      if (lineResult?.success) {
+        lineStatus = 'sent';
+        sentCount++;
+      } else {
+        lineStatus = 'failed';
+      }
+    } else {
+      unlinkedCount++;
+    }
 
     processedRecipients.push({
       hn: patientData.hn,
@@ -84,27 +97,41 @@ async function processUpcomingNcdReminders() {
       appointmentDate: dateStr,
       noticeType: is3DaysAhead ? 'เตือน 3 วันก่อนนัด' : 'เตือน 1 วันก่อนนัด',
       phone: r.phone || '-',
-      lineStatus: lineResult?.success ? 'sent' : 'queued',
+      lineStatus,
+      targetLineUserId: targetLineUserId || 'ยังไม่ผูก LINE',
     });
   }
 
   return {
     totalProcessed: rows.length,
+    sentCount,
+    unlinkedCount,
     sent3DaysCount: count3Days,
     sent1DayCount: count1Day,
     recipients: processedRecipients,
   };
 }
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
 
     // If messageText is provided, send direct staff reply to LINE user
     if (body.messageText) {
-      const targetLineUserId = process.env.TEST_LINE_USER_ID || 'U_DEMO_LINE_USER';
+      const hnFormatted = body.hn || '';
+      const patientName = body.patientName || 'ผู้ป่วย';
       const staffRole = body.staffRole || 'เจ้าหน้าที่สุขภาพ';
       const staffName = body.staffName || 'เจ้าหน้าที่';
-      const patientName = body.patientName || 'ผู้ป่วย';
+
+      // Find real LINE User ID bound to patient's HN
+      const targetLineUserId = (await getLineUserIdByHn(hnFormatted)) || body.lineUserId;
+
+      if (!targetLineUserId) {
+        return NextResponse.json({
+          status: 'error',
+          message: `⚠️ ผู้ป่วย คุณ${patientName} (${hnFormatted}) ยังไม่ได้ผูกบัญชี LINE ไม่สามารถส่งข้อความได้`,
+        }, { status: 400 });
+      }
 
       const formattedMessage = `💬 [คำตอบจาก ${staffRole}]\nเรียน คุณ${patientName}\n\n${body.messageText}\n\n---\n✍️ ${staffName}\n🏥 คลินิก NCDs โรงพยาบาลคลองหาด`;
 
@@ -113,7 +140,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         status: 'success',
         timestamp: new Date().toISOString(),
-        message: `💬 ส่งข้อความจาก [${staffRole}] หาคุณ ${patientName} สำเร็จ`,
+        message: `💬 ส่งข้อความจาก [${staffRole}] หาคุณ ${patientName} (${hnFormatted}) สำเร็จ`,
         result,
       });
     }

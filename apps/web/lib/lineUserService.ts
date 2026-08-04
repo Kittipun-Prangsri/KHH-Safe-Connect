@@ -266,3 +266,41 @@ export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Pro
   // Return empty array if patient has no upcoming appointments (No fake mock data)
   return [];
 }
+
+/**
+ * Find bound LINE User ID for a given patient HN (Checking In-Memory & Supabase)
+ * Returns null if the patient has not bound their LINE account yet.
+ */
+export async function getLineUserIdByHn(hn: string): Promise<string | null> {
+  if (!hn) return null;
+  const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+  const cleanHn = hn.trim().replace(/^HN-/i, '');
+
+  // 1. Search in-memory store
+  for (const [lineId, binding] of lineUserBindingStore.entries()) {
+    if (binding.hn === formattedHn || binding.hn.replace(/^HN-/i, '') === cleanHn) {
+      return lineId;
+    }
+  }
+
+  // 2. Search Supabase patient_line_users table
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('patient_line_users')
+        .select('line_user_id')
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
+        .maybeSingle();
+
+      if (data && !error && data.line_user_id) {
+        return data.line_user_id;
+      }
+    } catch (err) {
+      console.warn('⚠️ Error searching LINE User ID by HN in Supabase:', err);
+    }
+  }
+
+  return null;
+}
+
