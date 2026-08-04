@@ -90,20 +90,29 @@ export async function GET(
     }
 
     // Calculate CVD Risk level dynamically based on Vitals
-    let cvdRiskLevel: 'low' | 'moderate' | 'high' | 'very_high' = 'low';
-    let cvdRiskText = '🟢 เสี่ยงต่ำ (<10%)';
+    let cvdRiskLevel: 'low' | 'moderate' | 'high' | 'very_high' | 'extremely_high' = 'low';
+    let cvdRiskStage = 'ระยะที่ 1 (เสี่ยงต่ำ <10%)';
+    let cvdRiskText = '🟢 ระยะที่ 1: เสี่ยงต่ำ (<10%) - ประเมินพฤติกรรมสุขภาพ';
+
     const latestBps = rows && rows[0] ? Number(rows[0].bps) : null;
     const latestFbs = rows && rows[0] ? Number(rows[0].fbs) : null;
 
-    if (latestBps && latestBps >= 160) {
+    if (latestBps && latestBps >= 180) {
+      cvdRiskLevel = 'extremely_high';
+      cvdRiskStage = 'ระยะที่ 4 (เสี่ยงสูงรุนแรง ≥40%)';
+      cvdRiskText = '🔴 ระยะที่ 4: เสี่ยงสูงระดับรุนแรง (≥40%) - ต้องคุมความดัน/ไขมันด่วนพิเศษ';
+    } else if (latestBps && latestBps >= 160) {
       cvdRiskLevel = 'very_high';
-      cvdRiskText = '🔴 เสี่ยงสูงมาก (≥30%) - ต้องควบคุมความดันด่วน';
+      cvdRiskStage = 'ระยะที่ 3 (เสี่ยงสูงมาก 30-39%)';
+      cvdRiskText = '🔴 ระยะที่ 3: เสี่ยงสูงมาก (30-39%) - ต้องควบคุมความดันด่วน';
     } else if ((latestBps && latestBps >= 140) || (latestFbs && latestFbs >= 160)) {
       cvdRiskLevel = 'high';
-      cvdRiskText = '🟠 เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด';
+      cvdRiskStage = 'ระยะที่ 2 (เสี่ยงสูง 20-29%)';
+      cvdRiskText = '🟠 ระยะที่ 2: เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด';
     } else if ((latestBps && latestBps >= 130) || (latestFbs && latestFbs >= 130)) {
       cvdRiskLevel = 'moderate';
-      cvdRiskText = '🟡 เสี่ยงปานกลาง (10-19%)';
+      cvdRiskStage = 'ระยะที่ 1 (เสี่ยงปานกลาง 10-19%)';
+      cvdRiskText = '🟡 ระยะที่ 1: เสี่ยงปานกลาง (10-19%) - ติดตามอาการทุก 3-6 เดือน';
     }
 
     // Screening Status (Eye, Foot, Smoking, Alcohol, CVD Risk & EKG)
@@ -119,6 +128,7 @@ export async function GET(
       alcoholStatus: 'ไม่ดื่มสุรา',
       alcoholResult: '🟢 ไม่ดื่มสุรา / ปราศจากแอลกอฮอล์',
       cvdRiskLevel,
+      cvdRiskStage,
       cvdRiskText,
       ekgScreened: true,
       ekgScreenDate: 'ปี 2569',

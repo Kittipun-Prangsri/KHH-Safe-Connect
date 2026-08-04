@@ -471,9 +471,16 @@ export default function PatientsPage() {
                     <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
                       <span className="text-lg">🫀</span>
                       <div>
-                        <span className="font-bold text-slate-800 text-xs block">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (Thai CVD Risk)</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-800 text-xs block">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (Thai CVD Risk)</span>
+                          {patientScreening?.cvdRiskStage && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                              {patientScreening.cvdRiskStage}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] font-extrabold text-teal-800 block mt-0.5">
-                          {patientScreening?.cvdRiskText || '🟢 เสี่ยงต่ำ (<10%) - ประเมิน Thai CV Risk Score'}
+                          {patientScreening?.cvdRiskText || '🟠 ระยะที่ 2: เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด'}
                         </span>
                       </div>
                     </div>
