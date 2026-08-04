@@ -515,16 +515,16 @@ export default function PatientsPage() {
                       <span className="text-xs font-extrabold text-amber-900">{patientLabs?.fbs || '125 mg/dL'}</span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">eGFR (การทำงานไต)</span>
-                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.egfr || '84.5 mL/min'}</span>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Creatinine (Lab 78)</span>
+                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.creatinine || '1.1 mg/dL'}</span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">LDL (ไขมันชั่ว)</span>
-                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.ldl || '110 mg/dL'}</span>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">eGFR (Lab 515)</span>
+                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.egfr || '78.24 mL/min'}</span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Urine (ผลปัสสาวะ)</span>
-                      <span className="text-xs font-extrabold text-emerald-800">{patientLabs?.urineProtein || 'Negative (ปกติ)'}</span>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">CrCl (Lab 519)</span>
+                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.crcl || '75.5 mL/min'}</span>
                     </div>
                   </div>
                 </div>
@@ -559,7 +559,7 @@ export default function PatientsPage() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-1">
                             <div className="bg-white p-2 rounded-lg border border-slate-200/60">
                               <span className="text-[10px] text-slate-400 block">ความดัน (BP)</span>
                               <span className="font-bold text-slate-800">{item.bp}</span>
@@ -575,6 +575,14 @@ export default function PatientsPage() {
                             <div className="bg-white p-2 rounded-lg border border-slate-200/60">
                               <span className="text-[10px] text-slate-400 block">วินิจฉัย (ICD-10)</span>
                               <span className="font-bold text-teal-700">{item.primaryDiagnosisICD10}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">Creatinine (Lab 78)</span>
+                              <span className="font-bold text-slate-800">{patientLabs?.creatinine || '-'}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">eGFR (Lab 515)</span>
+                              <span className="font-bold text-slate-800">{patientLabs?.egfr || '-'}</span>
                             </div>
                           </div>
                         </div>

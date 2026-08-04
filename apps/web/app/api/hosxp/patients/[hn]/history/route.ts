@@ -56,24 +56,32 @@ export async function GET(
         labRows.forEach((r: any) => {
           const name = (r.lab_name || '').toLowerCase();
           const val = r.lab_order_result;
+          const code = String(r.lab_items_code || '');
+
           if (name.includes('hba1c') && !latestLabs.hba1c) latestLabs.hba1c = `${val} %`;
           if (name.includes('fbs') && !latestLabs.fbs) latestLabs.fbs = `${val} mg/dL`;
-          if ((name.includes('creatinine') || name === 'cr') && !latestLabs.creatinine) latestLabs.creatinine = `${val} mg/dL`;
-          if (name.includes('egfr') && !latestLabs.egfr) latestLabs.egfr = `${val} mL/min/1.73m²`;
+          if ((code === '78' || name.includes('creatinine') || name === 'cr') && !latestLabs.creatinine) latestLabs.creatinine = `${val} mg/dL`;
+          if ((code === '515' || name.includes('egfr')) && !latestLabs.egfr) latestLabs.egfr = `${val} mL/min/1.73m²`;
+          if ((code === '519' || name.includes('crcl')) && !latestLabs.crcl) latestLabs.crcl = `${val} mL/min`;
           if (name.includes('ldl') && !latestLabs.ldl) latestLabs.ldl = `${val} mg/dL`;
           if (name.includes('cholesterol') && !latestLabs.cholesterol) latestLabs.cholesterol = `${val} mg/dL`;
           if (name.includes('triglyceride') && !latestLabs.triglyceride) latestLabs.triglyceride = `${val} mg/dL`;
           if (name.includes('hdl') && !latestLabs.hdl) latestLabs.hdl = `${val} mg/dL`;
           if (name.includes('bun') && !latestLabs.bun) latestLabs.bun = `${val} mg/dL`;
           if (
-            (name.includes('microalbumin') ||
+            (code === '525' ||
+              code === '521' ||
+              code === '523' ||
+              code === '683' ||
+              code === '681' ||
+              name.includes('microalbumin') ||
               name.includes('protein') ||
               name.includes('urine') ||
               name.includes('ua') ||
               name.includes('alb')) &&
             !latestLabs.urineProtein
           ) {
-            latestLabs.urineProtein = val;
+            latestLabs.urineProtein = `${r.lab_name || 'Urine'}: ${val}`;
           }
         });
       }
