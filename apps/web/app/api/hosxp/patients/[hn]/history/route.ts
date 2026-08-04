@@ -65,7 +65,16 @@ export async function GET(
           if (name.includes('triglyceride') && !latestLabs.triglyceride) latestLabs.triglyceride = `${val} mg/dL`;
           if (name.includes('hdl') && !latestLabs.hdl) latestLabs.hdl = `${val} mg/dL`;
           if (name.includes('bun') && !latestLabs.bun) latestLabs.bun = `${val} mg/dL`;
-          if ((name.includes('microalbumin') || name.includes('protein')) && !latestLabs.urineProtein) latestLabs.urineProtein = val;
+          if (
+            (name.includes('microalbumin') ||
+              name.includes('protein') ||
+              name.includes('urine') ||
+              name.includes('ua') ||
+              name.includes('alb')) &&
+            !latestLabs.urineProtein
+          ) {
+            latestLabs.urineProtein = val;
+          }
         });
       }
     } catch (e) {

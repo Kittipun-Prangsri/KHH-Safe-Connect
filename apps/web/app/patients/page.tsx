@@ -505,7 +505,7 @@ export default function PatientsPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">HbA1c (น้ำตาลสะสม)</span>
                       <span className="text-xs font-extrabold text-amber-900">{patientLabs?.hba1c || '6.8 %'}</span>
@@ -521,6 +521,10 @@ export default function PatientsPage() {
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">LDL (ไขมันชั่ว)</span>
                       <span className="text-xs font-extrabold text-slate-800">{patientLabs?.ldl || '110 mg/dL'}</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Urine (ผลปัสสาวะ)</span>
+                      <span className="text-xs font-extrabold text-emerald-800">{patientLabs?.urineProtein || 'Negative (ปกติ)'}</span>
                     </div>
                   </div>
                 </div>
