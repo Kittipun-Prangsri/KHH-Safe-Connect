@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const events = body.events || [];
 
+    // Fast 200 OK response for LINE Developers "Verify" button test
+    if (!events || events.length === 0) {
+      return NextResponse.json({ status: 'ok', message: 'LINE Webhook endpoint verified successfully' }, { status: 200 });
+    }
+
     for (const event of events) {
       const lineUserId = event.source?.userId;
       const replyToken = event.replyToken;
