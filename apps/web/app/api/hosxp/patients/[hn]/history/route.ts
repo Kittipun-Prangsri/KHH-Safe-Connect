@@ -39,20 +39,25 @@ export async function GET(
       labDate: null,
     };
 
+    const labOrdersGrouped: any[] = [];
+
     try {
       const [labRows]: any = await pool.execute(
-        `SELECT lh.order_date, lh.order_time, CONVERT(li.lab_items_name USING utf8mb4) AS lab_name, lo.lab_order_result
+        `SELECT lh.lab_order_number, lh.order_date, lh.order_time, lo.lab_items_code, CONVERT(li.lab_items_name USING utf8mb4) AS lab_name, lo.lab_order_result, CONVERT(li.lab_items_normal_value USING utf8mb4) AS normal_value
          FROM lab_head lh
          INNER JOIN lab_order lo ON lh.lab_order_number = lo.lab_order_number
          INNER JOIN lab_items li ON lo.lab_items_code = li.lab_items_code
          WHERE lh.hn = ? AND lo.lab_order_result IS NOT NULL AND lo.lab_order_result != ''
          ORDER BY lh.order_date DESC, lh.order_time DESC
-         LIMIT 30`,
+         LIMIT 100`,
         [hn]
       );
 
       if (labRows && labRows.length > 0) {
         latestLabs.labDate = labRows[0].order_date ? new Date(labRows[0].order_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : null;
+        
+        const labOrderMap = new Map<string, any>();
+
         labRows.forEach((r: any) => {
           const name = (r.lab_name || '').toLowerCase();
           const val = r.lab_order_result;
@@ -83,6 +88,30 @@ export async function GET(
           ) {
             latestLabs.urineProtein = `${r.lab_name || 'Urine'}: ${val}`;
           }
+
+          // Group by lab_order_number for Lab History Modal
+          const orderNo = String(r.lab_order_number || '0');
+          const orderDate = r.order_date ? new Date(r.order_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
+          const orderTime = r.order_time || '-';
+
+          if (!labOrderMap.has(orderNo)) {
+            const newGroup = {
+              labOrderNumber: orderNo,
+              orderDate,
+              orderTime,
+              items: [],
+            };
+            labOrderMap.set(orderNo, newGroup);
+            labOrdersGrouped.push(newGroup);
+          }
+
+          const group = labOrderMap.get(orderNo);
+          group.items.push({
+            code: r.lab_items_code,
+            name: r.lab_name,
+            result: r.lab_order_result,
+            normalValue: r.normal_value || '-',
+          });
         });
       }
     } catch (e) {
@@ -189,6 +218,7 @@ export async function GET(
       count: history.length,
       history,
       latestLabs,
+      labOrdersGrouped,
       latestScreening,
       controlSummary: {
         isControlled,

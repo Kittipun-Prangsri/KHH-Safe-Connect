@@ -82,14 +82,6 @@ export default function PatientsPage() {
   const [newPatient, setNewPatient] = useState({
     hn: '',
     name: '',
-    age: '',
-    gender: 'ชาย',
-    phone: '',
-    diseases: ['DM'],
-    caregiver: '',
-    contactConsent: true,
-  });
-
   // Fetch Live Real Patients from HOSxP Database
   const fetchLiveHosxpPatients = async (query = '') => {
     setLoading(true);
@@ -116,6 +108,7 @@ export default function PatientsPage() {
     setLoadingHistory(true);
     setPatientHistory([]);
     setPatientLabs(null);
+    setLabOrdersGrouped([]);
     setPatientScreening(null);
     setControlSummary(null);
 
@@ -125,6 +118,7 @@ export default function PatientsPage() {
       if (data.success) {
         if (Array.isArray(data.history)) setPatientHistory(data.history);
         if (data.latestLabs) setPatientLabs(data.latestLabs);
+        if (Array.isArray(data.labOrdersGrouped)) setLabOrdersGrouped(data.labOrdersGrouped);
         if (data.latestScreening) setPatientScreening(data.latestScreening);
         if (data.controlSummary) setControlSummary(data.controlSummary);
       }
@@ -500,38 +494,57 @@ export default function PatientsPage() {
 
                 {/* 3. Latest Lab Results Section (labล่าสุด) */}
                 <div className="p-4 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <h4 className="font-extrabold text-amber-950 text-xs flex items-center gap-2">
                       <Stethoscope className="w-4 h-4 text-amber-600" />
                       <span>ผลตรวจทางห้องปฏิบัติการล่าสุด (Latest Lab Results จาก HOSxP)</span>
                     </h4>
-                    {patientLabs?.labDate && (
-                      <span className="text-[10px] text-amber-700 font-semibold bg-white px-2 py-0.5 rounded border border-amber-200">
-                        เจาะเลือดล่าสุด: {patientLabs.labDate}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {patientLabs?.labDate && (
+                        <span className="text-[10px] text-amber-700 font-semibold bg-white px-2 py-0.5 rounded border border-amber-200">
+                          เจาะเลือดล่าสุด: {patientLabs.labDate}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setShowLabModal(true)}
+                        className="text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 border border-amber-400/60 px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-800" />
+                        <span>🧪 ดูประวัติการสั่งแล็บและรายงานผล</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">HbA1c (น้ำตาลสะสม)</span>
-                      <span className="text-xs font-extrabold text-amber-900">{patientLabs?.hba1c || '6.8 %'}</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.hba1c ? 'text-amber-900' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.hba1c || 'ไม่ได้เจาะเลือด'}
+                      </span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">FBS (น้ำตางดน้ำ)</span>
-                      <span className="text-xs font-extrabold text-amber-900">{patientLabs?.fbs || '125 mg/dL'}</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.fbs ? 'text-amber-900' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.fbs || 'ไม่ได้เจาะเลือด'}
+                      </span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">Creatinine (Lab 78)</span>
-                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.creatinine || '1.1 mg/dL'}</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.creatinine ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.creatinine || 'ไม่ได้ตรวจ'}
+                      </span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">eGFR (Lab 515)</span>
-                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.egfr || '78.24 mL/min'}</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.egfr ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.egfr || 'ไม่ได้ตรวจ'}
+                      </span>
                     </div>
                     <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
                       <span className="text-[10px] text-slate-400 font-bold block uppercase">CrCl (Lab 519)</span>
-                      <span className="text-xs font-extrabold text-slate-800">{patientLabs?.crcl || '75.5 mL/min'}</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.crcl ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.crcl || 'ไม่ได้ตรวจ'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -696,6 +709,97 @@ export default function PatientsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+        {/* Lab Orders History & Report Modal */}
+        {showLabModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    <span>รายงานและประวัติการสั่งแล็บย้อนหลัง (Lab Orders Report)</span>
+                  </h3>
+                  <p className="text-xs text-amber-100 mt-0.5">
+                    ผู้ป่วย: <span className="font-bold text-white">{selectedPatient?.name}</span> ({selectedPatient?.hn})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowLabModal(false)}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+                {labOrdersGrouped.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200">
+                    <Database className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                    <p className="font-bold text-slate-600">ไม่พบประวัติใบสั่งแล็บย้อนหลังในระบบ HOSxP</p>
+                    <p className="text-xs text-slate-400 mt-1">ผู้ป่วยรายนี้ยังไม่มีประวัติการส่งเจาะแล็บหรือลงบันทึกในตาราง lab_head / lab_order</p>
+                  </div>
+                ) : (
+                  labOrdersGrouped.map((group, gIdx) => (
+                    <div key={gIdx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+                      {/* Order Group Header */}
+                      <div className="p-3 bg-amber-50/70 border-b border-amber-200/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
+                            ใบสั่งแล็บ No. {group.labOrderNumber}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700">
+                            📅 วันที่เจาะ: {group.orderDate} ({group.orderTime})
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          🟢 รายงานผลสำเร็จ
+                        </span>
+                      </div>
+
+                      {/* Items Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] text-slate-500 font-bold uppercase">
+                              <th className="py-2.5 px-4">รหัส</th>
+                              <th className="py-2.5 px-4">รายการตรวจทางห้องปฏิบัติการ</th>
+                              <th className="py-2.5 px-4 text-right">ผลการตรวจ</th>
+                              <th className="py-2.5 px-4 text-center">ค่าปกติอ้างอิง</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {group.items.map((item: any, iIdx: number) => (
+                              <tr key={iIdx} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-4 font-mono text-slate-400 text-[11px]">{item.code}</td>
+                                <td className="py-2.5 px-4 font-bold text-slate-800">{item.name}</td>
+                                <td className="py-2.5 px-4 text-right font-extrabold text-teal-700 bg-teal-50/30">
+                                  {item.result}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-slate-500 text-[11px]">
+                                  {item.normalValue || '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-white border-t border-slate-200 flex justify-end">
+                <button
+                  onClick={() => setShowLabModal(false)}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
             </div>
           </div>
         )}
