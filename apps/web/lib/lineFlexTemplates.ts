@@ -1154,7 +1154,7 @@ export function createMedicationAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ยาหลังอาหาร: ทานทันทีหลังอาหารเสร็จ 15-30 นาที',
+                text: '• ยาหลังอาหาร: ทานยาหลังอาหารทันทีหรือไม่เกิน 15-30 นาที',
                 size: 'xs',
                 color: '#334155',
                 margin: 'xs',
@@ -1162,7 +1162,7 @@ export function createMedicationAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ยาก่อนอาหาร: ทานก่อนอาหาร 15-30 นาที (ยาลดน้ำตาลต้องทานอาหารตามทันที)',
+                text: '• ยาก่อนอาหาร: ทานก่อนอาหาร30นาทีขึ้นไป (ยาเบาหวานต้องทานอาหารตามทันที)',
                 size: 'xs',
                 color: '#334155',
                 margin: 'xs',
