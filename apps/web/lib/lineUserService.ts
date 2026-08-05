@@ -17,8 +17,16 @@ export interface PatientAppointmentInfo {
   preparationNotes: string;
 }
 
+export interface LineUserBindingResult {
+  status: 'SUCCESS' | 'ALREADY_BOUND' | 'REBOUND_TRANSFERRED' | 'INVALID_VERIFICATION' | 'ERROR';
+  message: string;
+  hn: string;
+  patientName: string;
+  isCaregiver?: boolean;
+}
+
 /**
- * Get patient HN binding for a given LINE User ID (Checking In-Memory & Supabase)
+ * Enhanced LINE User ID Binding Validation & Duplicate Prevention Service
  */
 export async function getLineUserBinding(lineUserId: string) {
   if (!lineUserId) return null;
@@ -28,14 +36,17 @@ export async function getLineUserBinding(lineUserId: string) {
     return lineUserBindingStore.get(lineUserId)!;
   }
 
-  // 2. Check Supabase patient_line_users table if configured
+  // 2. Check Supabase patient_line_users table
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseAdminClient();
       const { data, error } = await supabase
         .from('patient_line_users')
-        .select('hn, patient_name, created_at')
+        .select('hn, patient_name, user_role, created_at')
         .eq('line_user_id', lineUserId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (data && !error) {
@@ -43,6 +54,7 @@ export async function getLineUserBinding(lineUserId: string) {
           hn: data.hn,
           patientName: data.patient_name || 'ผู้ป่วย รพ.คลองหาด',
           boundAt: data.created_at || new Date().toISOString(),
+          userRole: data.user_role || 'patient',
         };
         lineUserBindingStore.set(lineUserId, binding);
         return binding;
@@ -56,36 +68,83 @@ export async function getLineUserBinding(lineUserId: string) {
 }
 
 /**
- * Bind a LINE User ID to a specific HOSxP HN (Saving to In-Memory & Supabase)
+ * Bind a LINE User ID with strict duplicate prevention and conflict handling
  */
-export async function bindLineUserToHn(lineUserId: string, hn: string, patientName: string) {
-  if (!lineUserId || !hn) return false;
+export async function bindLineUserToHn(
+  lineUserId: string,
+  hn: string,
+  patientName: string,
+  options: { userRole?: 'patient' | 'caregiver'; overrideExisting?: boolean } = {}
+): Promise<LineUserBindingResult> {
+  if (!lineUserId || !hn) {
+    return { status: 'ERROR', message: 'ข้อมูลไม่ครบถ้วน', hn: '', patientName: '' };
+  }
 
   const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+  const userRole = options.userRole || 'patient';
+
+  // 1. Check if this exact LINE User ID is already bound to this HN
+  const existingUserBinding = await getLineUserBinding(lineUserId);
+  if (existingUserBinding && existingUserBinding.hn === formattedHn) {
+    return {
+      status: 'ALREADY_BOUND',
+      message: `บัญชี LINE นี้ถูกผูกกับผู้ป่วย ${patientName} (${formattedHn}) เรียบร้อยแล้ว`,
+      hn: formattedHn,
+      patientName,
+    };
+  }
+
+  // 2. Save/Update in-memory store
   const binding = {
     hn: formattedHn,
     patientName,
     boundAt: new Date().toISOString(),
+    userRole,
   };
-
   lineUserBindingStore.set(lineUserId, binding);
 
-  // Persist to Supabase if configured
+  // 3. Persist to Supabase with Duplicate Resolution Rules
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseAdminClient();
+
+      // If patient role, deactivate any older primary bindings for this HN to prevent orphaned duplicate accounts
+      if (userRole === 'patient' && options.overrideExisting) {
+        await supabase
+          .from('patient_line_users')
+          .update({ is_active: false, unbound_at: new Date().toISOString() })
+          .eq('hn', formattedHn)
+          .eq('is_primary', true);
+      }
+
       await supabase.from('patient_line_users').upsert({
         line_user_id: lineUserId,
         hn: formattedHn,
         patient_name: patientName,
+        user_role: userRole,
+        is_primary: userRole === 'patient',
+        is_active: true,
         created_at: new Date().toISOString(),
+      });
+
+      // Audit Log
+      await supabase.from('line_binding_audit_logs').insert({
+        line_user_id: lineUserId,
+        target_hn: formattedHn,
+        action_type: options.overrideExisting ? 'REBIND_TRANSFER' : userRole === 'caregiver' ? 'CAREGIVER_ADD' : 'BIND_SUCCESS',
+        reason: 'Successful LINE ID registration verification',
       });
     } catch (err) {
       console.warn('⚠️ Error persisting LINE user binding to Supabase:', err);
     }
   }
 
-  return true;
+  return {
+    status: options.overrideExisting ? 'REBOUND_TRANSFERRED' : 'SUCCESS',
+    message: `ผูกบัญชีสำเร็จ: คุณ${patientName} (${formattedHn})`,
+    hn: formattedHn,
+    patientName,
+  };
 }
 
 /**
