@@ -2204,7 +2204,10 @@ export function createPatientInfoVerificationFlex(
   patientName: string = 'สมชาย ดีเลิศ',
   hn: string = 'HN-98302',
   cid: string = '1-2345-XXXXX-12-3',
-  registeredClinics: string[] = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
+  registeredClinics: string[] = [
+    '🩺 คลินิก 001: คลินิกเบาหวาน (DM)',
+    '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)',
+  ]
 ) {
   const clinicContents = registeredClinics.map((c) => ({
     type: 'box',

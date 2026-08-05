@@ -305,7 +305,10 @@ export async function POST(req: NextRequest) {
               patientMatch.patientName,
               patientMatch.hn,
               maskedCid,
-              patientMatch.clinics || ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
+              patientMatch.clinics || [
+                '🩺 คลินิก 001: คลินิกเบาหวาน (DM)',
+                '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)',
+              ]
             );
 
             // 2. Automatic Interactive Risk Menu (Appointment Check, CVD Risk, Advice, Contact Staff)

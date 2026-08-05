@@ -176,11 +176,11 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       const p = rows[0];
 
       // Query registered chronic clinics from HOSxP clinicmember
-      let clinics = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
+      let clinics = ['🩺 คลินิก 001: คลินิกเบาหวาน (DM)', '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)'];
       try {
         const [clinicRows]: any = await pool.execute(
           `
-          SELECT DISTINCT CONVERT(c.name USING utf8mb4) AS clinic_name
+          SELECT DISTINCT cm.clinic, CONVERT(c.name USING utf8mb4) AS clinic_name
           FROM clinicmember cm
           LEFT JOIN clinic c ON cm.clinic = c.clinic
           WHERE cm.hn = ? AND cm.clinic IS NOT NULL
@@ -189,7 +189,10 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
         );
 
         if (clinicRows && clinicRows.length > 0) {
-          clinics = clinicRows.map((cr: any) => `🩺 ${cr.clinic_name || 'คลินิก NCDs'}`);
+          clinics = clinicRows.map((cr: any) => {
+            const codePrefix = cr.clinic ? `คลินิก ${cr.clinic}: ` : '';
+            return `🩺 ${codePrefix}${cr.clinic_name || 'คลินิก NCDs'}`;
+          });
         }
       } catch (err) {
         // Fallback default NCDs clinic list
