@@ -1090,6 +1090,182 @@ export function createDietAdviceFlex() {
   };
 }
 
+/**
+ * 6.2 Sub-Tile: "คำแนะนำการใช้ยาและข้อควรระวัง" (Medication Advice Flex)
+ */
+export function createMedicationAdviceFlex() {
+  return {
+    type: 'flex',
+    altText: '💊 คำแนะนำการใช้ยาและข้อควรระวังสำหรับผู้ป่วย NCDs - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0284C7',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '💊 คำแนะนำการใช้ยาและข้อควรระวัง',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'สำหรับผู้ป่วยกลุ่มโรค NCDs (รพ.คลองหาด)',
+            color: '#E0F2FE',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0F9FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BAE6FD',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '💊 การรับประทานยาอย่างถูกวิธี',
+                size: 'xs',
+                color: '#0369A1',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• ทานยาตามแพทย์สั่งอย่างเคร่งครัด ห้ามหยุดยาหรือปรับขนาดยาเอง',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ยาหลังอาหาร: ทานทันทีหลังอาหารเสร็จ 15-30 นาที',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ยาก่อนอาหาร: ทานก่อนอาหาร 15-30 นาที (ยาลดน้ำตาลต้องทานอาหารตามทันที)',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFFBEB',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FDE68A',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '⚠️ ข้อควรระวังและข้อปฏิบัติตัว',
+                size: 'xs',
+                color: '#92400E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• หากลืมทานยา: ให้ทานทันทีที่นึกได้ แต่ถ้าใกล้เวลาอาหารมื้อถัดไปให้ข้ามมื้อที่ลืม (ห้ามเพิ่มยาเป็น 2 เท่าเด็ดขาด)',
+                size: 'xs',
+                color: '#78350F',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• สังเกตอาการแพ้ยา: ผื่นคัน ปากบวม ตาบวม หายใจลำบาก ให้หยุดยาแล้วมาพบแพทย์ทันที',
+                size: 'xs',
+                color: '#78350F',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 คำแนะนำจากงานเภสัชกรรม',
+                size: 'xs',
+                color: '#475569',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'นำซองยาเดิม ยาสมุนไพร และอาหารเสริมที่ทานอยู่มาแสดงต่อเภสัชกรทุกครั้งที่มาตรวจตามนัด',
+                size: 'xs',
+                color: '#64748B',
+                wrap: true,
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#2563EB',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💊 คุยกับเภสัชกร',
+              text: 'คุยกับเภสัชกร',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+
 
 /**
  * Generate Role Selection Flex Message (Separating Patient vs Admin/Staff)

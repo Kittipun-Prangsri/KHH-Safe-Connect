@@ -19,6 +19,7 @@ import {
   createPreparationGuideFlex,
   createHealthEducationMenuFlex,
   createDietAdviceFlex,
+  createMedicationAdviceFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -129,7 +130,14 @@ export async function POST(req: NextRequest) {
         }
 
         // Tile 4: "ติดต่อเจ้าหน้าที่"
-        if (text === 'ติดต่อเจ้าหน้าที่' || text.includes('คุยกับพยาบาล') || text.includes('พยาบาล') || text.includes('นักโภชนา') || text.includes('โภชนาการ')) {
+        if (
+          text === 'ติดต่อเจ้าหน้าที่' ||
+          text.includes('คุยกับพยาบาล') ||
+          text.includes('พยาบาล') ||
+          text.includes('นักโภชนา') ||
+          text.includes('โภชนาการ') ||
+          text.includes('เภสัช')
+        ) {
           const flex = createContactStaffFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
@@ -145,10 +153,21 @@ export async function POST(req: NextRequest) {
         // Sub-Tile 6.1: "คำแนะนำการรับประทานอาหาร"
         if (
           text === 'คำแนะนำการรับประทานอาหาร' ||
-          text.includes('รับประทานอาหาร') ||
-          text.includes('โภชนาการ')
+          text.includes('รับประทานอาหาร')
         ) {
           const flex = createDietAdviceFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.2: "คำแนะนำการใช้ยา"
+        if (
+          text === 'คำแนะนำการใช้ยา' ||
+          text.includes('การใช้ยา') ||
+          text.includes('ข้อควรระวัง') ||
+          text.includes('ปรึกษายา')
+        ) {
+          const flex = createMedicationAdviceFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }

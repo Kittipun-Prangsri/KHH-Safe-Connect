@@ -25,7 +25,11 @@ function mergeLiveLineMessages(conversations: any[]) {
         phone: '-',
         cid: '-',
         subject: `[LINE Message] ${liveMsg.text}`,
-        category: liveMsg.text.includes('โภชนา') ? 'ปรึกษาโภชนาการ' : 'ติดต่อเจ้าหน้าที่',
+        category: liveMsg.text.includes('โภชนา')
+          ? 'ปรึกษาโภชนาการ'
+          : liveMsg.text.includes('ยา') || liveMsg.text.includes('เภสัช')
+          ? 'สอบถามการใช้ยา'
+          : 'ติดต่อเจ้าหน้าที่',
         priority: 'high',
         unreadCount: 1,
         lastMessageTime: liveMsg.timestamp,
@@ -37,6 +41,9 @@ function mergeLiveLineMessages(conversations: any[]) {
       target.lastMessageTime = liveMsg.timestamp;
       if (liveMsg.text.includes('โภชนา')) {
         target.category = 'ปรึกษาโภชนาการ';
+        target.subject = `[LINE Message] ${liveMsg.text}`;
+      } else if (liveMsg.text.includes('ยา') || liveMsg.text.includes('เภสัช')) {
+        target.category = 'สอบถามการใช้ยา';
         target.subject = `[LINE Message] ${liveMsg.text}`;
       }
     }
