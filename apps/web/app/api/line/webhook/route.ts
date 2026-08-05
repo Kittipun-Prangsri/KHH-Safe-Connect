@@ -22,6 +22,7 @@ import {
   createMedicationAdviceFlex,
   createPatientInfoVerificationFlex,
   createRiskAssessmentAndMenuFlex,
+  createPharmacistFormPromptFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -170,6 +171,18 @@ export async function POST(req: NextRequest) {
           text.includes('ปรึกษายา')
         ) {
           const flex = createMedicationAdviceFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.2.1: "แบบฟอร์มข้อมูลคนไข้สำหรับประกอบการปรึกษากับเภสัช"
+        if (
+          text === 'แบบฟอร์มข้อมูลคนไข้สำหรับประกอบการปรึกษากับเภสัช' ||
+          text.includes('แบบฟอร์มข้อมูลคนไข้') ||
+          text.includes('ประกอบการปรึกษากับเภสัช') ||
+          text.includes('แบบฟอร์มปรึกษาเภสัช')
+        ) {
+          const flex = createPharmacistFormPromptFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }

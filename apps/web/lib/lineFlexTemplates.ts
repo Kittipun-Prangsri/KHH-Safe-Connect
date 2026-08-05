@@ -1241,6 +1241,17 @@ export function createMedicationAdviceFlex() {
           {
             type: 'button',
             style: 'primary',
+            color: '#0284C7',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📋 แบบฟอร์มข้อมูลปรึกษาเภสัช',
+              uri: 'https://docs.google.com/forms/d/e/1FAIpQLScj3L97ewiNHY8-lYZG3Bjse4UotPa65nxDGCQSYAVc6CL_fA/viewform?pli=1',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
             color: '#2563EB',
             height: 'sm',
             action: {
@@ -1264,6 +1275,129 @@ export function createMedicationAdviceFlex() {
     },
   };
 }
+
+/**
+ * Generate Pharmacist Consultation Patient Info Form Prompt Flex Card
+ */
+export function createPharmacistFormPromptFlex() {
+  return {
+    type: 'flex',
+    altText: '📋 แบบฟอร์มข้อมูลคนไข้สำหรับประกอบการปรึกษากับเภสัชกร',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0284C7',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📋 แบบฟอร์มข้อมูลปรึกษาเภสัชกร',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'งานเภสัชกรรม โรงพยาบาลคลองหาด',
+            color: '#E0F2FE',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'โปรดพิมพ์ระบุรายละเอียดข้อมูลดังต่อไปนี้ส่งกลับมาในแชทนี้ได้ทันทีค่ะ:',
+            size: 'xs',
+            color: '#334155',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0F9FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BAE6FD',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '1. รายการยาประจำตัว หรือยาที่กำลังรับประทานอยู่',
+                size: 'xs',
+                color: '#0369A1',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '2. อาการผิดปกติ ปัญหา หรือคำถามเรื่องยาที่ต้องการปรึกษา',
+                size: 'xs',
+                color: '#0369A1',
+                weight: 'bold',
+                margin: 'sm',
+              },
+              {
+                type: 'text',
+                text: '3. ประวัติการแพ้ยา หรือผลข้างเคียงที่เคยพบ (ถ้ามี)',
+                size: 'xs',
+                color: '#0369A1',
+                weight: 'bold',
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'text',
+            text: '💡 ข้อความของท่านจะถูกส่งตรงถึงเภสัชกรประจำคลินิก และจะทำการตอบกลับผ่าน LINE นี้โดยเร็วที่สุดค่ะ',
+            size: 'xs',
+            color: '#0284C7',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0284C7',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📋 กรอกแบบฟอร์ม Google Form',
+              uri: 'https://docs.google.com/forms/d/e/1FAIpQLScj3L97ewiNHY8-lYZG3Bjse4UotPa65nxDGCQSYAVc6CL_fA/viewform?pli=1',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💬 พิมพ์ข้อความถึงเภสัชกร',
+              text: 'คุยกับเภสัชกร',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
 
 
 
