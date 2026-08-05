@@ -357,20 +357,28 @@ export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Pro
 /**
  * Find bound LINE User ID for a given patient HN (Checking In-Memory & Supabase)
  * Returns null if the patient has not bound their LINE account yet.
- */
 export async function getLineUserIdByHn(hn: string): Promise<string | null> {
   if (!hn) return null;
   const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
   const cleanHn = hn.trim().replace(/^HN-/i, '');
 
-  // 1. Search in-memory store
+  // 1. Search in-memory binding store
   for (const [lineId, binding] of lineUserBindingStore.entries()) {
     if (binding.hn === formattedHn || binding.hn.replace(/^HN-/i, '') === cleanHn) {
       return lineId;
     }
   }
 
-  // 2. Search Supabase patient_line_users table
+  // 2. Search in-memory live incoming messages store
+  for (const msg of liveIncomingMessagesStore) {
+    if (msg.hn === formattedHn || msg.hn.replace(/^HN-/i, '') === cleanHn) {
+      if (msg.lineUserId && !msg.lineUserId.startsWith('SIMULATED')) {
+        return msg.lineUserId;
+      }
+    }
+  }
+
+  // 3. Search Supabase patient_line_users table
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseAdminClient();
@@ -378,13 +386,32 @@ export async function getLineUserIdByHn(hn: string): Promise<string | null> {
         .from('patient_line_users')
         .select('line_user_id')
         .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
-        .maybeSingle();
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (data && !error && data.line_user_id) {
-        return data.line_user_id;
+      if (data && data.length > 0 && !error && data[0].line_user_id) {
+        return data[0].line_user_id;
       }
     } catch (err) {
-      console.warn('⚠️ Error searching LINE User ID by HN in Supabase:', err);
+      console.warn('⚠️ Error searching LINE User ID by HN in patient_line_users:', err);
+    }
+
+    // 4. Search Supabase patient_line_messages table fallback
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('patient_line_messages')
+        .select('line_user_id')
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0 && !error && data[0].line_user_id) {
+        return data[0].line_user_id;
+      }
+    } catch (err) {
+      console.warn('⚠️ Error searching LINE User ID by HN in patient_line_messages:', err);
     }
   }
 
