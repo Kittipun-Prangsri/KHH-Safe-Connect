@@ -902,6 +902,238 @@ export function createHealthEducationMenuFlex() {
               uri: 'https://docs.google.com/forms/d/e/1FAIpQLSddhwdT8RDyYBQ1AaTJfUVQXhJfXhyyJUASIfSSLk2z-JwVzg/viewform',
             },
           },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#EA580C',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🏃 5. การออกกำลังกายส่งเสริมสุขภาพ',
+              text: 'คำแนะนำการออกกำลังกาย',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 6.4 Sub-Tile: "การออกกำลังกายส่งเสริมสุขภาพ" (Exercise Advice Flex)
+ */
+export function createExerciseAdviceFlex() {
+  return {
+    type: 'flex',
+    altText: '🏃 คำแนะนำการออกกำลังกายสำหรับผู้ป่วย NCDs - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#EA580C',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🏃 การออกกำลังกายส่งเสริมสุขภาพ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: 'คำแนะนำสำหรับผู้ป่วย NCDs โรงพยาบาลคลองหาด',
+            color: '#FED7AA',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            backgroundColor: '#FFF7ED',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '⏱️',
+                size: 'xl',
+                flex: 0,
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                margin: 'md',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'เป้าหมายการออกกำลังกาย',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#EA580C',
+                  },
+                  {
+                    type: 'text',
+                    text: 'อย่างน้อย 150 นาที/สัปดาห์ หรือ 30 นาที/วัน 5 วัน/สัปดาห์',
+                    size: 'xs',
+                    color: '#374151',
+                    wrap: true,
+                    margin: 'xs',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'separator',
+          },
+          {
+            type: 'text',
+            text: '✅ กิจกรรมที่แนะนำสำหรับผู้ป่วย NCDs',
+            size: 'sm',
+            weight: 'bold',
+            color: '#1F2937',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '🚶', size: 'sm', flex: 0 },
+                  {
+                    type: 'text',
+                    text: 'เดินเร็ว — ง่าย เหมาะกับทุกวัย ลดความดันโลหิตได้ดี',
+                    size: 'xs',
+                    color: '#374151',
+                    wrap: true,
+                    margin: 'md',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '🏊', size: 'sm', flex: 0 },
+                  {
+                    type: 'text',
+                    text: 'ว่ายน้ำ — ไม่กระแทกข้อ เหมาะกับผู้ที่มีน้ำหนักมาก',
+                    size: 'xs',
+                    color: '#374151',
+                    wrap: true,
+                    margin: 'md',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '🚴', size: 'sm', flex: 0 },
+                  {
+                    type: 'text',
+                    text: 'ปั่นจักรยาน — เพิ่มการทำงานของหัวใจและปอด',
+                    size: 'xs',
+                    color: '#374151',
+                    wrap: true,
+                    margin: 'md',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '🧘', size: 'sm', flex: 0 },
+                  {
+                    type: 'text',
+                    text: 'โยคะ / ไทชิ — ลดความเครียด เพิ่มความยืดหยุ่น',
+                    size: 'xs',
+                    color: '#374151',
+                    wrap: true,
+                    margin: 'md',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'separator',
+          },
+          {
+            type: 'text',
+            text: '⚠️ ข้อควรระวังก่อนออกกำลังกาย',
+            size: 'sm',
+            weight: 'bold',
+            color: '#DC2626',
+          },
+          {
+            type: 'text',
+            text: '• หยุดทันทีหากมีอาการเจ็บหน้าอก หอบเหนื่อย หรือหน้ามืด\n• ควรอบอุ่นร่างกาย 5-10 นาทีก่อนเริ่ม\n• ตรวจน้ำตาลในเลือดก่อนออกกำลังกาย (ผู้ป่วยเบาหวาน)\n• ดื่มน้ำให้เพียงพอตลอดการออกกำลังกาย',
+            size: 'xs',
+            color: '#374151',
+            wrap: true,
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDF4',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 เคล็ดลับ: เริ่มต้นจากระยะสั้น แล้วค่อยๆ เพิ่มความเข้มข้น อย่าหักโหมในวันแรก',
+                size: 'xs',
+                color: '#15803D',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#EA580C',
+            height: 'md',
+            action: {
+              type: 'message',
+              label: '🦴 นัดหมายกายภาพบำบัด',
+              text: 'ขอนัดหมายกายภาพบำบัด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🔙 กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
         ],
       },
     },

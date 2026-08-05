@@ -24,6 +24,7 @@ import {
   createRiskAssessmentAndMenuFlex,
   createPharmacistFormPromptFlex,
   createStressAndSleepAdviceFlex,
+  createExerciseAdviceFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -198,6 +199,31 @@ export async function POST(req: NextRequest) {
         ) {
           const flex = createStressAndSleepAdviceFlex();
           await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.4: "การออกกำลังกายส่งเสริมสุขภาพ"
+        if (
+          text === 'คำแนะนำการออกกำลังกาย' ||
+          text.includes('ออกกำลังกาย') ||
+          text.includes('ส่งเสริมสุขภาพ')
+        ) {
+          const flex = createExerciseAdviceFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.4.1: "นัดหมายกายภาพบำบัด"
+        if (
+          text.includes('นัดหมายกายภาพบำบัด') ||
+          text.includes('กายภาพบำบัด')
+        ) {
+          await sendLineReplyMessage(replyToken, [
+            {
+              type: 'text',
+              text: '🦴 นัดหมายกายภาพบำบัด\n\nทีมเจ้าหน้าที่ได้รับคำขอของคุณแล้ว จะติดต่อกลับเพื่อนัดหมายกายภาพบำบัดให้โดยเร็วที่สุด\n\n📞 สอบถามเพิ่มเติม: 06-2271-0099\n⏰ ในเวลาราชการ 08:00 - 16:00 น.',
+            },
+          ]);
           continue;
         }
 
