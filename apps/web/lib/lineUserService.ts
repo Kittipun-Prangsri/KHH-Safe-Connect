@@ -176,7 +176,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       const p = rows[0];
 
       // Query registered chronic clinics from HOSxP clinicmember
-      let clinics = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
+      let clinics: string[] = [];
       try {
         const [clinicRows]: any = await pool.execute(
           `
@@ -195,7 +195,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
           });
         }
       } catch (err) {
-        // Fallback default NCDs clinic list
+        clinics = [];
       }
 
       return {

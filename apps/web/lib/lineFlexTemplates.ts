@@ -2204,34 +2204,52 @@ export function createPatientInfoVerificationFlex(
   patientName: string = 'สมชาย ดีเลิศ',
   hn: string = 'HN-98302',
   cid: string = '1-2345-XXXXX-12-3',
-  registeredClinics: string[] = [
-    '🩺 คลินิก 001: คลินิกเบาหวาน (DM)',
-    '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)',
-  ]
+  registeredClinics: string[] = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
 ) {
-  const clinicContents = registeredClinics.map((c) => ({
-    type: 'box',
-    layout: 'horizontal',
-    margin: 'xs',
-    contents: [
-      {
-        type: 'text',
-        text: '•',
-        size: 'xs',
-        color: '#0F766E',
-        flex: 0,
-      },
-      {
-        type: 'text',
-        text: c,
-        size: 'xs',
-        color: '#0F172A',
-        weight: 'bold',
+  const hasClinics = registeredClinics && registeredClinics.length > 0;
+
+  const clinicContents = hasClinics
+    ? registeredClinics.map((c) => ({
+        type: 'box',
+        layout: 'horizontal',
         margin: 'xs',
-        flex: 1,
-      },
-    ],
-  }));
+        contents: [
+          {
+            type: 'text',
+            text: '•',
+            size: 'xs',
+            color: '#0F766E',
+            flex: 0,
+          },
+          {
+            type: 'text',
+            text: c,
+            size: 'xs',
+            color: '#0F172A',
+            weight: 'bold',
+            margin: 'xs',
+            flex: 1,
+          },
+        ],
+      }))
+    : [
+        {
+          type: 'box',
+          layout: 'horizontal',
+          margin: 'xs',
+          contents: [
+            {
+              type: 'text',
+              text: '⚠️ คุณไม่ได้เป็นคนไข้ของคลินิก',
+              size: 'xs',
+              color: '#DC2626',
+              weight: 'bold',
+              margin: 'xs',
+              wrap: true,
+            },
+          ],
+        },
+      ];
 
   return {
     type: 'flex',
