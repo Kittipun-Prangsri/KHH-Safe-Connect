@@ -5,6 +5,7 @@ import {
   bindLineUserToHn,
   findPatientByHnOrCidInHosxp,
   fetchPatientUpcomingAppointmentsFromHosxp,
+  recordIncomingLineMessage,
 } from '@/lib/lineUserService';
 import {
   createRoleSelectionFlexMessage,
@@ -17,6 +18,7 @@ import {
   createContactStaffFlex,
   createPreparationGuideFlex,
   createHealthEducationMenuFlex,
+  createDietAdviceFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -50,6 +52,9 @@ export async function POST(req: NextRequest) {
       // Handle Message event
       if (event.type === 'message' && event.message.type === 'text') {
         const text = event.message.text.trim();
+
+        // Save incoming patient message to conversation log for Reply web portal
+        await recordIncomingLineMessage(lineUserId, text);
 
         // --------------------------------------------------------
         // Rich Menu 6 Tile Interactions
@@ -124,7 +129,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Tile 4: "ติดต่อเจ้าหน้าที่"
-        if (text === 'ติดต่อเจ้าหน้าที่' || text.includes('คุยกับพยาบาล') || text.includes('พยาบาล')) {
+        if (text === 'ติดต่อเจ้าหน้าที่' || text.includes('คุยกับพยาบาล') || text.includes('พยาบาล') || text.includes('นักโภชนา') || text.includes('โภชนาการ')) {
           const flex = createContactStaffFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
@@ -133,6 +138,17 @@ export async function POST(req: NextRequest) {
         // Tile 5: "การเตรียมตัวก่อนพบแพทย์"
         if (text === 'การเตรียมตัวก่อนพบแพทย์' || text.includes('เตรียมตัว') || text.includes('งดน้ำ')) {
           const flex = createPreparationGuideFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.1: "คำแนะนำการรับประทานอาหาร"
+        if (
+          text === 'คำแนะนำการรับประทานอาหาร' ||
+          text.includes('รับประทานอาหาร') ||
+          text.includes('โภชนาการ')
+        ) {
+          const flex = createDietAdviceFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }

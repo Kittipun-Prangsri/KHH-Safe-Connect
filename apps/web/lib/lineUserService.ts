@@ -304,3 +304,79 @@ export async function getLineUserIdByHn(hn: string): Promise<string | null> {
   return null;
 }
 
+export interface SavedLineMessage {
+  id: string;
+  lineUserId: string;
+  hn: string;
+  patientName: string;
+  text: string;
+  timestamp: string;
+  createdAt: string;
+}
+
+const liveIncomingMessagesStore: SavedLineMessage[] = [];
+
+/**
+ * Record incoming patient message from LINE Webhook
+ */
+export async function recordIncomingLineMessage(lineUserId: string, text: string) {
+  if (!lineUserId || !text) return null;
+
+  const binding = await getLineUserBinding(lineUserId);
+  const hn = binding?.hn || 'HN-UNBOUND';
+  const patientName = binding?.patientName || 'ผู้ป่วย (ยังไม่ได้ผูก HN)';
+  const now = new Date();
+
+  const msg: SavedLineMessage = {
+    id: `msg-live-${now.getTime()}-${Math.random().toString(36).substring(2, 7)}`,
+    lineUserId,
+    hn,
+    patientName,
+    text,
+    timestamp: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+    createdAt: now.toISOString(),
+  };
+
+  liveIncomingMessagesStore.unshift(msg);
+  if (liveIncomingMessagesStore.length > 200) {
+    liveIncomingMessagesStore.pop();
+  }
+
+  // Also persist to Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      await supabase.from('patient_line_messages').insert({
+        line_user_id: lineUserId,
+        hn,
+        patient_name: patientName,
+        message_text: text,
+        created_at: now.toISOString(),
+      });
+    } catch (err) {
+      console.warn('⚠️ Error logging LINE message to Supabase:', err);
+    }
+  }
+
+  return msg;
+}
+
+/**
+ * Get all live incoming LINE messages stored in memory/Supabase
+ */
+export function getAllIncomingLineMessages(): SavedLineMessage[] {
+  return [...liveIncomingMessagesStore];
+}
+
+/**
+ * Get incoming LINE messages for a specific HN
+ */
+export function getIncomingLineMessagesForHn(hn: string): SavedLineMessage[] {
+  if (!hn) return [];
+  const cleanHn = hn.trim().replace(/^HN-/i, '');
+  return liveIncomingMessagesStore.filter(
+    (m) => m.hn === hn || m.hn.replace(/^HN-/i, '') === cleanHn
+  );
+}
+
+

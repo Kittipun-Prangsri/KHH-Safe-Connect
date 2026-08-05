@@ -1,8 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getAllIncomingLineMessages } from '@/lib/lineUserService';
 
 export const dynamic = 'force-dynamic';
+
+function mergeLiveLineMessages(conversations: any[]) {
+  const liveMessages = getAllIncomingLineMessages();
+  if (!liveMessages || liveMessages.length === 0) return conversations;
+
+  const convMap = new Map<string, any>();
+  for (const c of conversations) {
+    convMap.set(c.hn, c);
+  }
+
+  for (const liveMsg of liveMessages) {
+    let target = convMap.get(liveMsg.hn);
+
+    if (!target) {
+      target = {
+        id: `conv-live-${liveMsg.hn}`,
+        hn: liveMsg.hn,
+        patientName: liveMsg.patientName,
+        phone: '-',
+        cid: '-',
+        subject: `[LINE Message] ${liveMsg.text}`,
+        category: liveMsg.text.includes('โภชนา') ? 'ปรึกษาโภชนาการ' : 'ติดต่อเจ้าหน้าที่',
+        priority: 'high',
+        unreadCount: 1,
+        lastMessageTime: liveMsg.timestamp,
+        messages: [],
+      };
+      convMap.set(liveMsg.hn, target);
+    } else {
+      target.unreadCount += 1;
+      target.lastMessageTime = liveMsg.timestamp;
+      if (liveMsg.text.includes('โภชนา')) {
+        target.category = 'ปรึกษาโภชนาการ';
+        target.subject = `[LINE Message] ${liveMsg.text}`;
+      }
+    }
+
+    const exists = target.messages.some((m: any) => m.id === liveMsg.id);
+    if (!exists) {
+      target.messages.push({
+        id: liveMsg.id,
+        sender: 'patient',
+        senderName: liveMsg.patientName,
+        text: liveMsg.text,
+        time: liveMsg.timestamp,
+      });
+    }
+  }
+
+  return Array.from(convMap.values());
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,6 +124,7 @@ export async function GET(request: NextRequest) {
           };
         });
 
+        conversations = mergeLiveLineMessages(conversations);
         return NextResponse.json({ success: true, count: conversations.length, source: 'hosxp', conversations });
       }
     } catch (hosxpError) {
@@ -120,6 +173,7 @@ export async function GET(request: NextRequest) {
             };
           });
 
+          conversations = mergeLiveLineMessages(conversations);
           return NextResponse.json({ success: true, count: conversations.length, source: 'supabase', conversations });
         }
       } catch (sbError) {
@@ -127,7 +181,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, count: 0, conversations: [] });
+    conversations = mergeLiveLineMessages([]);
+    return NextResponse.json({ success: true, count: conversations.length, conversations });
   } catch (error: any) {
     console.error('❌ Conversations API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

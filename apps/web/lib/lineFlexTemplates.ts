@@ -699,7 +699,7 @@ export function createContactStaffFlex() {
           },
           {
             type: 'text',
-            text: '📞 เบอร์โทรศัพท์: 06-2271-0099 (ในเวลาราชการ 08:30 - 16:30 น.)',
+            text: '📞 เบอร์โทรศัพท์: 06-2271-0099 (ในเวลาราชการ 08:00 - 16:00 น.)',
             size: 'xs',
             color: '#64748B',
             wrap: true,
@@ -906,6 +906,190 @@ export function createHealthEducationMenuFlex() {
     },
   };
 }
+
+/**
+ * 6.1 Sub-Tile: "คำแนะนำการรับประทานอาหาร" (Diet & Nutrition Education Flex)
+ */
+export function createDietAdviceFlex() {
+  return {
+    type: 'flex',
+    altText: '🥗 คำแนะนำการรับประทานอาหารสำหรับผู้ป่วย NCDs - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#16A34A',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🥗 คำแนะนำการรับประทานอาหาร',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'สำหรับผู้ป่วยกลุ่มโรค NCDs (รพ.คลองหาด)',
+            color: '#DCFCE7',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDF4',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BBF7D0',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🍽️ สูตรจัดจานอาหาร 2 : 1 : 1',
+                size: 'xs',
+                color: '#15803D',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• ผัก 2 ส่วน: ผักใบเขียว ผักต้ม (กากใยสูง ช่วยคุมน้ำตาล)',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• แป้ง 1 ส่วน: ข้าวกล้อง ข้าวซ้อมมือ ขนมปังโฮลวีต',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• เนื้อสัตว์ 1 ส่วน: ปลา อกไก่ เต้าหู้ ไข่ขาว ไขมันต่ำ',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEF2F2',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FECACA',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '⚠️ อาหารที่ควรหลีกเลี่ยง (ลด หวาน-มัน-เค็ม)',
+                size: 'xs',
+                color: '#B91C1C',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• งดเครื่องดื่มชงหวาน ชานม น้ำอัดลม ขนมหวาน',
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ลดอาหารรสเค็มจัด ผงชูรส อาหารแปรรูป/หมักดอง',
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• เลี่ยงของทอด กะทิ ขนมอบที่มีไขมันทรานส์',
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFFBEB',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FDE68A',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 ข้อแนะนำเพิ่มเติมจากทีมพยาบาล',
+                size: 'xs',
+                color: '#92400E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'ดื่มน้ำสะอาดวันละ 8-10 แก้ว และเคี้ยวอาหารช้าๆ อย่างน้อย 20 ครั้งต่อคำ เพื่อช่วยการย่อยและการดูดซึมน้ำตาลที่ดีขึ้น',
+                size: 'xs',
+                color: '#78350F',
+                wrap: true,
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🥗 คุยกับนักโภชนาการ',
+              text: 'คุยกับนักโภชนาการ',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
 
 /**
  * Generate Role Selection Flex Message (Separating Patient vs Admin/Staff)
