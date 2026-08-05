@@ -176,7 +176,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       const p = rows[0];
 
       // Query registered chronic clinics from HOSxP clinicmember
-      let clinics = ['🩺 คลินิก 001: คลินิกเบาหวาน (DM)', '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)'];
+      let clinics = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
       try {
         const [clinicRows]: any = await pool.execute(
           `
