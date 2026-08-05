@@ -874,9 +874,9 @@ export function createHealthEducationMenuFlex() {
             color: '#0D9488',
             height: 'sm',
             action: {
-              type: 'uri',
+              type: 'message',
               label: '🧘 2. ความเครียดและการนอน',
-              uri: 'https://checkin.dmh.go.th/main/index.php?type=1',
+              text: 'คำแนะนำความเครียดและการนอน',
             },
           },
           {
@@ -1397,6 +1397,175 @@ export function createPharmacistFormPromptFlex() {
     },
   };
 }
+
+/**
+ * 6.3 Sub-Tile: "คำแนะนำการจัดการความเครียดและการนอนหลับ" (Stress & Sleep Advice Flex)
+ */
+export function createStressAndSleepAdviceFlex() {
+  return {
+    type: 'flex',
+    altText: '🧘 คำแนะนำการจัดการความเครียดและการนอนหลับ - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0D9488',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🧘 คำแนะนำความเครียดและการนอน',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'สำหรับผู้ป่วยกลุ่มโรค NCDs (รพ.คลองหาด)',
+            color: '#CCFBF1',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '😴 ข้อปฏิบัติตัวเพื่อการนอนหลับที่ดี (Sleep Hygiene)',
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• เข้านอนและตื่นนอนให้เป็นเวลาเดียวกันทุกวัน (ควรก่อน 22:00 น.)',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• งดใช้อุปกรณ์สมาร์ทโฟน/แท็บเล็ต/จอคอมก่อนนอนอย่างน้อย 30 นาที',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• หลีกเลี่ยงกาแฟ ชา น้ำอัดลม เครื่องดื่มชูกำลัง หลังเวลา 14:00 น.',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• จัดห้องนอนให้มืด เงียบสบาย และอากาศถ่ายเทได้ดี',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F3E8FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E9D5FF',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🧘 การผ่อนคลายและจัดการความเครียดสะสม',
+                size: 'xs',
+                color: '#6B21A8',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• ความเครียดกระตุ้นฮอร์โมน คอร์ติซอล (Cortisol) ทำให้ระดับน้ำตาลในเลือดและความดันสูงขึ้นอย่างรวดเร็ว',
+                size: 'xs',
+                color: '#581C87',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ฝึกการหายใจลึก: สูดลมหายใจเข้าลึก 4 วินาที กลั้นไว้ 4 วินาที และผ่อนลมหายใจออกช้าๆ 6 วินาที (ทำซ้ำ 5-10 ครั้ง)',
+                size: 'xs',
+                color: '#581C87',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🧠 ประเมินความเครียด DMH Check-in',
+              uri: 'https://checkin.dmh.go.th/main/index.php?type=1',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#7C3AED',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 ปรึกษาสุขภาพจิต / พยาบาล',
+              text: 'ปรึกษาสุขภาพจิต',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
 
 
 

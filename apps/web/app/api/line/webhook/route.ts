@@ -23,6 +23,7 @@ import {
   createPatientInfoVerificationFlex,
   createRiskAssessmentAndMenuFlex,
   createPharmacistFormPromptFlex,
+  createStressAndSleepAdviceFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -183,6 +184,18 @@ export async function POST(req: NextRequest) {
           text.includes('แบบฟอร์มปรึกษาเภสัช')
         ) {
           const flex = createPharmacistFormPromptFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // Sub-Tile 6.3: "คำแนะนำความเครียดและการนอน"
+        if (
+          text === 'คำแนะนำความเครียดและการนอน' ||
+          text.includes('ความเครียด') ||
+          text.includes('การนอนหลับ') ||
+          text.includes('การนอน')
+        ) {
+          const flex = createStressAndSleepAdviceFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
