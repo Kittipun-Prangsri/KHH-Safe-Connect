@@ -717,11 +717,22 @@ export function createContactStaffFlex() {
           {
             type: 'button',
             style: 'primary',
+            color: '#DC2626',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🚨 อาการฉุกเฉินที่ต้องพบแพทย์',
+              text: 'อาการฉุกเฉิน',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
             color: '#0D9488',
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📞 โทรหาคลินิก NCDs',
+              label: '📞 โทรหาคลินิก NCDs (06-2271-0099)',
               uri: 'tel:0622710099',
             },
           },
