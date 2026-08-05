@@ -702,6 +702,7 @@ export function createContactStaffFlex() {
             text: '📞 เบอร์โทรศัพท์: 06-2271-0099 \n (ในเวลาราชการ 08:00 - 16:00 น.)',
             size: 'xs',
             color: '#64748B',
+            align: 'center',
             wrap: true,
             margin: 'md',
           },
