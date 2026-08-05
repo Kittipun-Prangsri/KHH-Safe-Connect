@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendLineAppointmentReminder, sendLinePushTextMessage } from '@/lib/lineMessagingService';
+import { sendLineAppointmentReminder, sendLinePushTextMessage, sendStaffReplyToPatient } from '@/lib/lineMessagingService';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getLineUserIdByHn } from '@/lib/lineUserService';
 import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -134,9 +134,39 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
+      // Fetch stored replyToken from Supabase (saved when patient last messaged)
+      let storedReplyToken: string | null = null;
+      let replyTokenExpiresAt: string | null = null;
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = getSupabaseAdminClient();
+          const cleanHn = hnFormatted.replace(/^HN-/i, '');
+          const { data } = await supabase
+            .from('patient_line_users')
+            .select('latest_reply_token, reply_token_expires_at')
+            .or(`hn.eq.${hnFormatted},hn.eq.${cleanHn}`)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data && data.length > 0) {
+            storedReplyToken = data[0].latest_reply_token || null;
+            replyTokenExpiresAt = data[0].reply_token_expires_at || null;
+          }
+        } catch (err) {
+          console.warn('⚠️ Could not fetch stored replyToken:', err);
+        }
+      }
+
       const formattedMessage = `💬 [คำตอบจาก ${staffRole}]\nเรียน คุณ${patientName}\n\n${body.messageText}\n\n---\n✍️ ${staffName}\n🏥 คลินิก NCDs โรงพยาบาลคลองหาด`;
 
-      const result = await sendLinePushTextMessage(targetLineUserId, formattedMessage);
+      // Use smart reply: Try LINE Reply API (free quota) → fallback to Push
+      const result = await sendStaffReplyToPatient({
+        lineUserId: targetLineUserId,
+        replyToken: storedReplyToken,
+        replyTokenExpiresAt,
+        text: formattedMessage,
+        hn: hnFormatted,
+      });
 
       // Persist staff reply to Supabase for audit and history
       if (isSupabaseConfigured()) {
@@ -154,10 +184,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      if (!result.success) {
+        return NextResponse.json({
+          status: 'error',
+          message: result.quotaExceeded
+            ? `⚠️ LINE Push Message ติดโควต้าประจำเดือน ไม่สามารถส่งข้อความได้`
+            : `⚠️ ส่งข้อความไม่สำเร็จ: ${result.error || 'unknown error'}`,
+          result,
+        }, { status: 503 });
+      }
+
+      const methodLabel = result.method === 'reply' ? 'LINE Reply (ฟรี)' : result.method === 'push' ? 'LINE Push' : 'Simulated';
       return NextResponse.json({
         status: 'success',
         timestamp: new Date().toISOString(),
-        message: `💬 ส่งข้อความจาก [${staffRole}] หาคุณ ${patientName} (${hnFormatted}) สำเร็จ`,
+        message: `💬 ส่งข้อความจาก [${staffRole}] หาคุณ ${patientName} (${hnFormatted}) สำเร็จ [via ${methodLabel}]`,
+        method: result.method,
         result,
       });
     }

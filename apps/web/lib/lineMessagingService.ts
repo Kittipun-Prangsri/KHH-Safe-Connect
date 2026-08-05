@@ -281,3 +281,80 @@ export async function sendLinePushTextMessage(
   }
 }
 
+/**
+ * Send LINE Reply Text Message using replyToken (Free API — no quota cost)
+ */
+export async function sendLineReplyTextMessage(
+  replyToken: string,
+  text: string,
+  channelAccessToken?: string
+) {
+  return sendLineReplyMessage(replyToken, [{ type: 'text', text }], channelAccessToken);
+}
+
+/**
+ * Smart staff reply strategy:
+ *   1. Try LINE Reply API first using the stored replyToken (FREE — no quota)
+ *   2. Fall back to LINE Push Message if token is expired/missing
+ *
+ * replyToken is only valid ~30 seconds after patient's webhook event.
+ * For web dashboard replies (delayed response), Push will be used as fallback.
+ */
+export async function sendStaffReplyToPatient(params: {
+  lineUserId: string;
+  replyToken?: string | null;
+  replyTokenExpiresAt?: string | null;
+  text: string;
+  hn?: string;
+  channelAccessToken?: string;
+}): Promise<{
+  success: boolean;
+  method: 'reply' | 'push' | 'simulated' | 'failed';
+  quotaExceeded?: boolean;
+  error?: string;
+}> {
+  const { lineUserId, replyToken, replyTokenExpiresAt, text, hn } = params;
+
+  // Check if replyToken is still valid (within 25 seconds of expiry buffer)
+  const canUseReply =
+    replyToken &&
+    replyToken.length > 10 &&
+    replyToken !== '00000000000000000000000000000000' &&
+    replyToken !== '11111111111111111111111111111111' &&
+    (!replyTokenExpiresAt || new Date(replyTokenExpiresAt) > new Date());
+
+  if (canUseReply) {
+    console.log(`💬 Attempting LINE Reply API (free quota) for HN: ${hn || 'unknown'}`);
+    const replyResult = await sendLineReplyTextMessage(replyToken!, text, params.channelAccessToken);
+
+    if (replyResult.success && !replyResult.simulated) {
+      await logLineNotificationToSupabase({
+        lineUserId,
+        hn,
+        messageType: 'reply_text',
+        status: 'SUCCESS',
+      });
+      console.log(`✅ LINE Reply sent successfully (free quota) for HN: ${hn}`);
+      return { success: true, method: 'reply' };
+    }
+    // Token expired — fall through to Push
+    console.warn(`⚠️ LINE Reply failed (token expired), falling back to Push for HN: ${hn}`);
+  }
+
+  // Fallback: LINE Push Message
+  if (!lineUserId || lineUserId.startsWith('SIMULATED')) {
+    console.warn(`⚠️ No valid LINE User ID — simulating for HN: ${hn}`);
+    return { success: true, method: 'simulated' };
+  }
+
+  console.log(`📤 LINE Push Message (fallback) for staff reply to HN: ${hn}`);
+  const pushResult = await sendLinePushTextMessage(lineUserId, text, params.channelAccessToken);
+
+  if (pushResult.success) {
+    return { success: true, method: 'push' };
+  }
+  if ((pushResult as any).quotaExceeded) {
+    return { success: false, method: 'failed', quotaExceeded: true, error: 'LINE Push quota exceeded' };
+  }
+  return { success: false, method: 'failed', error: (pushResult as any).error };
+}

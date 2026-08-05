@@ -58,8 +58,9 @@ export async function POST(req: NextRequest) {
       if (event.type === 'message' && event.message.type === 'text') {
         const text = event.message.text.trim();
 
-        // Save incoming patient message to conversation log for Reply web portal
-        await recordIncomingLineMessage(lineUserId, text);
+        // Save incoming patient message + replyToken to conversation log for Reply web portal
+        // replyToken stored in Supabase patient_line_users so staff can use free LINE Reply API
+        await recordIncomingLineMessage(lineUserId, text, replyToken);
 
         // --------------------------------------------------------
         // Rich Menu 6 Tile Interactions

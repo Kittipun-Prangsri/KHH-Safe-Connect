@@ -432,9 +432,10 @@ export interface SavedLineMessage {
 const liveIncomingMessagesStore: SavedLineMessage[] = [];
 
 /**
- * Record incoming patient message from LINE Webhook
+ * Record incoming patient message from LINE Webhook and store replyToken for staff replies.
+ * The replyToken is stored in patient_line_users so staff can use LINE Reply API (free quota).
  */
-export async function recordIncomingLineMessage(lineUserId: string, text: string) {
+export async function recordIncomingLineMessage(lineUserId: string, text: string, replyToken?: string) {
   if (!lineUserId || !text) return null;
 
   const binding = await getLineUserBinding(lineUserId);
@@ -457,10 +458,11 @@ export async function recordIncomingLineMessage(lineUserId: string, text: string
     liveIncomingMessagesStore.pop();
   }
 
-  // Also persist to Supabase if configured
+  // Persist to Supabase if configured
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseAdminClient();
+      // 1. Store incoming message
       await supabase.from('patient_line_messages').insert({
         line_user_id: lineUserId,
         hn,
@@ -468,8 +470,19 @@ export async function recordIncomingLineMessage(lineUserId: string, text: string
         message_text: text,
         created_at: now.toISOString(),
       });
+      // 2. Store latest replyToken on patient_line_users for staff to use LINE Reply API (free quota)
+      if (replyToken && hn !== 'HN-UNBOUND') {
+        const tokenExpiresAt = new Date(now.getTime() + 25000).toISOString(); // 25-second window
+        await supabase
+          .from('patient_line_users')
+          .update({
+            latest_reply_token: replyToken,
+            reply_token_expires_at: tokenExpiresAt,
+          })
+          .or(`hn.eq.${hn},hn.eq.${hn.replace(/^HN-/i, '')}`);
+      }
     } catch (err) {
-      console.warn('⚠️ Error logging LINE message to Supabase:', err);
+      console.warn('⚠️ Error logging LINE message/token to Supabase:', err);
     }
   }
 
