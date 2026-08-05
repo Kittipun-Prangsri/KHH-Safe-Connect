@@ -1542,3 +1542,227 @@ export function createRegistrationSuccessFlex(
     },
   };
 }
+
+/**
+ * Generate Patient Info Verification Flex Card (Full Name, HN, CID, Registered Clinics)
+ */
+export function createPatientInfoVerificationFlex(
+  patientName: string = 'สมชาย ดีเลิศ',
+  hn: string = 'HN-98302',
+  cid: string = '1-2345-XXXXX-12-3',
+  registeredClinics: string[] = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
+) {
+  const clinicContents = registeredClinics.map((c) => ({
+    type: 'box',
+    layout: 'horizontal',
+    margin: 'xs',
+    contents: [
+      {
+        type: 'text',
+        text: '•',
+        size: 'xs',
+        color: '#0F766E',
+        flex: 0,
+      },
+      {
+        type: 'text',
+        text: c,
+        size: 'xs',
+        color: '#0F172A',
+        weight: 'bold',
+        margin: 'xs',
+        flex: 1,
+      },
+    ],
+  }));
+
+  return {
+    type: 'flex',
+    altText: `✅ ยืนยันข้อมูลผู้ป่วยสำเร็จ: คุณ${patientName} (${hn})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0D9488',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '✅ ยืนยันข้อมูลผู้ป่วยสำเร็จ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'โรงพยาบาลคลองหาด (HOSxP Verified)',
+            color: '#CCFBF1',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '👤 ข้อมูลผู้ป่วยลงทะเบียน',
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `คุณ${patientName}`,
+                size: 'md',
+                color: '#0F172A',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `${hn} | เลขบัตร: ${cid}`,
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🏥 คลินิกประจำที่ลงทะเบียนไว้:',
+                size: 'xs',
+                color: '#334155',
+                weight: 'bold',
+              },
+              ...clinicContents,
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate Automatic Risk & Interactive Menu Flex Card
+ */
+export function createRiskAssessmentAndMenuFlex() {
+  return {
+    type: 'flex',
+    altText: '⚡ เมนูบริการสุขภาพและความเสี่ยง (Risk Menu) - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0F172A',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '⚡ เมนูบริการและประเมินความเสี่ยง',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'โปรดเลือกรายการบริการที่ต้องการตรวจสอบ:',
+            color: '#94A3B8',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🗓️ เช็ควันนัดหมายตรวจติดตาม',
+              text: 'นัดหมายของฉัน',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#E11D48',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '❤️ ประเมินความเสี่ยง CVD Risk',
+              text: 'ประเมินความเสี่ยง',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#16A34A',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🥗 คำแนะนำอาหารและโภชนาการ',
+              text: 'คำแนะนำการรับประทานอาหาร',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0284C7',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💊 คำแนะนำการใช้ยาและข้อควรระวัง',
+              text: 'คำแนะนำการใช้ยา',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 ติดต่อเจ้าหน้าที่ / พยาบาล NCDs',
+              text: 'ติดต่อเจ้าหน้าที่',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+

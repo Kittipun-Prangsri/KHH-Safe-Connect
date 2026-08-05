@@ -20,6 +20,8 @@ import {
   createHealthEducationMenuFlex,
   createDietAdviceFlex,
   createMedicationAdviceFlex,
+  createPatientInfoVerificationFlex,
+  createRiskAssessmentAndMenuFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -209,18 +211,24 @@ export async function POST(req: NextRequest) {
             // Bind LINE User ID to matched HOSxP HN
             await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName);
 
-            const successFlex = createRegistrationSuccessFlex(
-              'patient',
+            // Mask 13-digit CID for security (e.g. 1-2345-XXXXX-12-3)
+            const rawCid = patientMatch.cid || text;
+            const maskedCid = rawCid.length === 13 
+              ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}` 
+              : rawCid;
+
+            // 1. Patient Info Verification Card (Full Name, HN, CID, Registered Clinic Types)
+            const infoFlex = createPatientInfoVerificationFlex(
               patientMatch.patientName,
               patientMatch.hn,
-              lineUserId
+              maskedCid,
+              patientMatch.clinics || ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
             );
 
-            // Immediately send registration success + their appointments card
-            const appointments = await fetchPatientUpcomingAppointmentsFromHosxp(patientMatch.hn);
-            const appFlex = createMyAppointmentsFlex(patientMatch.patientName, patientMatch.hn, appointments);
+            // 2. Automatic Interactive Risk Menu (Appointment Check, CVD Risk, Advice, Contact Staff)
+            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
 
-            await sendLineReplyMessage(replyToken, [successFlex, appFlex]);
+            await sendLineReplyMessage(replyToken, [infoFlex, riskMenuFlex]);
           } else {
             await sendLineReplyMessage(replyToken, [
               {

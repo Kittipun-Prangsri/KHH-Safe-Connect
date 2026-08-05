@@ -174,6 +174,27 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
 
     if (rows && rows.length > 0) {
       const p = rows[0];
+
+      // Query registered chronic clinics from HOSxP clinicmember
+      let clinics = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
+      try {
+        const [clinicRows]: any = await pool.execute(
+          `
+          SELECT DISTINCT CONVERT(c.name USING utf8mb4) AS clinic_name
+          FROM clinicmember cm
+          LEFT JOIN clinic c ON cm.clinic = c.clinic
+          WHERE cm.hn = ? AND cm.clinic IS NOT NULL
+        `,
+          [p.hn]
+        );
+
+        if (clinicRows && clinicRows.length > 0) {
+          clinics = clinicRows.map((cr: any) => `🩺 ${cr.clinic_name || 'คลินิก NCDs'}`);
+        }
+      } catch (err) {
+        // Fallback default NCDs clinic list
+      }
+
       return {
         found: true,
         hn: p.hn.startsWith('HN-') ? p.hn : `HN-${p.hn}`,
@@ -181,6 +202,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
         patientName: p.patient_name || 'ผู้ป่วย รพ.คลองหาด',
         phone: p.phone || '-',
         cid: p.cid || '-',
+        clinics,
       };
     }
   } catch (error) {
@@ -199,6 +221,11 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
         .maybeSingle();
 
       if (data && !error) {
+        const diseaseType = data.disease_type || data.clinic_name;
+        const clinics = diseaseType
+          ? diseaseType.split(',').map((d: string) => `🩺 คลินิก${d.trim()}`)
+          : ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
+
         return {
           found: true,
           hn: data.hn || formattedHn,
@@ -206,6 +233,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
           patientName: data.patient_name || 'ผู้ป่วย รพ.คลองหาด',
           phone: data.phone || '-',
           cid: data.cid || '-',
+          clinics,
         };
       }
     } catch (err) {
@@ -213,7 +241,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
     }
   }
 
-  return { found: false, hn: '', patientName: '' };
+  return { found: false, hn: '', patientName: '', clinics: [] };
 }
 
 /**
