@@ -23,6 +23,7 @@ import {
   createPatientInfoVerificationFlex,
   createRiskAssessmentAndMenuFlex,
   createPharmacistFormPromptFlex,
+  createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
@@ -157,12 +158,21 @@ export async function POST(req: NextRequest) {
 
         // Tile 4: "ติดต่อเจ้าหน้าที่"
         if (
+          text === 'คุยกับเภสัชกร' ||
+          text.includes('เภสัช') ||
+          text.includes('ห้องยา')
+        ) {
+          const flex = createContactPharmacistFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        if (
           text === 'ติดต่อเจ้าหน้าที่' ||
           text.includes('คุยกับพยาบาล') ||
           text.includes('พยาบาล') ||
           text.includes('นักโภชนา') ||
-          text.includes('โภชนาการ') ||
-          text.includes('เภสัช')
+          text.includes('โภชนาการ')
         ) {
           const flex = createContactStaffFlex();
           await sendLineReplyMessage(replyToken, [flex]);

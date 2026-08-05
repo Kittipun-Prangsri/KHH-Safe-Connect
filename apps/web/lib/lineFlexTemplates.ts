@@ -1521,6 +1521,113 @@ export function createMedicationAdviceFlex() {
 }
 
 /**
+ * 6.2.2 Flex Message: "ติดต่อเจ้าหน้าที่/เภสัชกร" (Contact Pharmacist / Pharmacy Flex)
+ */
+export function createContactPharmacistFlex() {
+  return {
+    type: 'flex',
+    altText: '💊 ติดต่อเจ้าหน้าที่/เภสัชกร - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#808B3D',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '💊 ติดต่อเจ้าหน้าที่/เภสัชกร',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'งานเภสัชกรรม โรงพยาบาลคลองหาด',
+            color: '#ECF3CF',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'ท่านสามารถโทรติดต่อสอบถาม หรือปรึกษาเรื่องยากับเภสัชกรได้ตามข้อมูลด้านล่างนี้ค่ะ',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F5F7EA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CFD89D',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📞 เบอร์โทรศัพท์: 098-256-2900',
+                size: 'sm',
+                color: '#596424',
+                weight: 'bold',
+                align: 'center',
+              },
+              {
+                type: 'text',
+                text: '(ในเวลาราชการ 08:00-16:00 น.)',
+                size: 'xs',
+                color: '#64748B',
+                align: 'center',
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#808B3D',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทรหาห้องยา',
+              uri: 'tel:0982562900',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
  * Generate Pharmacist Consultation Patient Info Form Prompt Flex Card
  */
 export function createPharmacistFormPromptFlex() {
