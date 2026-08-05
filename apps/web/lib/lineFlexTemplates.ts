@@ -699,7 +699,7 @@ export function createContactStaffFlex() {
           },
           {
             type: 'text',
-            text: '📞 เบอร์โทรศัพท์: 06-2271-0099 (ในเวลาราชการ 08:00 - 16:00 น.)',
+            text: '📞 เบอร์โทรศัพท์: 06-2271-0099 \n (ในเวลาราชการ 08:00 - 16:00 น.)',
             size: 'xs',
             color: '#64748B',
             wrap: true,
