@@ -357,6 +357,7 @@ export async function fetchPatientUpcomingAppointmentsFromHosxp(hn: string): Pro
 /**
  * Find bound LINE User ID for a given patient HN (Checking In-Memory & Supabase)
  * Returns null if the patient has not bound their LINE account yet.
+ */
 export async function getLineUserIdByHn(hn: string): Promise<string | null> {
   if (!hn) return null;
   const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendLineAppointmentReminder, sendLinePushTextMessage } from '@/lib/lineMessagingService';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getLineUserIdByHn } from '@/lib/lineUserService';
+import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,6 +137,22 @@ export async function POST(req: NextRequest) {
       const formattedMessage = `💬 [คำตอบจาก ${staffRole}]\nเรียน คุณ${patientName}\n\n${body.messageText}\n\n---\n✍️ ${staffName}\n🏥 คลินิก NCDs โรงพยาบาลคลองหาด`;
 
       const result = await sendLinePushTextMessage(targetLineUserId, formattedMessage);
+
+      // Persist staff reply to Supabase for audit and history
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = getSupabaseAdminClient();
+          await supabase.from('patient_line_messages').insert({
+            line_user_id: targetLineUserId,
+            hn: hnFormatted,
+            patient_name: patientName,
+            message_text: `💬 [ตอบกลับจาก ${staffRole} ${staffName}]: ${body.messageText}`,
+            created_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.warn('⚠️ Could not persist staff reply to Supabase:', err);
+        }
+      }
 
       return NextResponse.json({
         status: 'success',

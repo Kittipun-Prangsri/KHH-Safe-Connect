@@ -229,6 +229,7 @@ export default function ReplyPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hn: activeChat.hn,
+            lineUserId: (activeChat as any).lineUserId,
             patientName: activeChat.patientName,
             messageText: inputText,
             staffRole: currentRoleConfig.label,
@@ -238,9 +239,13 @@ export default function ReplyPage() {
 
         const data = await res.json();
         if (data.status === 'success') {
-          setSendSuccessToast(`💬 ส่งข้อความถึงคุณ ${activeChat.patientName} (${activeChat.hn}) ผ่าน LINE เรียบร้อยแล้ว!`);
+          if (data.result?.quotaExceeded) {
+            setSendSuccessToast(`💬 บันทึกข้อความการตอบกลับในระบบเรียบร้อยแล้ว (LINE Push ติดโควตาประจำเดือน)`);
+          } else {
+            setSendSuccessToast(`💬 ส่งข้อความตอบกลับถึงคุณ ${activeChat.patientName} (${activeChat.hn}) ผ่าน LINE เรียบร้อยแล้ว!`);
+          }
         } else {
-          setSendSuccessToast(data.message || `⚠️ ผู้ป่วยยังไม่ได้ผูกบัญชี LINE (บันทึกแชตไว้ในระบบเรียบร้อย)`);
+          setSendSuccessToast(data.message || `⚠️ บันทึกการตอบกลับในระบบเรียบร้อยแล้ว`);
         }
         setTimeout(() => setSendSuccessToast(null), 5000);
       } catch (err) {

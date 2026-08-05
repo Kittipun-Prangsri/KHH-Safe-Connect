@@ -5,8 +5,42 @@ import { getAllIncomingLineMessages } from '@/lib/lineUserService';
 
 export const dynamic = 'force-dynamic';
 
-function mergeLiveLineMessages(conversations: any[]) {
-  const liveMessages = getAllIncomingLineMessages();
+async function mergeLiveLineMessages(conversations: any[]) {
+  let liveMessages = getAllIncomingLineMessages() || [];
+
+  // Also fetch persisted patient_line_messages from Supabase
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('patient_line_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (data && !error && data.length > 0) {
+        const dbMsgs = data.map((m: any) => ({
+          id: m.id,
+          lineUserId: m.line_user_id,
+          hn: m.hn,
+          patientName: m.patient_name || 'ผู้ป่วย (LINE)',
+          text: m.message_text,
+          timestamp: new Date(m.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+          createdAt: m.created_at,
+        }));
+        // Merge without duplicates
+        const existingIds = new Set(liveMessages.map((m) => m.id));
+        for (const dbm of dbMsgs) {
+          if (!existingIds.has(dbm.id)) {
+            liveMessages.push(dbm);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Error querying patient_line_messages in conversations API:', err);
+    }
+  }
+
   if (!liveMessages || liveMessages.length === 0) return conversations;
 
   const convMap = new Map<string, any>();
@@ -21,6 +55,7 @@ function mergeLiveLineMessages(conversations: any[]) {
       target = {
         id: `conv-live-${liveMsg.hn}`,
         hn: liveMsg.hn,
+        lineUserId: liveMsg.lineUserId,
         patientName: liveMsg.patientName,
         phone: '-',
         cid: '-',
@@ -29,6 +64,8 @@ function mergeLiveLineMessages(conversations: any[]) {
           ? 'ปรึกษาโภชนาการ'
           : liveMsg.text.includes('ยา') || liveMsg.text.includes('เภสัช')
           ? 'สอบถามการใช้ยา'
+          : liveMsg.text.includes('เครียด') || liveMsg.text.includes('นอน')
+          ? 'ปรึกษาสุขภาพจิต'
           : 'ติดต่อเจ้าหน้าที่',
         priority: 'high',
         unreadCount: 1,
@@ -37,6 +74,7 @@ function mergeLiveLineMessages(conversations: any[]) {
       };
       convMap.set(liveMsg.hn, target);
     } else {
+      target.lineUserId = target.lineUserId || liveMsg.lineUserId;
       target.unreadCount += 1;
       target.lastMessageTime = liveMsg.timestamp;
       if (liveMsg.text.includes('โภชนา')) {
@@ -44,6 +82,9 @@ function mergeLiveLineMessages(conversations: any[]) {
         target.subject = `[LINE Message] ${liveMsg.text}`;
       } else if (liveMsg.text.includes('ยา') || liveMsg.text.includes('เภสัช')) {
         target.category = 'สอบถามการใช้ยา';
+        target.subject = `[LINE Message] ${liveMsg.text}`;
+      } else if (liveMsg.text.includes('เครียด') || liveMsg.text.includes('นอน')) {
+        target.category = 'ปรึกษาสุขภาพจิต';
         target.subject = `[LINE Message] ${liveMsg.text}`;
       }
     }
@@ -131,7 +172,7 @@ export async function GET(request: NextRequest) {
           };
         });
 
-        conversations = mergeLiveLineMessages(conversations);
+        conversations = await mergeLiveLineMessages(conversations);
         return NextResponse.json({ success: true, count: conversations.length, source: 'hosxp', conversations });
       }
     } catch (hosxpError) {
@@ -180,7 +221,7 @@ export async function GET(request: NextRequest) {
             };
           });
 
-          conversations = mergeLiveLineMessages(conversations);
+          conversations = await mergeLiveLineMessages(conversations);
           return NextResponse.json({ success: true, count: conversations.length, source: 'supabase', conversations });
         }
       } catch (sbError) {
@@ -188,7 +229,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    conversations = mergeLiveLineMessages([]);
+    conversations = await mergeLiveLineMessages([]);
     return NextResponse.json({ success: true, count: conversations.length, conversations });
   } catch (error: any) {
     console.error('❌ Conversations API Error:', error);
