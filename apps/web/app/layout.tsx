@@ -4,22 +4,28 @@ import './globals.css';
 
 const prompt = Prompt({
   weight: ['300', '400', '500', '600', '700', '800'],
-  subsets: ['thai', 'latin'],
+  subsets: ['latin'],
   display: 'swap',
   variable: '--font-prompt',
+  fallback: ['system-ui', 'sans-serif'],
+  adjustFontFallback: false,
 });
 
 const sarabun = Sarabun({
   weight: ['300', '400', '500', '600', '700', '800'],
-  subsets: ['thai', 'latin'],
+  subsets: ['latin'],
   display: 'swap',
   variable: '--font-sarabun',
+  fallback: ['system-ui', 'sans-serif'],
+  adjustFontFallback: false,
 });
 
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+  fallback: ['system-ui', 'sans-serif'],
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
