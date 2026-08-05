@@ -2302,3 +2302,215 @@ export function createRiskAssessmentAndMenuFlex() {
   };
 }
 
+/**
+ * Emergency Symptoms Flex — อาการฉุกเฉินที่ต้องพบแพทย์ทันที
+ * ใช้งาน: ผู้ป่วยกดปุ่ม "อาการฉุกเฉิน" หรือพิมพ์ "ฉุกเฉิน / อาการที่ต้องพบแพทย์"
+ */
+export function createEmergencySymptomsFlex() {
+  return {
+    type: 'flex',
+    altText: '🚨 อาการฉุกเฉินที่ต้องพบแพทย์ทันที — รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#B91C1C',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🚨 อาการฉุกเฉิน',
+            color: '#FFFFFF',
+            size: 'xl',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'ต้องพบแพทย์ทันที — อย่ารอนัดหมาย',
+            color: '#FECACA',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEF2F2',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FECACA',
+            borderWidth: '2px',
+            contents: [
+              {
+                type: 'text',
+                text: '❤️ อาการทางหัวใจและหลอดเลือด',
+                size: 'sm',
+                weight: 'bold',
+                color: '#B91C1C',
+              },
+              {
+                type: 'text',
+                text: '• เจ็บแน่นหน้าอก หรือเจ็บร้าวไปแขนซ้าย คอ กราม\n• ใจสั่น เต้นผิดจังหวะ หรือหัวใจเต้นเร็วมาก\n• หอบเหนื่อยรุนแรง แม้ขณะพัก\n• เป็นลม หมดสติ หรือหน้ามืดบ่อย',
+                size: 'xs',
+                color: '#374151',
+                wrap: true,
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFF7ED',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FED7AA',
+            borderWidth: '2px',
+            contents: [
+              {
+                type: 'text',
+                text: '🧠 อาการทางสมองและระบบประสาท',
+                size: 'sm',
+                weight: 'bold',
+                color: '#C2410C',
+              },
+              {
+                type: 'text',
+                text: '• แขนขาอ่อนแรงข้างใดข้างหนึ่งทันที\n• พูดไม่ออก ปากเบี้ยว หรือใบหน้าตก\n• ปวดศีรษะรุนแรงมาก เกิดขึ้นฉับพลัน\n• ตามองไม่เห็น หรือมองเห็นภาพซ้อน',
+                size: 'xs',
+                color: '#374151',
+                wrap: true,
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEFCE8',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FEF08A',
+            borderWidth: '2px',
+            contents: [
+              {
+                type: 'text',
+                text: '🩸 อาการน้ำตาลในเลือด (เบาหวาน)',
+                size: 'sm',
+                weight: 'bold',
+                color: '#A16207',
+              },
+              {
+                type: 'text',
+                text: '• น้ำตาลต่ำ: มือสั่น เหงื่อออกมาก ตัวเย็น ชัก\n• น้ำตาลสูง: หายใจหอบ กลิ่นปากผิดปกติ ซึม\n• หมดสติ ไม่รู้สึกตัว',
+                size: 'xs',
+                color: '#374151',
+                wrap: true,
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0F9FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BAE6FD',
+            borderWidth: '2px',
+            contents: [
+              {
+                type: 'text',
+                text: '💧 อาการความดันโลหิต',
+                size: 'sm',
+                weight: 'bold',
+                color: '#0369A1',
+              },
+              {
+                type: 'text',
+                text: '• ความดันสูงมาก (≥ 180/110 mmHg) ร่วมกับปวดศีรษะ\n• ความดันต่ำมาก + วูบ หรือหมดสติ\n• เลือดออกผิดปกติ หยุดไม่ได้',
+                size: 'xs',
+                color: '#374151',
+                wrap: true,
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFF1F2',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '⚡ หากเกิดอาการข้างต้น...',
+                size: 'xs',
+                weight: 'bold',
+                color: '#BE123C',
+              },
+              {
+                type: 'text',
+                text: 'โทรสายด่วนฉุกเฉิน 1669 ทันที หรือรีบมาห้องฉุกเฉิน รพ.คลองหาด อย่ารอนัดหมาย อย่าขับรถมาเอง',
+                size: 'xs',
+                color: '#374151',
+                wrap: true,
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#DC2626',
+            height: 'md',
+            action: {
+              type: 'uri',
+              label: '🚑 โทรฉุกเฉิน 1669 ทันที',
+              uri: 'tel:1669',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0F766E',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 ติดต่อ รพ.คลองหาด โดยตรง',
+              uri: 'tel:0622710099',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 แจ้งอาการให้เจ้าหน้าที่รับทราบ',
+              text: 'ติดต่อเจ้าหน้าที่',
+            },
+          },
+        ],
+      },
+    },
+  };
+}

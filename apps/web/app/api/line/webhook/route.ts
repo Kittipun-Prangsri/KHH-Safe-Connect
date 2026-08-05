@@ -25,6 +25,7 @@ import {
   createPharmacistFormPromptFlex,
   createStressAndSleepAdviceFlex,
   createExerciseAdviceFlex,
+  createEmergencySymptomsFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -131,6 +132,25 @@ export async function POST(req: NextRequest) {
         // Tile 3: "ขอเลื่อนนัด"
         if (text === 'ขอเลื่อนนัด' || text.includes('เลื่อนวันนัด')) {
           const flex = createRescheduleRequestFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        // 🚨 อาการฉุกเฉินที่ต้องพบแพทย์ทันที — ตรวจก่อนทุก Tile (highest priority)
+        if (
+          text.includes('ฉุกเฉิน') ||
+          text.includes('เจ็บหน้าอก') ||
+          text.includes('หมดสติ') ||
+          text.includes('ชัก') ||
+          text.includes('หอบเหนื่อย') ||
+          text.includes('ปวดศีรษะรุนแรง') ||
+          text.includes('อ่อนแรง') ||
+          text.includes('ปากเบี้ยว') ||
+          text.includes('อาการฉุกเฉิน') ||
+          text.includes('อาการที่ต้องพบแพทย์') ||
+          text === 'ฉุกเฉิน'
+        ) {
+          const flex = createEmergencySymptomsFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
