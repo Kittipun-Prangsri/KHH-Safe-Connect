@@ -76,15 +76,26 @@ export async function sendLineAppointmentReminder(
 
     if (!response.ok) {
       const errorText = await response.text();
+      const isQuotaExceeded = response.status === 429 || errorText.includes('monthly limit');
+
       await logLineNotificationToSupabase({
         lineUserId,
         hn: appointmentData.hn,
         messageType: 'push_flex',
         status: 'FAILED',
         httpStatus: response.status,
-        errorMessage: errorText,
+        errorMessage: isQuotaExceeded ? 'Monthly LINE Push quota limit reached (HTTP 429)' : errorText,
         latencyMs,
       });
+
+      if (isQuotaExceeded) {
+        console.warn(`⚠️ LINE Push quota exceeded (HTTP 429) for ${appointmentData.patientName} (${lineUserId})`);
+        return {
+          success: false,
+          quotaExceeded: true,
+          error: 'LINE Push Message monthly limit reached (HTTP 429). Use LINE Reply API or upgrade package.',
+        };
+      }
 
       throw new Error(`LINE API returned status ${response.status}: ${errorText}`);
     }
@@ -225,14 +236,26 @@ export async function sendLinePushTextMessage(
 
     if (!response.ok) {
       const errorText = await response.text();
+      const isQuotaExceeded = response.status === 429 || errorText.includes('monthly limit');
+
       await logLineNotificationToSupabase({
         lineUserId,
         messageType: 'push_text',
         status: 'FAILED',
         httpStatus: response.status,
-        errorMessage: errorText,
+        errorMessage: isQuotaExceeded ? 'Monthly LINE Push quota limit reached (HTTP 429)' : errorText,
         latencyMs,
       });
+
+      if (isQuotaExceeded) {
+        console.warn(`⚠️ LINE Push text quota exceeded (HTTP 429) for UID: ${lineUserId}`);
+        return {
+          success: false,
+          quotaExceeded: true,
+          error: 'LINE Push Message monthly limit reached (HTTP 429). Use LINE Reply API or upgrade package.',
+        };
+      }
+
       throw new Error(`LINE Push API status ${response.status}: ${errorText}`);
     }
 

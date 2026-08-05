@@ -1,8 +1,20 @@
-import { config } from 'dotenv';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), '.env.local') });
+// Load environment variables from .env.local natively
+const envPath = resolve(process.cwd(), '.env.local');
+if (existsSync(envPath)) {
+  const envConfig = readFileSync(envPath, 'utf8');
+  envConfig.split('\n').forEach((line) => {
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      const val = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+      if (!process.env[key.trim()]) {
+        process.env[key.trim()] = val;
+      }
+    }
+  });
+}
 
 import { getSupabaseAdminClient, isSupabaseConfigured } from '../lib/supabaseClient';
 import { sendLineAppointmentReminder, logLineNotificationToSupabase } from '../lib/lineMessagingService';
