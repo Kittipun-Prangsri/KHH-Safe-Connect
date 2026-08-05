@@ -1,14 +1,55 @@
 import { createAppointmentFlexMessage, AppointmentNotificationData } from './lineFlexTemplates';
+import { getSupabaseAdminClient, isSupabaseConfigured } from './supabaseClient';
+
+/**
+ * Log LINE Push / Reply notifications to Supabase line_push_logs table
+ */
+export async function logLineNotificationToSupabase(logData: {
+  lineUserId: string;
+  hn?: string;
+  messageType: 'push_flex' | 'push_text' | 'reply_flex' | 'reply_text';
+  status: 'SUCCESS' | 'FAILED' | 'SIMULATED';
+  httpStatus?: number;
+  errorMessage?: string;
+  latencyMs?: number;
+}) {
+  if (!isSupabaseConfigured()) return;
+
+  try {
+    const supabase = getSupabaseAdminClient();
+    await supabase.from('line_push_logs').insert({
+      line_user_id: logData.lineUserId,
+      hn: logData.hn || null,
+      message_type: logData.messageType,
+      status: logData.status,
+      http_status: logData.httpStatus || null,
+      error_message: logData.errorMessage || null,
+      latency_ms: logData.latencyMs || 0,
+      created_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('⚠️ Failed to log LINE push notification to Supabase:', err);
+  }
+}
 
 export async function sendLineAppointmentReminder(
   lineUserId: string,
   appointmentData: AppointmentNotificationData,
   channelAccessToken?: string
 ) {
-  const token = channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU=';
+  const token = (channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim();
+  const startTime = Date.now();
 
   if (!token) {
     console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN is missing. Returning simulated notification response.');
+    await logLineNotificationToSupabase({
+      lineUserId,
+      hn: appointmentData.hn,
+      messageType: 'push_flex',
+      status: 'SIMULATED',
+      errorMessage: 'LINE_CHANNEL_ACCESS_TOKEN missing',
+    });
+
     return {
       success: true,
       simulated: true,
@@ -31,10 +72,31 @@ export async function sendLineAppointmentReminder(
       }),
     });
 
+    const latencyMs = Date.now() - startTime;
+
     if (!response.ok) {
       const errorText = await response.text();
+      await logLineNotificationToSupabase({
+        lineUserId,
+        hn: appointmentData.hn,
+        messageType: 'push_flex',
+        status: 'FAILED',
+        httpStatus: response.status,
+        errorMessage: errorText,
+        latencyMs,
+      });
+
       throw new Error(`LINE API returned status ${response.status}: ${errorText}`);
     }
+
+    await logLineNotificationToSupabase({
+      lineUserId,
+      hn: appointmentData.hn,
+      messageType: 'push_flex',
+      status: 'SUCCESS',
+      httpStatus: 200,
+      latencyMs,
+    });
 
     return {
       success: true,
@@ -129,8 +191,15 @@ export async function sendLinePushTextMessage(
     process.env.LINE_CHANNEL_ACCESS_TOKEN ||
     '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
   ).trim();
+  const startTime = Date.now();
 
   if (!token || !lineUserId) {
+    await logLineNotificationToSupabase({
+      lineUserId: lineUserId || 'unknown',
+      messageType: 'push_text',
+      status: 'SIMULATED',
+      errorMessage: 'LINE_CHANNEL_ACCESS_TOKEN or lineUserId missing',
+    });
     return { success: true, simulated: true, message: '[Simulated] LINE Push text message simulated' };
   }
 
@@ -152,10 +221,28 @@ export async function sendLinePushTextMessage(
       }),
     });
 
+    const latencyMs = Date.now() - startTime;
+
     if (!response.ok) {
       const errorText = await response.text();
+      await logLineNotificationToSupabase({
+        lineUserId,
+        messageType: 'push_text',
+        status: 'FAILED',
+        httpStatus: response.status,
+        errorMessage: errorText,
+        latencyMs,
+      });
       throw new Error(`LINE Push API status ${response.status}: ${errorText}`);
     }
+
+    await logLineNotificationToSupabase({
+      lineUserId,
+      messageType: 'push_text',
+      status: 'SUCCESS',
+      httpStatus: 200,
+      latencyMs,
+    });
 
     return {
       success: true,
