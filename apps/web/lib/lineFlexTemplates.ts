@@ -2299,6 +2299,17 @@ export function createRiskAssessmentAndMenuFlex() {
           },
           {
             type: 'button',
+            style: 'primary',
+            color: '#DC2626',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🚨 อาการฉุกเฉินที่ต้องพบแพทย์',
+              text: 'อาการฉุกเฉิน',
+            },
+          },
+          {
+            type: 'button',
             style: 'secondary',
             height: 'sm',
             action: {
