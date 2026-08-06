@@ -2014,7 +2014,7 @@ export function createRoleSelectionFlexMessage() {
 export function createPatientRegistrationPromptFlex() {
   return {
     type: 'flex',
-    altText: '📌 ลงทะเบียนผู้ป่วย: โปรดพิมพ์หมายเลข HN ของท่าน',
+    altText: '📌 ลงทะเบียนผู้ป่วย: โปรดพิมพ์หมายเลข HN หรือสแกนบาร์โค้ดใบนัด',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -2031,6 +2031,13 @@ export function createPatientRegistrationPromptFlex() {
             size: 'sm',
             weight: 'bold',
           },
+          {
+            type: 'text',
+            text: 'โรงพยาบาลคลองหาด (KHH Safe-Connect)',
+            color: '#CCFBF1',
+            size: 'xs',
+            margin: 'xs',
+          },
         ],
       },
       body: {
@@ -2041,18 +2048,166 @@ export function createPatientRegistrationPromptFlex() {
         contents: [
           {
             type: 'text',
-            text: 'โปรดพิมพ์หมายเลข HN หรือเลขบัตรประชาชนส่งกลับมาในแชทนี้',
+            text: 'โปรดพิมพ์หมายเลข HN หรือเลขบัตรประชาชน 13 หลัก ส่งกลับมาในแชทนี้',
             size: 'xs',
             color: '#334155',
             wrap: true,
             weight: 'bold',
           },
           {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            margin: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 ตัวอย่างพิมพ์ส่ง:',
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• พิมพ์ HN: HN-98302 หรือ 98302\n• พิมพ์เลขบัตร: 1234567890123',
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📷 สแกนบาร์โค้ดใบนัด HOSxP',
+              uri: 'https://khh-safe-connect.vercel.app/scan-hn',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate Interactive Role Confirmation Flex Card (Self vs. Caregiver)
+ */
+export function createRoleConfirmationFlex(
+  hn: string,
+  patientName: string,
+  maskedCid: string
+) {
+  return {
+    type: 'flex',
+    altText: `📋 ยืนยันสถานะการลงทะเบียน: คุณ${patientName} (${hn})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0D9488',
+        paddingAll: 'lg',
+        contents: [
+          {
             type: 'text',
-            text: 'ตัวอย่าง: HN-98302 หรือ 1234567890123',
+            text: '📋 เลือกสถานะการลงทะเบียน',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'โรงพยาบาลคลองหาด (HOSxP Verified)',
+            color: '#CCFBF1',
             size: 'xs',
-            color: '#64748B',
             margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'พบข้อมูลผู้ป่วยในระบบ HOSxP เรียบร้อยแล้วค่ะ โปรดเลือกสถานะการลงทะเบียนของท่าน:',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: `คุณ${patientName}`,
+                size: 'sm',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `${hn} | เลขบัตร: ${maskedCid}`,
+                size: 'xs',
+                color: '#64748B',
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '👤 ฉันคือผู้ป่วย (ลงทะเบียนเอง)',
+              text: `REGISTER_SELF:${hn}`,
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#2563EB',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '👥 ฉันคือ ญาติ/ผู้ดูแล (ลงทะเบียนแทน)',
+              text: `REGISTER_CAREGIVER:${hn}`,
+            },
           },
         ],
       },

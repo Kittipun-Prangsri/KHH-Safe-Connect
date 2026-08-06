@@ -26,6 +26,16 @@ export interface LineUserBindingResult {
 }
 
 /**
+ * Generate 1-Tap LINE Registration Deep Link for Printed Appointment Slips / Medicine Bags
+ * Example: https://line.me/R/oaMessage/@khhsafeconnect/?HN-98302
+ */
+export function generateRegistrationDeepLink(hn: string, lineOaBasicId: string = '@khhsafeconnect'): string {
+  const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+  const encodedMsg = encodeURIComponent(formattedHn);
+  return `https://line.me/R/oaMessage/${lineOaBasicId}/?${encodedMsg}`;
+}
+
+/**
  * Enhanced LINE User ID Binding Validation & Duplicate Prevention Service
  */
 export async function getLineUserBinding(lineUserId: string) {

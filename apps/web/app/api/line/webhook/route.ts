@@ -27,6 +27,7 @@ import {
   createStressAndSleepAdviceFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
+  createRoleConfirmationFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -286,35 +287,64 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Interactive Role Selection Handling: REGISTER_SELF:HN-XXXXX / REGISTER_CAREGIVER:HN-XXXXX
+        if (text.startsWith('REGISTER_SELF:') || text.startsWith('REGISTER_CAREGIVER:')) {
+          const isCaregiver = text.startsWith('REGISTER_CAREGIVER:');
+          const targetHn = text.replace(/^REGISTER_(SELF|CAREGIVER):/i, '');
+          const patientMatch = await findPatientByHnOrCidInHosxp(targetHn);
+
+          if (patientMatch.found) {
+            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName, {
+              userRole: isCaregiver ? 'caregiver' : 'patient',
+              overrideExisting: !isCaregiver,
+            });
+
+            const rawCid = patientMatch.cid || targetHn;
+            const maskedCid =
+              rawCid.length === 13
+                ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
+                : rawCid;
+
+            const roleNotice = isCaregiver ? '👥 ลงทะเบียนในฐานะ: ญาติ / ผู้ดูแล' : '👤 ลงทะเบียนในฐานะ: ผู้ป่วยหลัก';
+            const infoFlex = createPatientInfoVerificationFlex(
+              patientMatch.patientName,
+              patientMatch.hn,
+              maskedCid,
+              patientMatch.clinics
+            );
+
+            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: `✅ ${roleNotice}\nระบบทำการผูกบัญชี LINE เรียบร้อยแล้วค่ะ`,
+              },
+              infoFlex,
+              riskMenuFlex,
+            ]);
+          }
+          continue;
+        }
+
         // Patient Registration matching HN format (HN-XXXXX) or 13-digit CID
         if (text.toUpperCase().startsWith('HN-') || text.match(/^[0-9]{13}$/) || text.match(/^[0-9]{4,8}$/)) {
           const patientMatch = await findPatientByHnOrCidInHosxp(text);
 
           if (patientMatch.found) {
-            // Bind LINE User ID to matched HOSxP HN
-            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName);
-
-            // Mask 13-digit CID for security (e.g. 1-2345-XXXXX-12-3)
             const rawCid = patientMatch.cid || text;
-            const maskedCid = rawCid.length === 13 
-              ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}` 
-              : rawCid;
+            const maskedCid =
+              rawCid.length === 13
+                ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
+                : rawCid;
 
-            // 1. Patient Info Verification Card (Full Name, HN, CID, Registered Clinic Types)
-            const infoFlex = createPatientInfoVerificationFlex(
-              patientMatch.patientName,
+            // Send Role Confirmation Flex Card (Self vs Caregiver)
+            const roleFlex = createRoleConfirmationFlex(
               patientMatch.hn,
-              maskedCid,
-              patientMatch.clinics || [
-                '🩺 คลินิก 001: คลินิกเบาหวาน (DM)',
-                '🩺 คลินิก 002: คลินิกความดันโลหิตสูง (HT)',
-              ]
+              patientMatch.patientName,
+              maskedCid
             );
 
-            // 2. Automatic Interactive Risk Menu (Appointment Check, CVD Risk, Advice, Contact Staff)
-            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
-
-            await sendLineReplyMessage(replyToken, [infoFlex, riskMenuFlex]);
+            await sendLineReplyMessage(replyToken, [roleFlex]);
           } else {
             await sendLineReplyMessage(replyToken, [
               {
