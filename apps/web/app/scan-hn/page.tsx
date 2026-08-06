@@ -1,15 +1,50 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, CheckCircle2, QrCode, ArrowLeft, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, CheckCircle2, QrCode, ArrowLeft, RefreshCw, AlertCircle, Sparkles, Send, Keyboard } from 'lucide-react';
 
 export default function ScanHnPage() {
-  const [scannedHn, setScannedHn] = useState('');
   const [manualInput, setManualInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successHn, setSuccessHn] = useState('');
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Automatic BarcodeDetector Loop
+  const startBarcodeDetectionLoop = () => {
+    if ('BarcodeDetector' in window) {
+      try {
+        const barcodeDetector = new (window as any).BarcodeDetector({
+          formats: ['code_128', 'code_39', 'qr_code', 'ean_13'],
+        });
+
+        const detectFrame = async () => {
+          if (videoRef.current && videoRef.current.readyState === 4 && !successHn) {
+            try {
+              const barcodes = await barcodeDetector.detect(videoRef.current);
+              if (barcodes && barcodes.length > 0) {
+                const rawVal = barcodes[0].rawValue;
+                if (rawVal && rawVal.trim().length >= 3) {
+                  handleRegisterHn(rawVal);
+                  return;
+                }
+              }
+            } catch (e) {
+              // Frame detection pass
+            }
+          }
+          if (!successHn) {
+            animationFrameRef.current = requestAnimationFrame(detectFrame);
+          }
+        };
+
+        animationFrameRef.current = requestAnimationFrame(detectFrame);
+      } catch (err) {
+        console.warn('BarcodeDetector initialization fallback:', err);
+      }
+    }
+  };
 
   // Start Camera Stream for Barcode Scanner
   const startCamera = async () => {
@@ -18,11 +53,12 @@ export default function ScanHnPage() {
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
+          await videoRef.current.play();
+          startBarcodeDetectionLoop();
         }
       } else {
         setErrorMsg('⚠️ อุปกรณ์นี้ไม่รองรับการเปิดกล้องผ่านเบราว์เซอร์');
@@ -36,6 +72,9 @@ export default function ScanHnPage() {
   };
 
   const stopCamera = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((t) => t.stop());
@@ -64,7 +103,7 @@ export default function ScanHnPage() {
     setTimeout(() => {
       const lineOaDeepLink = `https://line.me/R/oaMessage/@khhsafeconnect/?${encodeURIComponent(formattedHn)}`;
       window.location.href = lineOaDeepLink;
-    }, 1200);
+    }, 1000);
   };
 
   return (
@@ -73,34 +112,34 @@ export default function ScanHnPage() {
       <div className="w-full max-w-md flex items-center justify-between py-3 border-b border-slate-800">
         <button
           onClick={() => (window.location.href = 'https://line.me/R/ti/p/@khhsafeconnect')}
-          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer"
+          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer border border-slate-700"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>กลับไปยัง LINE</span>
         </button>
         <span className="text-xs font-extrabold text-teal-400 flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5" /> KHH Safe-Connect Scanner
+          <Sparkles className="w-3.5 h-3.5" /> KHH Safe-Connect
         </span>
       </div>
 
       {/* Main Content Body */}
-      <div className="w-full max-w-md my-auto space-y-5">
+      <div className="w-full max-w-md my-auto space-y-5 py-4">
         {/* Title Banner */}
         <div className="text-center space-y-1">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 mb-2">
+          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 mb-2 shadow-inner">
             <QrCode className="w-8 h-8" />
           </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
             สแกนบาร์โค้ดใบนัด HOSxP
           </h1>
           <p className="text-xs text-slate-400">
-            ส่องกล้องไปที่บาร์โค้ดมุมใบนัด หรือพิมพ์ HN เพื่อลงทะเบียนใน LINE ทันที
+            ส่องกล้องไปที่บาร์โค้ดมุมใบนัด หรือพิมพ์ HN ด้านล่างเพื่อลงทะเบียนใน LINE ทันที
           </p>
         </div>
 
         {/* Camera Scanner Viewfinder */}
         {!successHn ? (
-          <div className="relative rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500/30 shadow-2xl aspect-4/3 flex items-center justify-center">
+          <div className="relative rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500/40 shadow-2xl aspect-4/3 flex items-center justify-center">
             <video
               ref={videoRef}
               className="w-full h-full object-cover"
@@ -109,10 +148,10 @@ export default function ScanHnPage() {
             />
 
             {/* Viewfinder Target Box Overlay */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
-              <div className="w-full h-32 border-2 border-dashed border-teal-400 rounded-2xl relative animate-pulse flex items-center justify-center bg-teal-500/5">
-                <span className="text-[11px] font-bold text-teal-300 bg-slate-900/80 px-3 py-1 rounded-full border border-teal-500/30 shadow-sm">
-                  วางบาร์โค้ดใบนัดให้อยู่ในกรอบนี้
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
+              <div className="w-full h-36 border-2 border-dashed border-teal-400 rounded-2xl relative animate-pulse flex items-center justify-center bg-teal-500/5 shadow-inner">
+                <span className="text-[11px] font-bold text-teal-300 bg-slate-900/90 px-3 py-1.5 rounded-full border border-teal-500/40 shadow-md">
+                  📷 วางบาร์โค้ดใบนัดให้อยู่ในกรอบนี้ (สแกนอัตโนมัติ)
                 </span>
               </div>
             </div>
@@ -133,10 +172,10 @@ export default function ScanHnPage() {
           </div>
         ) : (
           /* Success Screen Card */
-          <div className="p-6 rounded-3xl bg-teal-950/80 border-2 border-teal-500/40 text-center space-y-3 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="p-6 rounded-3xl bg-teal-950/80 border-2 border-teal-500/50 text-center space-y-3 shadow-2xl animate-in zoom-in-95 duration-200">
             <CheckCircle2 className="w-12 h-12 text-teal-400 mx-auto animate-bounce" />
             <h2 className="text-lg font-black text-white">สแกน/ระบุหมายเลขสำเร็จ!</h2>
-            <div className="p-3 bg-slate-900/90 rounded-2xl border border-teal-500/30 font-mono text-xl font-bold text-teal-300">
+            <div className="p-3.5 bg-slate-900/90 rounded-2xl border border-teal-500/40 font-mono text-2xl font-bold text-teal-300 tracking-wider">
               {successHn}
             </div>
             <p className="text-xs text-teal-200 animate-pulse">
@@ -145,24 +184,29 @@ export default function ScanHnPage() {
           </div>
         )}
 
-        {/* Manual Fallback Input Card */}
-        <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-3">
-          <label className="block text-xs font-bold text-slate-300">
-            หรือ พิมพ์หมายเลข HN / เลขบัตรประชาชน ด้วยตนเอง:
+        {/* Manual Input Box Section (ช่องกรอกข้อมูลด้วยตนเอง) */}
+        <div className="p-4 rounded-2xl bg-slate-800/90 border border-slate-700 space-y-3 shadow-lg">
+          <label className="block text-xs font-bold text-teal-300 flex items-center gap-1.5">
+            <Keyboard className="w-4 h-4 text-teal-400" />
+            <span>ช่องกรอกข้อมูลด้วยตนเอง (หากไม่สะดวกเปิดกล้อง):</span>
           </label>
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="ตัวอย่าง: HN-98302 หรือ 98302"
+              placeholder="พิมพ์หมายเลข HN เช่น HN-98302 หรือ 98302"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRegisterHn(manualInput);
+              }}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
             />
             <button
               onClick={() => handleRegisterHn(manualInput)}
-              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer whitespace-nowrap"
+              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap"
             >
-              ส่งข้อมูล
+              <Send className="w-3.5 h-3.5" />
+              <span>ตกลง</span>
             </button>
           </div>
         </div>

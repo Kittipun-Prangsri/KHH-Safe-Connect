@@ -2014,7 +2014,7 @@ export function createRoleSelectionFlexMessage() {
 export function createPatientRegistrationPromptFlex() {
   return {
     type: 'flex',
-    altText: '📌 ลงทะเบียนผู้ป่วย: โปรดพิมพ์หมายเลข HN หรือสแกนบาร์โค้ดใบนัด',
+    altText: '📌 ลงทะเบียนผู้ป่วย: พิมพ์หมายเลข HN ในแชต หรือ สแกนบาร์โค้ดใบนัด',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -2044,16 +2044,8 @@ export function createPatientRegistrationPromptFlex() {
         type: 'box',
         layout: 'vertical',
         paddingAll: 'lg',
-        spacing: 'sm',
+        spacing: 'md',
         contents: [
-          {
-            type: 'text',
-            text: 'โปรดพิมพ์หมายเลข HN หรือเลขบัตรประชาชน 13 หลัก ส่งกลับมาในแชทนี้',
-            size: 'xs',
-            color: '#334155',
-            wrap: true,
-            weight: 'bold',
-          },
           {
             type: 'box',
             layout: 'vertical',
@@ -2062,20 +2054,53 @@ export function createPatientRegistrationPromptFlex() {
             paddingAll: 'md',
             borderColor: '#CCFBF1',
             borderWidth: '1px',
-            margin: 'sm',
             contents: [
               {
                 type: 'text',
-                text: '💡 ตัวอย่างพิมพ์ส่ง:',
+                text: '✍️ วิธีที่ 1: พิมพ์ระบุข้อความลงในช่องแชทนี้',
                 size: 'xs',
                 color: '#0F766E',
                 weight: 'bold',
               },
               {
                 type: 'text',
+                text: 'พิมพ์หมายเลข HN หรือ เลขบัตรประชาชน 13 หลัก ส่งกลับมาในแชทได้ทันทีค่ะ',
+                size: 'xs',
+                color: '#334155',
+                wrap: true,
+                margin: 'xs',
+              },
+              {
+                type: 'text',
                 text: '• พิมพ์ HN: HN-98302 หรือ 98302\n• พิมพ์เลขบัตร: 1234567890123',
                 size: 'xs',
-                color: '#475569',
+                color: '#64748B',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📷 วิธีที่ 2: สแกนบาร์โค้ดใบนัด HOSxP',
+                size: 'xs',
+                color: '#1E293B',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'กดปุ่มด้านล่างเพื่อเปิดกล้องส่องบาร์โค้ดใบนัด โดยไม่ต้องพิมพ์ตัวเลข',
+                size: 'xs',
+                color: '#64748B',
+                wrap: true,
                 margin: 'xs',
               },
             ],
@@ -2095,8 +2120,8 @@ export function createPatientRegistrationPromptFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📷 สแกนบาร์โค้ดใบนัด HOSxP',
-              uri: 'https://khh-safe-connect.vercel.app/scan-hn',
+              label: '📷 เปิดกล้องสแกนบาร์โค้ดใบนัด HOSxP',
+              uri: `${process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://khhncd.khostime.site'}/scan-hn`,
             },
           },
         ],
