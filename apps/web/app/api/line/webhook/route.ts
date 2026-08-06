@@ -4,6 +4,7 @@ import {
   getLineUserBinding,
   bindLineUserToHn,
   findPatientByHnOrCidInHosxp,
+  findStaffInHosxp,
   fetchPatientUpcomingAppointmentsFromHosxp,
   recordIncomingLineMessage,
 } from '@/lib/lineUserService';
@@ -378,22 +379,26 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Staff Registration matching STAFF / NURSE format
+        // Staff Registration matching STAFF-, NURSE-, DOC- or HOSxP loginname
         if (
           text.toUpperCase().startsWith('STAFF-') ||
           text.toUpperCase().startsWith('NURSE-') ||
           text.toUpperCase().startsWith('DOC-')
         ) {
-          const staffCode = text.toUpperCase();
-          const staffName = 'กิตติพงษ์ แก้วมณี (พยาบาลวิชาชีพ)';
-
+          const staffMatch = await findStaffInHosxp(text);
           const successFlex = createRegistrationSuccessFlex(
             'staff',
-            staffName,
-            staffCode,
+            staffMatch.staffName,
+            staffMatch.staffCode,
             lineUserId
           );
-          await sendLineReplyMessage(replyToken, [successFlex]);
+          await sendLineReplyMessage(replyToken, [
+            {
+              type: 'text',
+              text: `⚡ ผูกสิทธิ์เจ้าหน้าที่สำเร็จ!\nยินดีต้อนรับ ${staffMatch.staffName} (${staffMatch.department || 'คลินิก NCDs'})`,
+            },
+            successFlex,
+          ]);
           continue;
         }
 

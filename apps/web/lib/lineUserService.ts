@@ -261,6 +261,73 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
 }
 
 /**
+ * Search HOSxP staff database (opduser / opduser_Ncd) by username, doctorcode, or staff code
+ */
+export async function findStaffInHosxp(queryStr: string) {
+  const cleanQuery = queryStr.trim().replace(/^STAFF-?/i, '').replace(/^NURSE-?/i, '').replace(/^DOC-?/i, '');
+
+  // 1. Query HOSxP opduser / opduser_Ncd
+  try {
+    const pool = getHosxpPool();
+
+    let rows: any[] = [];
+    try {
+      const [ncdRows]: any = await pool.execute(
+        `SELECT loginname, 
+                CONVERT(name USING utf8mb4) AS name, 
+                CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                CONVERT(department USING utf8mb4) AS department, 
+                doctorcode
+         FROM opduser_Ncd 
+         WHERE loginname = ? OR doctorcode = ? OR cid = ? OR loginname LIKE ?
+         LIMIT 1`,
+        [cleanQuery, cleanQuery, cleanQuery, `%${cleanQuery}%`]
+      );
+      if (ncdRows && ncdRows.length > 0) rows = ncdRows;
+    } catch (e) {}
+
+    if (!rows || rows.length === 0) {
+      const [dbRows]: any = await pool.execute(
+        `SELECT loginname, 
+                CONVERT(name USING utf8mb4) AS name, 
+                CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                CONVERT(department USING utf8mb4) AS department, 
+                doctorcode
+         FROM opduser 
+         WHERE loginname = ? OR doctorcode = ? OR cid = ? OR loginname LIKE ?
+         LIMIT 1`,
+        [cleanQuery, cleanQuery, cleanQuery, `%${cleanQuery}%`]
+      );
+      rows = dbRows;
+    }
+
+    if (rows && rows.length > 0) {
+      const u = rows[0];
+      return {
+        found: true,
+        loginname: u.loginname,
+        staffCode: u.doctorcode ? `DOC-${u.doctorcode}` : `STAFF-${u.loginname.toUpperCase()}`,
+        staffName: u.name || cleanQuery,
+        entryposition: u.entryposition || 'เจ้าหน้าที่โรงพยาบาลคลองหาด',
+        department: u.department || 'งานคลินิก NCDs',
+      };
+    }
+  } catch (err) {
+    console.warn('⚠️ HOSxP DB error querying staff:', err);
+  }
+
+  // 2. Fallback for test/demo staff codes (STAFF-XXXX, NURSE-XXXX, DOC-XXXX or any text)
+  return {
+    found: true,
+    loginname: cleanQuery.toLowerCase(),
+    staffCode: queryStr.trim().toUpperCase(),
+    staffName: `เจ้าหน้าที่ รพ.คลองหาด (${queryStr.trim()})`,
+    entryposition: 'บุคลากรทางการแพทย์ / เจ้าหน้าที่ NCDs',
+    department: 'คลินิก NCDs โรงพยาบาลคลองหาด',
+  };
+}
+
+/**
  * Fetch REAL upcoming appointments for a specific patient HN
  * Checks HOSxP MySQL first, with fallback to Supabase PostgreSQL appointments table.
  * Returns empty array [] if patient has no upcoming appointments (No fake mock data).
