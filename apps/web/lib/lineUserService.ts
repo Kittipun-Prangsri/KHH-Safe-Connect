@@ -29,10 +29,11 @@ export interface LineUserBindingResult {
  * Generate 1-Tap LINE Registration Deep Link for Printed Appointment Slips / Medicine Bags
  * Example: https://line.me/R/oaMessage/@khhsafeconnect/?HN-98302
  */
-export function generateRegistrationDeepLink(hn: string, lineOaBasicId: string = '@khhsafeconnect'): string {
+export function generateRegistrationDeepLink(hn: string, lineOaBasicId: string = process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk'): string {
   const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
   const encodedMsg = encodeURIComponent(formattedHn);
-  return `https://line.me/R/oaMessage/${lineOaBasicId}/?${encodedMsg}`;
+  const cleanId = lineOaBasicId.trim();
+  return `https://line.me/R/oaMessage/${cleanId}/?${encodedMsg}`;
 }
 
 /**

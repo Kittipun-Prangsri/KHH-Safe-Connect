@@ -88,6 +88,10 @@ export default function ScanHnPage() {
     return () => stopCamera();
   }, []);
 
+  const [copied, setCopied] = useState(false);
+
+  const lineOaBasicId = process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk';
+
   const handleRegisterHn = (hnValue: string) => {
     if (!hnValue || hnValue.trim().length < 3) {
       setErrorMsg('กรุณาระบุหมายเลข HN หรือเลขบัตรประชาชนให้ถูกต้อง');
@@ -99,11 +103,25 @@ export default function ScanHnPage() {
     setSuccessHn(formattedHn);
     stopCamera();
 
+    // Copy HN to clipboard automatically for backup
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(formattedHn).catch(() => {});
+    }
+
     // Redirect to LINE OA DeepLink with 1-tap message prefilled
     setTimeout(() => {
-      const lineOaDeepLink = `https://line.me/R/oaMessage/@khhsafeconnect/?${encodeURIComponent(formattedHn)}`;
+      const cleanId = lineOaBasicId.trim();
+      const lineOaDeepLink = `https://line.me/R/oaMessage/${cleanId}/?${encodeURIComponent(formattedHn)}`;
       window.location.href = lineOaDeepLink;
     }, 1000);
+  };
+
+  const handleManualCopy = (hn: string) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(hn);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -111,7 +129,7 @@ export default function ScanHnPage() {
       {/* Header Bar */}
       <div className="w-full max-w-md flex items-center justify-between py-3 border-b border-slate-800">
         <button
-          onClick={() => (window.location.href = 'https://line.me/R/ti/p/@khhsafeconnect')}
+          onClick={() => (window.location.href = `https://line.me/R/ti/p/${lineOaBasicId.trim()}`)}
           className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer border border-slate-700"
         >
           <ArrowLeft className="w-4 h-4" />
