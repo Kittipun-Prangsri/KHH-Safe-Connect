@@ -1,17 +1,93 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, CheckCircle2, QrCode, ArrowLeft, RefreshCw, AlertCircle, Sparkles, Send, Keyboard } from 'lucide-react';
+import { Camera, CheckCircle2, QrCode, ArrowLeft, RefreshCw, AlertCircle, Sparkles, Send, Keyboard, Copy, Check } from 'lucide-react';
 
 export default function ScanHnPage() {
   const [manualInput, setManualInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successHn, setSuccessHn] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [zxingLoaded, setZxingLoaded] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const zxingReaderRef = useRef<any>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Automatic BarcodeDetector Loop
+  const lineOaBasicId = process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk';
+
+  // 1. Load ZXing library script dynamically for 100% iOS/Android/LINE Browser compatibility
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).ZXing) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+      script.async = true;
+      script.onload = () => {
+        setZxingLoaded(true);
+      };
+      script.onerror = () => {
+        console.warn('⚠️ ZXing CDN script failed to load, falling back to BarcodeDetector');
+      };
+      document.body.appendChild(script);
+    } else if ((window as any).ZXing) {
+      setZxingLoaded(true);
+    }
+  }, []);
+
+  // 2. Start Camera and Barcode Scanning Loop
+  const startCamera = async () => {
+    setErrorMsg('');
+    setIsScanning(true);
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+
+          // Start ZXing reader if available
+          if ((window as any).ZXing) {
+            startZxingScanner();
+          } else {
+            startBarcodeDetectionLoop();
+          }
+        }
+      } else {
+        setErrorMsg('⚠️ อุปกรณ์นี้ไม่รองรับการเปิดกล้องผ่านเบราว์เซอร์');
+        setIsScanning(false);
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Camera access error:', err);
+      setErrorMsg('⚠️ ไม่สามารถเปิดกล้องได้ โปรดอนุญาตการเข้าถึงกล้อง หรือพิมพ์หมายเลข HN ด้านล่าง');
+      setIsScanning(false);
+    }
+  };
+
+  // Start ZXing Code128 / Code39 / QR Reader
+  const startZxingScanner = () => {
+    if ((window as any).ZXing && videoRef.current) {
+      try {
+        const codeReader = new (window as any).ZXing.BrowserMultiFormatReader();
+        zxingReaderRef.current = codeReader;
+        codeReader.decodeFromVideoDevice(null, videoRef.current, (result: any, err: any) => {
+          if (result && result.getText && !successHn) {
+            const rawVal = result.getText();
+            if (rawVal && rawVal.trim().length >= 3) {
+              handleRegisterHn(rawVal);
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('ZXing scanner error:', err);
+        startBarcodeDetectionLoop();
+      }
+    }
+  };
+
+  // Fallback native BarcodeDetector Loop
   const startBarcodeDetectionLoop = () => {
     if ('BarcodeDetector' in window) {
       try {
@@ -30,9 +106,7 @@ export default function ScanHnPage() {
                   return;
                 }
               }
-            } catch (e) {
-              // Frame detection pass
-            }
+            } catch (e) {}
           }
           if (!successHn) {
             animationFrameRef.current = requestAnimationFrame(detectFrame);
@@ -41,37 +115,17 @@ export default function ScanHnPage() {
 
         animationFrameRef.current = requestAnimationFrame(detectFrame);
       } catch (err) {
-        console.warn('BarcodeDetector initialization fallback:', err);
+        console.warn('BarcodeDetector fallback error:', err);
       }
-    }
-  };
-
-  // Start Camera Stream for Barcode Scanner
-  const startCamera = async () => {
-    setErrorMsg('');
-    setIsScanning(true);
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          startBarcodeDetectionLoop();
-        }
-      } else {
-        setErrorMsg('⚠️ อุปกรณ์นี้ไม่รองรับการเปิดกล้องผ่านเบราว์เซอร์');
-        setIsScanning(false);
-      }
-    } catch (err: any) {
-      console.warn('⚠️ Camera access error:', err);
-      setErrorMsg('⚠️ ไม่สามารถเปิดกล้องได้ โปรดอนุญาตการเข้าถึงกล้อง หรือพิมพ์หมายเลข HN ด้านล่าง');
-      setIsScanning(false);
     }
   };
 
   const stopCamera = () => {
+    if (zxingReaderRef.current) {
+      try {
+        zxingReaderRef.current.reset();
+      } catch (e) {}
+    }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -86,20 +140,19 @@ export default function ScanHnPage() {
   useEffect(() => {
     startCamera();
     return () => stopCamera();
-  }, []);
+  }, [zxingLoaded]);
 
-  const [copied, setCopied] = useState(false);
-
-  const lineOaBasicId = process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk';
-
+  // Handle scanned or manually entered HN
   const handleRegisterHn = (hnValue: string) => {
     if (!hnValue || hnValue.trim().length < 3) {
       setErrorMsg('กรุณาระบุหมายเลข HN หรือเลขบัตรประชาชนให้ถูกต้อง');
       return;
     }
 
-    const cleanHn = hnValue.trim().toUpperCase();
-    const formattedHn = cleanHn.startsWith('HN-') ? cleanHn : `HN-${cleanHn}`;
+    // Extract digits and clean prefix (e.g. "HN 000059754" -> "HN-000059754")
+    const digitsOnly = hnValue.replace(/[^0-9]/g, '');
+    const formattedHn = digitsOnly.length >= 3 ? `HN-${digitsOnly}` : `HN-${hnValue.trim().toUpperCase().replace(/^HN-?/i, '')}`;
+
     setSuccessHn(formattedHn);
     stopCamera();
 
@@ -113,7 +166,7 @@ export default function ScanHnPage() {
       const cleanId = lineOaBasicId.trim();
       const lineOaDeepLink = `https://line.me/R/oaMessage/${cleanId}/?${encodeURIComponent(formattedHn)}`;
       window.location.href = lineOaDeepLink;
-    }, 1000);
+    }, 1200);
   };
 
   const handleManualCopy = (hn: string) => {
@@ -196,9 +249,27 @@ export default function ScanHnPage() {
             <div className="p-3.5 bg-slate-900/90 rounded-2xl border border-teal-500/40 font-mono text-2xl font-bold text-teal-300 tracking-wider">
               {successHn}
             </div>
-            <p className="text-xs text-teal-200 animate-pulse">
-              กำลังนำท่านไปยัง LINE OA เพื่อลงทะเบียน 1-Tap...
-            </p>
+
+            <div className="pt-2 space-y-2">
+              <button
+                onClick={() => {
+                  const cleanId = lineOaBasicId.trim();
+                  window.location.href = `https://line.me/R/oaMessage/${cleanId}/?${encodeURIComponent(successHn)}`;
+                }}
+                className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                <span>เปิดแชต LINE ส่งข้อความลงทะเบียน</span>
+              </button>
+
+              <button
+                onClick={() => handleManualCopy(successHn)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'คัดลอก HN เรียบร้อย!' : 'คัดลอก HN ไว้ส่งในแชต'}</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -211,7 +282,7 @@ export default function ScanHnPage() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="พิมพ์หมายเลข HN เช่น HN-98302 หรือ 98302"
+              placeholder="พิมพ์หมายเลข HN เช่น 000059754"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
               onKeyDown={(e) => {
