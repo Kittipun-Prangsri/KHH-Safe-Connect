@@ -575,6 +575,203 @@ export function createConfirmSuccessFlex(patientName: string = 'สมชาย 
 }
 
 /**
+ * Generate Confirmation Flex Card when Staff Approves/Changes Rescheduled Appointment Date
+ */
+export function createRescheduleSuccessFlex(params: {
+  patientName: string;
+  hn: string;
+  newDate: string;
+  newTime?: string;
+  doctor?: string;
+  clinic?: string;
+}) {
+  const {
+    patientName,
+    hn,
+    newDate,
+    newTime = '08:00 - 12:00 น.',
+    doctor = 'พญ. วรรณภา จิตดี (แพทย์ประจำคลินิก NCDs)',
+    clinic = 'คลินิก NCDs โรงพยาบาลคลองหาด',
+  } = params;
+
+  // Build Google Calendar Event URL
+  const calTitle = encodeURIComponent(`นัดตรวจคลินิก NCDs - คุณ${patientName} (${hn})`);
+  const calDetails = encodeURIComponent(
+    `ใบนัดตรวจติดตามคลินิก NCDs โรงพยาบาลคลองหาด\nผู้ป่วย: คุณ${patientName} (${hn})\nวันนัดใหม่: ${newDate}\nเวลา: ${newTime}\nแพทย์: ${doctor}\nสถานที่: ${clinic}`
+  );
+  const calLocation = encodeURIComponent('โรงพยาบาลคลองหาด');
+  const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${calTitle}&details=${calDetails}&location=${calLocation}`;
+
+  return {
+    type: 'flex',
+    altText: `📅 ยืนยันการเปลี่ยนวันนัดหมายสำเร็จ: คุณ${patientName} (นัดใหม่ ${newDate})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0284C7',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📅 ยืนยันการเปลี่ยนวันนัดหมายสำเร็จ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'เจ้าหน้าที่อนุมัติวันนัดหมายใหม่เรียบร้อยแล้ว',
+            color: '#E0F2FE',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0F9FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BAE6FD',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '👤 ผู้ป่วยลงทะเบียน:',
+                size: 'xs',
+                color: '#0369A1',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `คุณ${patientName}`,
+                size: 'sm',
+                color: '#0F172A',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `หมายเลข HN: ${hn}`,
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            spacing: 'xs',
+            contents: [
+              {
+                type: 'text',
+                text: '🗓️ กำหนดวันนัดหมายใหม่:',
+                size: 'xs',
+                color: '#475569',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: newDate,
+                size: 'lg',
+                color: '#0284C7',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'separator',
+                color: '#E2E8F0',
+                margin: 'sm',
+              },
+              {
+                type: 'text',
+                text: `⏰ เวลาตรวจ: ${newTime}`,
+                size: 'xs',
+                color: '#334155',
+                margin: 'sm',
+              },
+              {
+                type: 'text',
+                text: `🩺 แพทย์ผู้ตรวจ: ${doctor}`,
+                size: 'xs',
+                color: '#334155',
+              },
+              {
+                type: 'text',
+                text: `🏥 สถานที่/คลินิก: ${clinic}`,
+                size: 'xs',
+                color: '#334155',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEF3C7',
+            cornerRadius: 'md',
+            paddingAll: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 ข้อแนะนำ: โปรดนำบัตรประชาชนและยาประจำตัวมาด้วยทุกครั้งก่อนมาตามนัดใหม่ค่ะ',
+                size: 'xs',
+                color: '#92400E',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0284C7',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📅 บันทึกลงปฏิทิน Google Calendar',
+              uri: googleCalUrl,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 ติดต่อคลินิก NCDs (06-2271-0099)',
+              uri: 'tel:0622710099',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
  * 3. Tile 3: "ขอเลื่อนนัด"
  */
 export function createRescheduleRequestFlex() {

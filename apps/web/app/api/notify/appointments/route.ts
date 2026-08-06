@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendLineAppointmentReminder, sendLinePushTextMessage, sendStaffReplyToPatient } from '@/lib/lineMessagingService';
+import { sendLineAppointmentReminder, sendLinePushTextMessage, sendStaffReplyToPatient, sendStaffRescheduleConfirmation } from '@/lib/lineMessagingService';
 import { getHosxpPool } from '@/lib/hosxpClient';
 import { getLineUserIdByHn } from '@/lib/lineUserService';
 import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -116,6 +116,62 @@ async function processUpcomingNcdReminders() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
+
+    // Handle Reschedule Success Confirmation Flex Card
+    if (body.action === 'reschedule_success' || (body.appointmentDate && !body.messageText)) {
+      const hnFormatted = body.hn || '';
+      const patientName = body.patientName || 'ผู้ป่วย';
+      const targetLineUserId = (await getLineUserIdByHn(hnFormatted)) || body.userId || body.lineUserId;
+
+      if (!targetLineUserId) {
+        return NextResponse.json({
+          status: 'error',
+          message: `⚠️ ผู้ป่วย คุณ${patientName} (${hnFormatted}) ยังไม่ได้ผูกบัญชี LINE ไม่สามารถส่งการ์ดแจ้งนัดได้`,
+        }, { status: 400 });
+      }
+
+      let storedReplyToken: string | null = null;
+      let replyTokenExpiresAt: string | null = null;
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = getSupabaseAdminClient();
+          const cleanHn = hnFormatted.replace(/^HN-/i, '');
+          const { data } = await supabase
+            .from('patient_line_users')
+            .select('latest_reply_token, reply_token_expires_at')
+            .or(`hn.eq.${hnFormatted},hn.eq.${cleanHn}`)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data && data.length > 0) {
+            storedReplyToken = data[0].latest_reply_token || null;
+            replyTokenExpiresAt = data[0].reply_token_expires_at || null;
+          }
+        } catch (err) {
+          console.warn('⚠️ Could not fetch stored replyToken:', err);
+        }
+      }
+
+      const result = await sendStaffRescheduleConfirmation({
+        lineUserId: targetLineUserId,
+        replyToken: storedReplyToken,
+        replyTokenExpiresAt,
+        patientName,
+        hn: hnFormatted,
+        newDate: body.appointmentDate,
+        newTime: body.appointmentTime || '08:00 - 12:00 น.',
+        doctor: body.doctor || 'พญ. วรรณภา จิตดี (แพทย์ประจำคลินิก NCDs)',
+        clinic: body.clinic || 'คลินิก NCDs โรงพยาบาลคลองหาด',
+      });
+
+      return NextResponse.json({
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        message: `📅 ส่งการ์ดยืนยันการเปลี่ยนวันนัดใหม่สำเร็จ หาคุณ ${patientName} (${hnFormatted}) [via ${result.method}]`,
+        method: result.method,
+        result,
+      });
+    }
 
     // If messageText is provided, send direct staff reply to LINE user
     if (body.messageText) {

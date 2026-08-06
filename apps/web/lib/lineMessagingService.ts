@@ -1,4 +1,8 @@
-import { createAppointmentFlexMessage, AppointmentNotificationData } from './lineFlexTemplates';
+import {
+  createAppointmentFlexMessage,
+  createRescheduleSuccessFlex,
+  AppointmentNotificationData,
+} from './lineFlexTemplates';
 import { getSupabaseAdminClient, isSupabaseConfigured } from './supabaseClient';
 
 /**
@@ -357,4 +361,69 @@ export async function sendStaffReplyToPatient(params: {
     return { success: false, method: 'failed', quotaExceeded: true, error: 'LINE Push quota exceeded' };
   }
   return { success: false, method: 'failed', error: (pushResult as any).error };
+}
+
+/**
+ * Send Confirmed Reschedule Flex Card to Patient
+ */
+export async function sendStaffRescheduleConfirmation(params: {
+  lineUserId: string;
+  replyToken?: string | null;
+  replyTokenExpiresAt?: string | null;
+  patientName: string;
+  hn: string;
+  newDate: string;
+  newTime?: string;
+  doctor?: string;
+  clinic?: string;
+  channelAccessToken?: string;
+}) {
+  const flexCard = createRescheduleSuccessFlex({
+    patientName: params.patientName,
+    hn: params.hn,
+    newDate: params.newDate,
+    newTime: params.newTime,
+    doctor: params.doctor,
+    clinic: params.clinic,
+  });
+
+  const canUseReply =
+    params.replyToken &&
+    params.replyToken.length > 10 &&
+    params.replyToken !== '00000000000000000000000000000000' &&
+    params.replyToken !== '11111111111111111111111111111111' &&
+    (!params.replyTokenExpiresAt || new Date(params.replyTokenExpiresAt) > new Date());
+
+  if (canUseReply) {
+    const res = await sendLineReplyMessage(params.replyToken!, [flexCard], params.channelAccessToken);
+    if (res.success && !res.simulated) return { success: true, method: 'reply' as const };
+  }
+
+  // Push fallback
+  const token = (
+    params.channelAccessToken ||
+    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
+    ''
+  ).trim();
+
+  if (!token || !params.lineUserId) {
+    return { success: true, simulated: true, method: 'simulated' as const };
+  }
+
+  try {
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        to: params.lineUserId,
+        messages: [flexCard],
+      }),
+    });
+    return { success: response.ok, method: response.ok ? ('push' as const) : ('failed' as const) };
+  } catch (e: any) {
+    return { success: false, error: e.message, method: 'failed' as const };
+  }
 }
