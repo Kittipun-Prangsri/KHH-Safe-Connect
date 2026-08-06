@@ -2573,6 +2573,180 @@ export function createPatientInfoVerificationFlex(
 }
 
 /**
+ * Generate General Wellness & Prevention Flex Card for Non-chronic Patients
+ */
+export function createGeneralWellnessFlexMessage() {
+  return {
+    type: 'flex',
+    altText: '🌿 ข้อมูลสุขภาพดี & การป้องกันโรค NCDs - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#059669',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🌿 คู่มือดูแลสุขภาพดี & ป้องกันโรค NCDs',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'คำแนะนำการส่งเสริมสุขภาพสำหรับประชาชน - รพ.คลองหาด',
+            color: '#D1FAE5',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'ยินดีด้วยค่ะ! ท่านไม่มีประวัติป่วยด้วยโรคเรื้อรัง (NCDs) มาร่วมรักษาสุขภาพให้แข็งแรง เพื่อป้องกันโรคในระยะยาวด้วยหลัก 4 อ. ดังนี้ค่ะ:',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+            weight: 'bold',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDF4',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BBF7D0',
+            borderWidth: '1px',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '🥗 1. อาหาร 2:1:1 (ลดหวาน มัน เค็ม)',
+                size: 'xs',
+                color: '#166534',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'เน้นผัก 2 ส่วน, ข้าวแป้ง 1 ส่วน, โปรตีน 1 ส่วน เลี่ยงน้ำหวานและอาหารแปรรูป',
+                size: 'xs',
+                color: '#475569',
+                wrap: true,
+              },
+              {
+                type: 'separator',
+                color: '#DCFCE7',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: '🏃 2. ออกกำลังกายสม่ำเสมอ',
+                size: 'xs',
+                color: '#166534',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'ขยับร่างกายอย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน)',
+                size: 'xs',
+                color: '#475569',
+                wrap: true,
+              },
+              {
+                type: 'separator',
+                color: '#DCFCE7',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: '😴 3. อารมณ์และการนอนหลับ',
+                size: 'xs',
+                color: '#166534',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'นอนหลับ 7-8 ชม./คืน ผ่อนคลายความเครียดสะสม',
+                size: 'xs',
+                color: '#475569',
+                wrap: true,
+              },
+              {
+                type: 'separator',
+                color: '#DCFCE7',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: '🚭 4. อนามัยสิ่งแวดล้อม (งดบุหรี่/สุรา)',
+                size: 'xs',
+                color: '#166534',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'งดสูบบุหรี่ บุหรี่ไฟฟ้า และดื่มสุรา เพื่อหลอดเลือดและหัวใจที่แข็งแรง',
+                size: 'xs',
+                color: '#475569',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#059669',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🥗 อ่านคำแนะนำโภชนาการสุขภาพดี',
+              text: 'คำแนะนำการรับประทานอาหาร',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🏃 คำแนะนำการออกกำลังกาย',
+              text: 'คำแนะนำการออกกำลังกาย',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 ติดต่อศูนย์ส่งเสริมสุขภาพ (037-247-190)',
+              uri: 'tel:037247190',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
  * Generate Automatic Risk & Interactive Menu Flex Card
  */
 export function createRiskAssessmentAndMenuFlex() {

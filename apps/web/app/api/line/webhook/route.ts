@@ -23,6 +23,7 @@ import {
   createMedicationAdviceFlex,
   createPatientInfoVerificationFlex,
   createRiskAssessmentAndMenuFlex,
+  createGeneralWellnessFlexMessage,
   createPharmacistFormPromptFlex,
   createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
@@ -325,6 +326,8 @@ export async function POST(req: NextRequest) {
 
             if (isEnrolledInClinic) {
               replyMessages.push(createRiskAssessmentAndMenuFlex());
+            } else {
+              replyMessages.push(createGeneralWellnessFlexMessage());
             }
 
             await sendLineReplyMessage(replyToken, replyMessages);
@@ -374,6 +377,9 @@ export async function POST(req: NextRequest) {
             // 2. Automatic Interactive Risk Menu (ONLY sent if enrolled in a chronic clinic)
             if (isEnrolledInClinic) {
               replyMessages.push(createRiskAssessmentAndMenuFlex());
+            } else {
+              // Send General Wellness & Prevention Guide for Non-Chronic Patients
+              replyMessages.push(createGeneralWellnessFlexMessage());
             }
 
             await sendLineReplyMessage(replyToken, replyMessages);
