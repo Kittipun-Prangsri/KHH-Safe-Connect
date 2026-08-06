@@ -2502,7 +2502,7 @@ export function createEmergencySymptomsFlex() {
             contents: [
               {
                 type: 'text',
-                text: '🧠 โรคหลอดเลือดสมอง / สโตรก (STROKE)',
+                text: '🧠 โรคหลอดเลือดสมอง/สโตรก(STROKE)',
                 size: 'sm',
                 weight: 'bold',
                 color: '#C2410C',
