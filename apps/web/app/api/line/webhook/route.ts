@@ -314,15 +314,20 @@ export async function POST(req: NextRequest) {
               patientMatch.clinics
             );
 
-            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
-            await sendLineReplyMessage(replyToken, [
+            const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
+            const replyMessages: any[] = [
               {
                 type: 'text',
                 text: `✅ ${roleNotice}\nระบบทำการผูกบัญชี LINE เรียบร้อยแล้วค่ะ`,
               },
               infoFlex,
-              riskMenuFlex,
-            ]);
+            ];
+
+            if (isEnrolledInClinic) {
+              replyMessages.push(createRiskAssessmentAndMenuFlex());
+            }
+
+            await sendLineReplyMessage(replyToken, replyMessages);
           }
           continue;
         }
@@ -357,17 +362,21 @@ export async function POST(req: NextRequest) {
               patientMatch.clinics
             );
 
-            // 2. Automatic Interactive Risk Menu (Appointment Check, CVD Risk, Advice, Contact Staff)
-            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
-
-            await sendLineReplyMessage(replyToken, [
+            const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
+            const replyMessages: any[] = [
               {
                 type: 'text',
                 text: `✅ ลงทะเบียนสำเร็จเรียบร้อยค่ะ!\nยินดีต้อนรับ คุณ${patientMatch.patientName} (${patientMatch.hn})`,
               },
               infoFlex,
-              riskMenuFlex,
-            ]);
+            ];
+
+            // 2. Automatic Interactive Risk Menu (ONLY sent if enrolled in a chronic clinic)
+            if (isEnrolledInClinic) {
+              replyMessages.push(createRiskAssessmentAndMenuFlex());
+            }
+
+            await sendLineReplyMessage(replyToken, replyMessages);
           } else {
             await sendLineReplyMessage(replyToken, [
               {

@@ -2844,16 +2844,16 @@ export function createEmergencySymptomsFlex() {
               uri: 'tel:1669',
             },
           },
-          {
-            type: 'button',
-            style: 'secondary',
-            height: 'sm',
-            action: {
-              type: 'message',
-              label: '🎧 แจ้งอาการให้เจ้าหน้าที่รับทราบ',
-              text: 'ติดต่อเจ้าหน้าที่',
-            },
-          },
+          // {
+          //   type: 'button',
+          //   style: 'secondary',
+          //   height: 'sm',
+          //   action: {
+          //     type: 'message',
+          //     label: '🎧 แจ้งอาการให้เจ้าหน้าที่รับทราบ',
+          //     text: 'ติดต่อเจ้าหน้าที่',
+          //   },
+          // },
         ],
       },
     },
