@@ -2,8 +2,8 @@ import { getHosxpPool } from './hosxpClient';
 import { getSupabaseAdminClient, isSupabaseConfigured } from './supabaseClient';
 
 // Store in-memory bindings map for fast lookup
-// key: lineUserId, value: { hn: string, patientName: string, boundAt: string }
-const lineUserBindingStore = new Map<string, { hn: string; patientName: string; boundAt: string }>();
+// key: lineUserId, value: { hn: string, patientName: string, boundAt: string, userRole?: string }
+const lineUserBindingStore = new Map<string, { hn: string; patientName: string; boundAt: string; userRole?: string }>();
 
 export interface PatientAppointmentInfo {
   oappId: string;
@@ -509,5 +509,116 @@ export function getIncomingLineMessagesForHn(hn: string): SavedLineMessage[] {
     (m) => m.hn === hn || m.hn.replace(/^HN-/i, '') === cleanHn
   );
 }
+
+/**
+ * Unbind LINE User ID from HN (Staff action via Web Dashboard)
+ */
+export async function unbindLineUserFromHn(
+  hn: string,
+  lineUserId?: string,
+  staffReason: string = 'Staff unbind requested via Web Dashboard'
+): Promise<{ success: boolean; message: string; unboundCount: number }> {
+  if (!hn) {
+    return { success: false, message: 'กรุณาระบุ HN', unboundCount: 0 };
+  }
+
+  const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+  const cleanHn = hn.trim().replace(/^HN-/i, '');
+  let unboundCount = 0;
+
+  // 1. Remove from in-memory binding store
+  for (const [key, value] of lineUserBindingStore.entries()) {
+    if (value.hn === formattedHn || value.hn.replace(/^HN-/i, '') === cleanHn) {
+      if (!lineUserId || key === lineUserId) {
+        lineUserBindingStore.delete(key);
+        unboundCount++;
+      }
+    }
+  }
+
+  // 2. Deactivate in Supabase patient_line_users table
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      let query = supabase
+        .from('patient_line_users')
+        .update({
+          is_active: false,
+          unbound_at: new Date().toISOString(),
+        })
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
+        .eq('is_active', true);
+
+      if (lineUserId) {
+        query = query.eq('line_user_id', lineUserId);
+      }
+
+      const { data, error } = await query.select();
+
+      if (!error && data) {
+        unboundCount = Math.max(unboundCount, data.length);
+      }
+
+      // Audit Log
+      await supabase.from('line_binding_audit_logs').insert({
+        line_user_id: lineUserId || 'ALL_BOUND_USERS',
+        target_hn: formattedHn,
+        action_type: 'UNBIND_STAFF_ACTION',
+        reason: staffReason,
+      });
+    } catch (err) {
+      console.warn('⚠️ Error unbinding LINE user from Supabase:', err);
+    }
+  }
+
+  return {
+    success: true,
+    message: `ปลดการผูกบัญชี LINE สำหรับผู้ป่วย ${formattedHn} สำเร็จ (${unboundCount} บัญชี)`,
+    unboundCount,
+  };
+}
+
+/**
+ * Get active & history LINE bindings for a specific HN
+ */
+export async function getLineBindingsForHn(hn: string) {
+  if (!hn) return [];
+  const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+  const cleanHn = hn.trim().replace(/^HN-/i, '');
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('patient_line_users')
+        .select('*')
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanHn}`)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Error fetching LINE bindings for HN:', err);
+    }
+  }
+
+  // Memory fallback
+  const results = [];
+  for (const [lineId, value] of lineUserBindingStore.entries()) {
+    if (value.hn === formattedHn || value.hn.replace(/^HN-/i, '') === cleanHn) {
+      results.push({
+        line_user_id: lineId,
+        hn: value.hn,
+        patient_name: value.patientName,
+        user_role: value.userRole,
+        is_active: true,
+        created_at: value.boundAt,
+      });
+    }
+  }
+  return results;
+}
+
 
 

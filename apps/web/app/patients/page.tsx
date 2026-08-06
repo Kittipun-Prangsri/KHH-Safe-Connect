@@ -24,6 +24,8 @@ import {
   EyeOff,
   ShieldCheck,
   AlertTriangle,
+  Unlink,
+  Link,
 } from 'lucide-react';
 import { maskCid, maskPhone, maskPatientName as maskName, isITSuperAdmin } from '@/lib/pdpaUtils';
 
@@ -79,6 +81,8 @@ export default function PatientsPage() {
   const [showLabModal, setShowLabModal] = useState<boolean>(false);
   const [patientScreening, setPatientScreening] = useState<any>(null);
   const [controlSummary, setControlSummary] = useState<any>(null);
+  const [lineBindings, setLineBindings] = useState<any[]>([]);
+  const [loadingBindings, setLoadingBindings] = useState(false);
 
   // New patient state
   const [newPatient, setNewPatient] = useState({
@@ -123,6 +127,7 @@ export default function PatientsPage() {
     setControlSummary(null);
 
     try {
+      fetchLineBindings(patient.rawHn || patient.hn);
       const res = await fetch(`/api/hosxp/patients/${patient.rawHn || patient.hn}/history`);
       const data = await res.json();
       if (data.success) {
@@ -136,6 +141,51 @@ export default function PatientsPage() {
       console.error('❌ Failed to fetch patient history:', err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const fetchLineBindings = async (hn: string) => {
+    setLoadingBindings(true);
+    try {
+      const res = await fetch(`/api/line/binding?hn=${encodeURIComponent(hn)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.bindings)) {
+        setLineBindings(data.bindings);
+      } else {
+        setLineBindings([]);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch LINE bindings:', err);
+      setLineBindings([]);
+    } finally {
+      setLoadingBindings(false);
+    }
+  };
+
+  const handleUnbindLine = async (hn: string, lineUserId?: string) => {
+    if (
+      !confirm(
+        `⚠️ ยืนยันปลดการผูกบัญชี LINE สำหรับผู้ป่วย ${hn} หรือไม่?\n\nหลังจากปลดการผูก บัญชี LINE นี้จะไม่ได้รับแจ้งเตือนนัดหมาย และผู้ป่วย/ญาติจะต้องทำการลงทะเบียนใหม่`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/line/binding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hn, lineUserId, reason: 'Unbound by staff from Web Dashboard' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        fetchLineBindings(hn);
+      } else {
+        alert(`❌ ไม่สามารถปลดการผูกบัญชีได้: ${data.message}`);
+      }
+    } catch (err) {
+      alert('❌ เกิดข้อผิดพลาดในการปลดการผูกบัญชี LINE');
     }
   };
 
@@ -378,6 +428,86 @@ export default function PatientsPage() {
                     <span className="text-slate-400 block text-[10px]">เลขบัตรประชาชน (CID)</span>
                     <span className="font-bold text-slate-800 font-mono">{showPdpaData ? (selectedPatient.cid || '-') : maskCid(selectedPatient.cid || '')}</span>
                   </div>
+                </div>
+
+                {/* LINE Account Binding Status & Unbind Action Card */}
+                <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-emerald-950 text-xs flex items-center gap-2">
+                      <Link className="w-4 h-4 text-emerald-600" />
+                      <span>สถานะการผูกบัญชี LINE Official Account (LINE Binding)</span>
+                    </h4>
+                    {lineBindings.filter((b) => b.is_active).length > 0 && (
+                      <button
+                        onClick={() => handleUnbindLine(selectedPatient.hn)}
+                        className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="ปลดการผูกบัญชี LINE ทั้งหมดของผู้ป่วยรายนี้"
+                      >
+                        <Unlink className="w-3.5 h-3.5 text-rose-600" />
+                        <span>ปลดการผูก LINE ทั้งหมด (Unbind All)</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {loadingBindings ? (
+                    <div className="p-3 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                      <span>กำลังตรวจสอบสถานะการผูก LINE...</span>
+                    </div>
+                  ) : lineBindings.length === 0 ? (
+                    <div className="p-3 bg-white border border-emerald-100 rounded-lg flex items-center justify-between text-xs text-slate-500">
+                      <span>⚪ ผู้ป่วยรายนี้ยังไม่ได้ทำการผูกบัญชี LINE ในระบบ</span>
+                      <span className="text-[10px] text-slate-400 font-medium">แนะให้ผู้ป่วยพิมพ์ {selectedPatient.hn} ในแชต LINE</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lineBindings.map((b, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            b.is_active
+                              ? 'bg-white border-emerald-200 shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 opacity-60'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  b.is_active
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-200 text-slate-600'
+                                }`}
+                              >
+                                {b.is_active ? '🟢 สถานะ: ผูกสำเร็จ (Active)' : '🔴 ยกเลิกแล้ว (Unbound)'}
+                              </span>
+                              <span className="font-bold text-slate-800">
+                                บทบาท: {b.user_role === 'caregiver' ? '👥 ญาติ / ผู้ดูแล' : '👤 ผู้ป่วยหลัก'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono">
+                              LINE User ID: {b.line_user_id ? `${b.line_user_id.substring(0, 10)}...` : '-'}
+                              {b.created_at && (
+                                <span className="ml-2 text-slate-400 font-sans">
+                                  (ผูกเมื่อ {new Date(b.created_at).toLocaleDateString('th-TH')})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {b.is_active && (
+                            <button
+                              onClick={() => handleUnbindLine(selectedPatient.hn, b.line_user_id)}
+                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Unlink className="w-3.5 h-3.5" />
+                              <span>ปลดการผูก</span>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* 1. Status Summary & Current Control Banner */}
