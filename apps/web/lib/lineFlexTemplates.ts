@@ -2057,14 +2057,14 @@ export function createPatientRegistrationPromptFlex() {
             contents: [
               {
                 type: 'text',
-                text: '✍️ วิธีที่ 1: พิมพ์ระบุข้อความลงในช่องแชทนี้',
+                text: '✍️ วิธีที่ 1: พิมพ์เลขบัตรประชาชน 13 หลัก',
                 size: 'xs',
                 color: '#0F766E',
                 weight: 'bold',
               },
               {
                 type: 'text',
-                text: 'พิมพ์หมายเลข HN หรือ เลขบัตรประชาชน 13 หลัก ส่งกลับมาในแชทได้ทันทีค่ะ',
+                text: 'พิมพ์เลขบัตรประชาชน 13 หลักของผู้ป่วย (เฉพาะตัวเลข) ส่งมาในแชทนี้ได้ทันทีค่ะ',
                 size: 'xs',
                 color: '#334155',
                 wrap: true,
@@ -2072,7 +2072,7 @@ export function createPatientRegistrationPromptFlex() {
               },
               {
                 type: 'text',
-                text: '• พิมพ์ HN: HN-98302 หรือ 98302\n• พิมพ์เลขบัตร: 1234567890123',
+                text: '💡 ตัวอย่าง: 1234567890123 หรือ พิมพ์ HN เช่น 000059754',
                 size: 'xs',
                 color: '#64748B',
                 margin: 'xs',
@@ -2097,7 +2097,7 @@ export function createPatientRegistrationPromptFlex() {
               },
               {
                 type: 'text',
-                text: 'กดปุ่มด้านล่างเพื่อเปิดกล้องส่องบาร์โค้ดใบนัด โดยไม่ต้องพิมพ์ตัวเลข',
+                text: 'กดปุ่มด้านล่างเพื่อเปิดกล้องส่องบาร์โค้ดมุมใบนัด โดยไม่ต้องพิมพ์ตัวเลข',
                 size: 'xs',
                 color: '#64748B',
                 wrap: true,
@@ -2113,6 +2113,17 @@ export function createPatientRegistrationPromptFlex() {
         spacing: 'sm',
         paddingAll: 'md',
         contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#2563EB',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '✍️ กดเพื่อพิมพ์เลขบัตรประชาชน 13 หลัก',
+              uri: `https://line.me/R/oaMessage/${(process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk').trim()}/?`,
+            },
+          },
           {
             type: 'button',
             style: 'primary',
