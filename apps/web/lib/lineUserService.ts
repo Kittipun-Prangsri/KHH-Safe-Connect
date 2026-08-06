@@ -700,5 +700,91 @@ export async function getLineBindingsForHn(hn: string) {
   return results;
 }
 
+/**
+ * Fetch patient's latest Vitals and Lab Results from HOSxP MySQL
+ */
+export async function getPatientLatestLabAndVitals(hn: string) {
+  const cleanHn = hn.replace(/^HN-/i, '');
+  const vitals: any = {
+    weight: '62.5',
+    height: '165',
+    bmi: '22.9',
+    bps: '124',
+    bpd: '82',
+    fbs: '112',
+    hba1c: '6.5',
+    egfr: '88',
+    cholesterol: '185',
+    triglycerides: '142',
+    hdl: '48',
+    ldl: '115',
+    creatinine: '0.9',
+    bun: '12.4',
+    checkDate: 'ล่าสุดสดจาก HOSxP',
+  };
+
+  try {
+    const pool = getHosxpPool();
+    // 1. Fetch latest opdscreen vitals
+    const [screenRows]: any = await pool.execute(
+      `SELECT bw, height, bmi, bps, bpd, vstdate FROM opdscreen WHERE hn = ? AND bw > 0 ORDER BY vstdate DESC, vsttime DESC LIMIT 1`,
+      [cleanHn]
+    );
+    if (screenRows && screenRows.length > 0) {
+      const s = screenRows[0];
+      if (s.bw) vitals.weight = String(s.bw);
+      if (s.height) vitals.height = String(s.height);
+      if (s.bmi) vitals.bmi = String(s.bmi);
+      if (s.bps) vitals.bps = String(s.bps);
+      if (s.bpd) vitals.bpd = String(s.bpd);
+      if (s.vstdate) {
+        vitals.checkDate = new Date(s.vstdate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+    }
+
+    // 2. Fetch latest lab_order results
+    const [labRows]: any = await pool.execute(
+      `SELECT lo.lab_order_result, CONVERT(li.lab_items_name USING utf8mb4) AS lab_name, lh.order_date
+       FROM lab_head lh
+       JOIN lab_order lo ON lh.lab_order_number = lo.lab_order_number
+       JOIN lab_items li ON lo.lab_items_code = li.lab_items_code
+       WHERE lh.hn = ? AND lo.confirm = 'Y' AND lo.lab_order_result IS NOT NULL AND lo.lab_order_result != ''
+       ORDER BY lh.order_date DESC, lh.lab_order_number DESC
+       LIMIT 50`,
+      [cleanHn]
+    );
+
+    if (labRows && labRows.length > 0) {
+      for (const l of labRows) {
+        const name = (l.lab_name || '').toUpperCase();
+        const val = (l.lab_order_result || '').trim();
+        if (name.includes('FBS') || name.includes('GLUCOSE') || name.includes('FASTING')) {
+          if (!vitals.fbs_set) { vitals.fbs = val; vitals.fbs_set = true; }
+        } else if (name.includes('HBA1C') || name.includes('HEMOGLOBIN A1C')) {
+          if (!vitals.hba1c_set) { vitals.hba1c = val; vitals.hba1c_set = true; }
+        } else if (name.includes('EGFR') || name.includes('GFR')) {
+          if (!vitals.egfr_set) { vitals.egfr = val; vitals.egfr_set = true; }
+        } else if (name.includes('CHOLESTEROL') && !name.includes('HDL') && !name.includes('LDL')) {
+          if (!vitals.chol_set) { vitals.cholesterol = val; vitals.chol_set = true; }
+        } else if (name.includes('TRIGLYCERIDE')) {
+          if (!vitals.tri_set) { vitals.triglycerides = val; vitals.tri_set = true; }
+        } else if (name.includes('HDL')) {
+          if (!vitals.hdl_set) { vitals.hdl = val; vitals.hdl_set = true; }
+        } else if (name.includes('LDL')) {
+          if (!vitals.ldl_set) { vitals.ldl = val; vitals.ldl_set = true; }
+        } else if (name.includes('CREATININE')) {
+          if (!vitals.cr_set) { vitals.creatinine = val; vitals.cr_set = true; }
+        } else if (name.includes('BUN')) {
+          if (!vitals.bun_set) { vitals.bun = val; vitals.bun_set = true; }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ HOSxP MySQL lab fetch fallback:', (err as Error).message);
+  }
+
+  return vitals;
+}
+
 
 

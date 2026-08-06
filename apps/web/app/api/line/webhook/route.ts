@@ -6,6 +6,7 @@ import {
   findPatientByHnOrCidInHosxp,
   findStaffInHosxp,
   fetchPatientUpcomingAppointmentsFromHosxp,
+  getPatientLatestLabAndVitals,
   recordIncomingLineMessage,
 } from '@/lib/lineUserService';
 import {
@@ -25,6 +26,7 @@ import {
   createRiskAssessmentAndMenuFlex,
   createGeneralWellnessFlexMessage,
   createPatientVitalsFlex,
+  createPdpaPinPromptFlex,
   createPharmacistFormPromptFlex,
   createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
@@ -261,7 +263,53 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Vitals & Lab Results Trigger
+        // PIN Verification for PDPA Protected Vitals & Lab Results (e.g. PIN-1234 or 4 digits)
+        const isPinInput = text.toUpperCase().startsWith('PIN-') || (text.length === 4 && /^\d{4}$/.test(text));
+        if (isPinInput) {
+          const pinDigits = text.replace(/[^0-9]/g, '');
+          const binding = await getLineUserBinding(lineUserId);
+
+          if (!binding) {
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: '⚠️ บัญชี LINE ของท่านยังไม่ได้ผูกกับระบบผู้ป่วย กรุณาพิมพ์เลขบัตรประชาชน หรือ HN 13 หลักเพื่อลงทะเบียนก่อนค่ะ',
+              },
+            ]);
+            continue;
+          }
+
+          const patientMatch = await findPatientByHnOrCidInHosxp(binding.hn);
+          const rawCid = (patientMatch?.cid || '').replace(/[^0-9]/g, '');
+          const last4Cid = rawCid.slice(-4);
+
+          if (pinDigits && last4Cid && pinDigits === last4Cid) {
+            const vitals = await getPatientLatestLabAndVitals(binding.hn);
+            const vitalsFlex = createPatientVitalsFlex(
+              binding.patientName || patientMatch.patientName,
+              binding.hn,
+              vitals
+            );
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: `🔓 ยืนยันรหัส PIN สดจาก HOSxP เรียบร้อยแล้วค่ะ!\nแสดงผลตรวจสุขภาพและผลแล็บล่าสุดของ คุณ${binding.patientName}`,
+              },
+              vitalsFlex,
+            ]);
+          } else {
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: `❌ รหัสผ่านไม่ถูกต้อง!\n\nเลข 4 หลักท้ายของบัตรประชาชนไม่ตรงกับข้อมูลในระบบ HOSxP\nกรุณาตรวจสอบและกดลองใหม่อีกครั้งค่ะ`,
+              },
+              createPdpaPinPromptFlex(binding.patientName, binding.hn),
+            ]);
+          }
+          continue;
+        }
+
+        // Vitals & Lab Results Trigger (Prompt for PIN)
         if (
           text === 'ผลตรวจสุขภาพ' ||
           text.includes('ผลแล็บ') ||
@@ -270,13 +318,11 @@ export async function POST(req: NextRequest) {
           text.includes('BMI')
         ) {
           const binding = await getLineUserBinding(lineUserId);
-          const patientMatch = binding ? await findPatientByHnOrCidInHosxp(binding.hn) : null;
-          const flex = createPatientVitalsFlex(
+          const pdpaPromptFlex = createPdpaPinPromptFlex(
             binding?.patientName || 'ผู้ป่วย',
-            binding?.hn || 'HN-0000',
-            (patientMatch as any)?.vitals
+            binding?.hn || 'HN-XXXXX'
           );
-          await sendLineReplyMessage(replyToken, [flex]);
+          await sendLineReplyMessage(replyToken, [pdpaPromptFlex]);
           continue;
         }
 

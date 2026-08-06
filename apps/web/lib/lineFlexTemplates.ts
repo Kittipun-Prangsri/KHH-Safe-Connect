@@ -2822,7 +2822,7 @@ export function createPatientInfoVerificationFlex(
                 height: 'sm',
                 action: {
                   type: 'message',
-                  label: '📊 ดูผลตรวจสุขภาพ & สัญญาณชีพฉบับเต็ม',
+                  label: '🔒 ดูผลตรวจสุขภาพ & สัญญาณชีพ (คุ้มครอง PDPA)',
                   text: 'ผลตรวจสุขภาพ',
                 },
               },
@@ -2850,6 +2850,134 @@ export function createPatientInfoVerificationFlex(
                 },
               },
             ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate PDPA Protection PIN Prompt Flex Card
+ */
+export function createPdpaPinPromptFlex(patientName: string = 'ผู้ป่วย', hn: string = 'HN-XXXXX') {
+  const lineOaBasicId = (process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk').trim();
+
+  return {
+    type: 'flex',
+    altText: '🔒 โปรดยืนยันรหัสผ่านเพื่อเปิดดูผลตรวจสุขภาพ (PDPA Protected)',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#475569',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🔒 ยืนยันรหัสผ่านเปิดดูผลตรวจสุขภาพ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: 'ข้อมูลสุขภาพส่วนบุคคลได้รับการคุ้มครองตาม พ.ร.บ. PDPA',
+            color: '#E2E8F0',
+            size: 'xs',
+            margin: 'xs',
+            wrap: true,
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '👤 บัญชีผู้ป่วย:',
+                size: 'xs',
+                color: '#64748B',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `คุณ${patientName} (${hn})`,
+                size: 'sm',
+                color: '#0F172A',
+                weight: 'bold',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEF3C7',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FDE68A',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🔑 วิธีการปลดล็อกดูผลตรวจ:',
+                size: 'xs',
+                color: '#92400E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'โปรดส่งรหัสผ่านโดยพิมพ์ PIN- ตามด้วยเลข 4 หลักสุดท้ายของบัตรประชาชนผู้ป่วย',
+                size: 'xs',
+                color: '#78350F',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '💡 ตัวอย่าง: เลขบัตรลงด้วย 1234 ให้พิมพ์ PIN-1234 หรือ 1234',
+                size: 'xs',
+                color: '#B45309',
+                weight: 'bold',
+                margin: 'sm',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0F766E',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🔓 กดเพื่อพิมพ์รหัสยืนยัน (PIN-)',
+              uri: `https://line.me/R/oaMessage/${lineOaBasicId}/?PIN-`,
+            },
+          },
+        ],
       },
     },
   };
