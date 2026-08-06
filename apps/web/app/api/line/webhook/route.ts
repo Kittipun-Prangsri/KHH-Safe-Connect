@@ -326,30 +326,52 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Patient Registration matching HN format (HN-XXXXX) or 13-digit CID
-        if (text.toUpperCase().startsWith('HN-') || text.match(/^[0-9]{13}$/) || text.match(/^[0-9]{4,8}$/)) {
+        // Patient Registration matching HN format (HN-XXXXX), 13-digit CID, or digits (3-13 digits)
+        const cleanDigitsStr = text.replace(/[^0-9]/g, '');
+        if (
+          text.toUpperCase().startsWith('HN-') ||
+          cleanDigitsStr.length === 13 ||
+          (cleanDigitsStr.length >= 3 && cleanDigitsStr.length <= 10)
+        ) {
           const patientMatch = await findPatientByHnOrCidInHosxp(text);
 
           if (patientMatch.found) {
-            const rawCid = patientMatch.cid || text;
+            // Automatically bind LINE User ID to matched HOSxP HN as primary patient
+            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName, {
+              userRole: 'patient',
+              overrideExisting: true,
+            });
+
+            const rawCid = patientMatch.cid || cleanDigitsStr;
             const maskedCid =
               rawCid.length === 13
                 ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
                 : rawCid;
 
-            // Send Role Confirmation Flex Card (Self vs Caregiver)
-            const roleFlex = createRoleConfirmationFlex(
-              patientMatch.hn,
+            // 1. Patient Info Verification Card (Full Name, HN, CID, Registered Clinics)
+            const infoFlex = createPatientInfoVerificationFlex(
               patientMatch.patientName,
-              maskedCid
+              patientMatch.hn,
+              maskedCid,
+              patientMatch.clinics
             );
 
-            await sendLineReplyMessage(replyToken, [roleFlex]);
+            // 2. Automatic Interactive Risk Menu (Appointment Check, CVD Risk, Advice, Contact Staff)
+            const riskMenuFlex = createRiskAssessmentAndMenuFlex();
+
+            await sendLineReplyMessage(replyToken, [
+              {
+                type: 'text',
+                text: `✅ ลงทะเบียนสำเร็จเรียบร้อยค่ะ!\nยินดีต้อนรับ คุณ${patientMatch.patientName} (${patientMatch.hn})`,
+              },
+              infoFlex,
+              riskMenuFlex,
+            ]);
           } else {
             await sendLineReplyMessage(replyToken, [
               {
                 type: 'text',
-                text: `⚠️ ไม่พบข้อมูลรหัส "${text}" ในระบบผู้ป่วยโรงพยาบาลคลองหาด กรุณาตรวจสอบ HN หรือเลขบัตรประชาชนอีกครั้งค่ะ`,
+                text: `⚠️ ไม่พบข้อมูลหมายเลข "${text}" ในระบบผู้ป่วยโรงพยาบาลคลองหาด กรุณาตรวจสอบเลขบัตรประชาชน หรือ HN อีกครั้งค่ะ`,
               },
             ]);
           }

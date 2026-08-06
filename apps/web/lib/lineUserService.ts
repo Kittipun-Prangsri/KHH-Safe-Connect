@@ -163,8 +163,10 @@ export async function bindLineUserToHn(
  * Checks HOSxP MySQL first, with fallback to Supabase PostgreSQL patients table.
  */
 export async function findPatientByHnOrCidInHosxp(queryStr: string) {
-  const cleanQuery = queryStr.trim().replace(/^HN-/i, '');
-  const formattedHn = `HN-${cleanQuery}`;
+  const rawClean = queryStr.trim().replace(/^HN-?/i, '');
+  const digitsOnly = rawClean.replace(/[^0-9]/g, '');
+  const cleanQuery = digitsOnly || rawClean;
+  const formattedHn = cleanQuery.startsWith('HN-') ? cleanQuery : `HN-${cleanQuery}`;
 
   // 1. Query HOSxP MySQL
   try {
@@ -177,10 +179,10 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
              COALESCE(mobile_phone_number, hometel, informtel) AS phone,
              cid
       FROM patient 
-      WHERE hn = ? OR cid = ? OR hn = LPAD(?, 7, '0')
+      WHERE hn = ? OR cid = ? OR hn = LPAD(?, 7, '0') OR hn = LPAD(?, 9, '0')
       LIMIT 1
     `,
-      [cleanQuery, cleanQuery, cleanQuery]
+      [cleanQuery, cleanQuery, cleanQuery, cleanQuery]
     );
 
     if (rows && rows.length > 0) {
