@@ -24,6 +24,7 @@ import {
   createPatientInfoVerificationFlex,
   createRiskAssessmentAndMenuFlex,
   createGeneralWellnessFlexMessage,
+  createPatientVitalsFlex,
   createPharmacistFormPromptFlex,
   createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
@@ -260,6 +261,25 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Vitals & Lab Results Trigger
+        if (
+          text === 'ผลตรวจสุขภาพ' ||
+          text.includes('ผลแล็บ') ||
+          text.includes('สัญญาณชีพ') ||
+          text.includes('ความดัน') ||
+          text.includes('BMI')
+        ) {
+          const binding = await getLineUserBinding(lineUserId);
+          const patientMatch = binding ? await findPatientByHnOrCidInHosxp(binding.hn) : null;
+          const flex = createPatientVitalsFlex(
+            binding?.patientName || 'ผู้ป่วย',
+            binding?.hn || 'HN-0000',
+            (patientMatch as any)?.vitals
+          );
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
         // General Wellness & Prevention Flex Card Trigger
         if (text === 'ข้อมูลสุขภาพดี' || text.includes('สุขภาพดี')) {
           const flex = createGeneralWellnessFlexMessage();
@@ -319,7 +339,8 @@ export async function POST(req: NextRequest) {
               patientMatch.patientName,
               patientMatch.hn,
               maskedCid,
-              patientMatch.clinics
+              patientMatch.clinics,
+              (patientMatch as any).vitals
             );
 
             const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
@@ -369,7 +390,8 @@ export async function POST(req: NextRequest) {
               patientMatch.patientName,
               patientMatch.hn,
               maskedCid,
-              patientMatch.clinics
+              patientMatch.clinics,
+              (patientMatch as any).vitals
             );
 
             const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;

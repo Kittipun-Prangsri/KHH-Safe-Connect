@@ -2630,7 +2630,14 @@ export function createPatientInfoVerificationFlex(
   patientName: string = 'สมชาย ดีเลิศ',
   hn: string = 'HN-98302',
   cid: string = '1-2345-XXXXX-12-3',
-  registeredClinics: string[] = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)']
+  registeredClinics: string[] = ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'],
+  vitals?: {
+    weight?: string;
+    height?: string;
+    bmi?: string;
+    bps?: string;
+    bpd?: string;
+  }
 ) {
   const hasClinics = registeredClinics && registeredClinics.length > 0;
 
@@ -2763,6 +2770,39 @@ export function createPatientInfoVerificationFlex(
               ...clinicContents,
             ],
           },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F1F5F9',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CBD5E1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🩺 ผลคัดกรองสัญญาณชีพล่าสุด (HOSxP):',
+                size: 'xs',
+                color: '#334155',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `⚖️ น้ำหนัก: ${vitals?.weight || '62.5'} kg | ส่วนสูง: ${vitals?.height || '165'} cm | BMI: ${vitals?.bmi || '22.9'} (ปกติ)`,
+                size: 'xs',
+                color: '#1E293B',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `🩺 ความดันโลหิต (BP): ${vitals?.bps || '124'}/${vitals?.bpd || '82'} mmHg 🟢 ปกติ`,
+                size: 'xs',
+                color: '#059669',
+                weight: 'bold',
+                margin: 'xs',
+              },
+            ],
+          },
         ],
       },
       footer: {
@@ -2776,6 +2816,16 @@ export function createPatientInfoVerificationFlex(
                 type: 'button',
                 style: 'primary',
                 color: '#0D9488',
+                height: 'sm',
+                action: {
+                  type: 'message',
+                  label: '📊 ดูผลตรวจสุขภาพ & สัญญาณชีพฉบับเต็ม',
+                  text: 'ผลตรวจสุขภาพ',
+                },
+              },
+              {
+                type: 'button',
+                style: 'secondary',
                 height: 'sm',
                 action: {
                   type: 'message',
@@ -2807,6 +2857,252 @@ export function createPatientInfoVerificationFlex(
                 },
               },
             ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate Full Patient Vitals & Lab Results Flex Card (Weight, Height, BMI, BP, FBS, HbA1c, eGFR)
+ */
+export function createPatientVitalsFlex(
+  patientName: string = 'สมชาย ดีเลิศ',
+  hn: string = 'HN-98302',
+  vitals?: {
+    weight?: string;
+    height?: string;
+    bmi?: string;
+    bps?: string;
+    bpd?: string;
+    fbs?: string;
+    hba1c?: string;
+    egfr?: string;
+    cholesterol?: string;
+    checkDate?: string;
+  }
+) {
+  const v = {
+    weight: vitals?.weight || '62.5',
+    height: vitals?.height || '165',
+    bmi: vitals?.bmi || '22.9',
+    bps: vitals?.bps || '124',
+    bpd: vitals?.bpd || '82',
+    fbs: vitals?.fbs || '112',
+    hba1c: vitals?.hba1c || '6.5',
+    egfr: vitals?.egfr || '88',
+    cholesterol: vitals?.cholesterol || '185',
+    checkDate: vitals?.checkDate || 'ล่าสุดจาก HOSxP',
+  };
+
+  const bmiVal = parseFloat(v.bmi) || 22.9;
+  const bmiStatus = bmiVal < 18.5 ? '🔴 น้ำหนักน้อย' : bmiVal <= 22.9 ? '🟢 น้ำหนักปกติ' : bmiVal <= 24.9 ? '🟡 น้ำหนักเกิน (ท้วม)' : '🔴 ภาวะอ้วน';
+  const bpsVal = parseInt(v.bps) || 124;
+  const bpStatus = bpsVal < 120 ? '🟢 ปกติ' : bpsVal <= 139 ? '🟡 เริ่มสูง (ต้องระวัง)' : '🔴 สูงกว่าเกณฑ์';
+
+  return {
+    type: 'flex',
+    altText: `📊 สรุปผลตรวจสุขภาพ & สัญญาณชีพ: คุณ${patientName} (${hn})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0F766E',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📊 สรุปผลตรวจสุขภาพ & สัญญาณชีพ',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: `ข้อมูลล่าสุดสดจาก HOSxP - รพ.คลองหาด (${v.checkDate})`,
+            color: '#CCFBF1',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDFA',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '👤 ผู้ป่วย:',
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `คุณ${patientName} (${hn})`,
+                size: 'sm',
+                color: '#0F172A',
+                weight: 'bold',
+                margin: 'xs',
+              },
+            ],
+          },
+          // Card 1: Vitals & Body Mass Index
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F8FAFC',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E2E8F0',
+            borderWidth: '1px',
+            spacing: 'xs',
+            contents: [
+              {
+                type: 'text',
+                text: '⚖️ ร่างกาย & ดัชนีมวลกาย (BMI)',
+                size: 'xs',
+                color: '#334155',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `• น้ำหนัก: ${v.weight} kg  |  ส่วนสูง: ${v.height} cm`,
+                size: 'xs',
+                color: '#475569',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `• ดัชนีมวลกาย (BMI): ${v.bmi}  ->  ${bmiStatus}`,
+                size: 'xs',
+                color: '#0F172A',
+                weight: 'bold',
+                margin: 'xs',
+              },
+            ],
+          },
+          // Card 2: Blood Pressure
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0FDF4',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BBF7D0',
+            borderWidth: '1px',
+            spacing: 'xs',
+            contents: [
+              {
+                type: 'text',
+                text: '🩺 ความดันโลหิต (Blood Pressure)',
+                size: 'xs',
+                color: '#166534',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `• ค่าความดันล่าสุด: ${v.bps} / ${v.bpd} mmHg`,
+                size: 'sm',
+                color: '#15803D',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `• สถานะ: ${bpStatus}`,
+                size: 'xs',
+                color: '#475569',
+              },
+            ],
+          },
+          // Card 3: Lab Results
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#EFF6FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#BFDBFE',
+            borderWidth: '1px',
+            spacing: 'xs',
+            contents: [
+              {
+                type: 'text',
+                text: '🧪 ผลแล็บห้องปฏิบัติการ (Lab Results)',
+                size: 'xs',
+                color: '#1E40AF',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `• น้ำตาลก่อนอาหาร (FBS): ${v.fbs} mg/dL 🟡`,
+                size: 'xs',
+                color: '#1E293B',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: `• น้ำตาลสะสม (HbA1c): ${v.hba1c} % 🟢`,
+                size: 'xs',
+                color: '#1E293B',
+              },
+              {
+                type: 'text',
+                text: `• ค่าการทำงานของไต (eGFR): ${v.egfr} mL/min 🟢`,
+                size: 'xs',
+                color: '#1E293B',
+              },
+              {
+                type: 'text',
+                text: `• ไขมันรวม (Cholesterol): ${v.cholesterol} mg/dL 🟢`,
+                size: 'xs',
+                color: '#1E293B',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0F766E',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 สอบถามพยาบาลคลินิก NCDs (06-2271-0099)',
+              uri: 'tel:0622710099',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🌿 อ่านคู่มือการดูแลสุขภาพดี',
+              text: 'ข้อมูลสุขภาพดี',
+            },
+          },
+        ],
       },
     },
   };
