@@ -2568,6 +2568,49 @@ export function createPatientInfoVerificationFlex(
           },
         ],
       },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: hasClinics
+          ? [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#0D9488',
+                height: 'sm',
+                action: {
+                  type: 'message',
+                  label: '🌿 อ่านคู่มือการดูแลสุขภาพดี',
+                  text: 'ข้อมูลสุขภาพดี',
+                },
+              },
+            ]
+          : [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#059669',
+                height: 'sm',
+                action: {
+                  type: 'message',
+                  label: '🌿 ดูคู่มือดูแลสุขภาพดี & ป้องกันโรค NCDs',
+                  text: 'ข้อมูลสุขภาพดี',
+                },
+              },
+              {
+                type: 'button',
+                style: 'secondary',
+                height: 'sm',
+                action: {
+                  type: 'uri',
+                  label: '📞 ติดต่อสอบถามห้องเวชระเบียน',
+                  uri: 'tel:037247190',
+                },
+              },
+            ],
+      },
     },
   };
 }

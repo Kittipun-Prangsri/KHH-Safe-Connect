@@ -260,6 +260,13 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // General Wellness & Prevention Flex Card Trigger
+        if (text === 'ข้อมูลสุขภาพดี' || text.includes('สุขภาพดี')) {
+          const flex = createGeneralWellnessFlexMessage();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
         // Tile 6: "คำแนะนำสุขภาพ"
         if (text === 'คำแนะนำสุขภาพ' || text.includes('ความรู้') || text.includes('คำแนะนำ')) {
           const flex = createHealthEducationMenuFlex();
