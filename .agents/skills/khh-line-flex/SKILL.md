@@ -1,13 +1,32 @@
 ---
 name: khh-line-flex
 description: >-
-  Build, maintain, and optimize LINE Flex Message templates and digital health innovations for Khlong Hat Hospital NCDs Care (KHH Safe-Connect).
+  Build, maintain, and optimize LINE Flex Message templates and digital health innovations for Khlong Hat Hospital NCDs Care (KHH Safe-Connect). Enforces 100% FREE Reply Messages (NO Push Messages).
 ---
 
 # KHH Safe-Connect: LINE Flex Message Development Skill
 
 ## Overview
 This skill provides comprehensive instructions, standards, and utilities for building, modifying, and expanding LINE Flex Message templates for **Khlong Hat Hospital (โรงพยาบาลคลองหาด)** NCDs Care Portal (`apps/web/lib/flex/`).
+
+> [!IMPORTANT]
+> **STRICT COST-SAVING POLICY: NO LINE PUSH MESSAGES**
+> LINE Official Account charges fees/quotas for Push Messages. To support 100 to 1,000+ patients without any monthly costs, **ALL messages MUST be delivered via 100% FREE LINE Reply Messages (`sendLineReplyMessage`)** using the Webhook `replyToken`.
+
+---
+
+## Messaging Policy: 100% FREE Reply Messages Only
+
+| Message Type | LINE Fee / Quota | KHH Policy | Implementation Method |
+| :--- | :---: | :---: | :--- |
+| **Reply Message** (`replyToken`) | **0 Baht (100% FREE & Unlimited)** | ✅ **MANDATORY** | `sendLineReplyMessage(replyToken, flexCard)` |
+| **Push Message** (`to: userId`) | Charges quota / Monthly fee | ❌ **PROHIBITED** | Do NOT use `sendLinePushMessage` |
+
+### How On-Demand Check-in Works (0 Baht for 1,000+ Patients):
+1. Patient taps Rich Menu **"🗓️ นัดหมายของฉัน"** or types `"เช็กนัด"`
+2. LINE Webhook receives event with `replyToken`
+3. Server queries HOSxP database and calls `createMyAppointmentsFlex(name, hn, appointments)`
+4. Server replies via `sendLineReplyMessage(replyToken, flexCard)` — **0 Baht, Unlimited Quota**
 
 ---
 
@@ -94,11 +113,12 @@ KHH_COLORS.EMERGENCY_RED     // '#DC2626'
 
 ## Technical Guidelines & LINE API Rules
 
-1. **Footer Container Limit**: Max 5 buttons in `footer` box container per bubble.
-2. **Text Wrapping**: Always set `wrap: true` on any text component containing newlines `\n` or long strings.
-3. **Empty Box Contents**: Every `box` component MUST have a non-empty `contents` array.
-4. **0% Server Load Optimization**: Use LINE Scheme URIs (`https://line.me/R/msg/text/?...` and `https://line.me/R/oaMessage/...`) for client-side actions.
-5. **Verification**: Always run `npx tsc --noEmit` inside `apps/web` after editing Flex templates.
+1. **Strict Messaging Rule**: **ALWAYS use `sendLineReplyMessage(replyToken, ...)`**. Never call LINE Push API.
+2. **Footer Container Limit**: Max 5 buttons in `footer` box container per bubble.
+3. **Text Wrapping**: Always set `wrap: true` on any text component containing newlines `\n` or long strings.
+4. **Empty Box Contents**: Every `box` component MUST have a non-empty `contents` array.
+5. **0% Server Load Optimization**: Use LINE Scheme URIs (`https://line.me/R/msg/text/?...` and `https://line.me/R/oaMessage/...`) for client-side actions.
+6. **Verification**: Always run `npx tsc --noEmit` inside `apps/web` after editing Flex templates.
 
 ---
 
