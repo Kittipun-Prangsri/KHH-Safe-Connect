@@ -2002,7 +2002,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• เกณฑ์เวลา 2 สัปดาห์: ให้คะแนนย้อนนึกถึงความรู้สึกใน 14 วันที่ผ่านมาเท่านั้น ไม่ใช่ความรู้สึกอดีตนานมาแล้ว หรือแค่ความรู้สึกชั่ววูบวันนี้',
+                text: '• เกณฑ์เวลา 2 สัปดาห์: \nให้คะแนนย้อนนึกถึงความรู้สึกใน 14 วันที่ผ่านมาเท่านั้น ไม่ใช่ความรู้สึกอดีตนานมาแล้ว หรือแค่ความรู้สึกชั่ววูบวันนี้',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2018,7 +2018,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• เลือกช่วงเวลาที่พร้อม: ทำขณะสมองโปร่ง หลีกเลี่ยงการทำทันทีหลังเผชิญเหตุการณ์สะเทือนใจสดๆ',
+                text: '• เลือกช่วงเวลาที่พร้อม: \nทำขณะสมองโปร่ง หลีกเลี่ยงการทำทันทีหลังเผชิญเหตุการณ์สะเทือนใจสดๆ',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2026,7 +2026,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ความถี่ของอาการ: ไม่มีเลย | มีบางวัน (1-7 วัน) | มีบ่อย (>7 วัน) | มีเกือบทุกวัน',
+                text: '• ความถี่ของอาการ: \nไม่มีเลย | มีบางวัน (1-7 วัน) | มีบ่อย (>7 วัน) | มีเกือบทุกวัน',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2052,7 +2052,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ไม่ใช่การวินิจฉัยโรค: เป็นเพียงการคัดกรองเบื้องต้น ไม่สามารถใช้ระบุว่าเป็นโรคซึมเศร้า การวินิจฉัยต้องทำโดยจิตแพทย์/นักจิตวิทยาคลินิก',
+                text: '• ไม่ใช่การวินิจฉัยโรค: \nเป็นเพียงการคัดกรองเบื้องต้น ไม่สามารถใช้ระบุว่าเป็นโรคซึมเศร้า การวินิจฉัยต้องทำโดยจิตแพทย์/นักจิตวิทยาคลินิก',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2060,7 +2060,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ระวังอาการจากโรคทางกาย: อ่อนเพลีย นอนไม่หลับ หรือเบื่ออาหาร อาจเกิดจากไทรอยด์ทำงานต่ำ (Hypothyroidism) หรือผลข้างเคียงยา',
+                text: '• ระวังอาการจากโรคทางกาย: \nอ่อนเพลีย นอนไม่หลับ หรือเบื่ออาหาร อาจเกิดจากไทรอยด์ทำงานต่ำ (Hypothyroidism) หรือผลข้างเคียงยา',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2068,7 +2068,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• อารมณ์เศร้าตามธรรมชาติ (Grief): ความโศกเศร้าจากการสูญเสียคือปฏิกิริยาปกติ อาจทำให้คะแนนสูงชั่วคราว แต่ไม่ได้แปลว่าป่วยซึมเศร้ารุนแรง',
+                text: '• อารมณ์เศร้าตามธรรมชาติ (Grief): \nความโศกเศร้าจากการสูญเสียคือปฏิกิริยาปกติ อาจทำให้คะแนนสูงชั่วคราว แต่ไม่ได้แปลว่าป่วยซึมเศร้ารุนแรง',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2076,7 +2076,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• อย่าตื่นตระหนก: หากคะแนนเสี่ยงสูง อย่าเพิ่งหมดหวัง ให้ใช้ผลลัพธ์ในการปรึกษาผู้เชี่ยวชาญ',
+                text: '• อย่าตื่นตระหนก: \nหากคะแนนเสี่ยงสูง อย่าเพิ่งหมดหวัง ให้ใช้ผลลัพธ์ในการปรึกษาผู้เชี่ยวชาญ',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2084,7 +2084,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '🚨 ความคิดทำร้ายตนเอง: หากในแบบประเมินมีข้อที่ถามถึง "ความคิดอยากตายหรือทำร้ายตนเอง" แล้วตอบว่า "มี" ควรรีบขอความช่วยเหลือทันที ไม่ต้องรอคำนวณคะแนนรวม!',
+                text: '🚨 ความคิดทำร้ายตนเอง: \nหากในแบบประเมินมีข้อที่ถามถึง "ความคิดอยากตายหรือทำร้ายตนเอง" แล้วตอบว่า "มี" ควรรีบขอความช่วยเหลือทันที ไม่ต้องรอคำนวณคะแนนรวม!',
                 size: 'xs',
                 color: '#DC2626',
                 weight: 'bold',
@@ -2145,10 +2145,19 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• เบอร์โทรแผนก: 061-3961769\n• LINE ID: 061-3961769\n• เวลาทำการ: ในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
+                text: 'เบอร์โทรแผนก: 061-3961769\n• LINE ID: 061-3961769\n• เวลาทำการ: \nในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
                 size: 'xs',
                 color: '#4C1D95',
                 margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '🚨 สายด่วนสุขภาพจิต: โทร 1323 (ฟรีตลอด 24 ชั่วโมง)',
+                size: 'xs',
+                color: '#DC2626',
+                weight: 'bold',
+                margin: 'sm',
                 wrap: true,
               },
             ],
@@ -2190,8 +2199,19 @@ export function createStressAndSleepAdviceFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📞 โทรงานสุขภาพจิต (061-3961769)',
+              label: '📞 โทรปรึกษาสุขภาพจิต',
               uri: 'tel:0613961769',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#DC2626',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🚨 สายด่วนสุขภาพจิต 1323 (ฟรี 24 ชม.)',
+              uri: 'tel:1323',
             },
           },
           {
@@ -2201,8 +2221,8 @@ export function createStressAndSleepAdviceFlex() {
             height: 'sm',
             action: {
               type: 'message',
-              label: '🎧 พิมพ์คุยกับเจ้าหน้าที่สุขภาพจิต',
-              text: 'ปรึกษาสุขภาพจิต',
+              label: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
+              text: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
             },
           },
           {
@@ -2239,7 +2259,7 @@ export function createContactMentalHealthStaffFlex() {
         contents: [
           {
             type: 'text',
-            text: '🧠 ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด',
+            text: '🧠 งานสุขภาพจิตและยาเสพติด',
             color: '#FFFFFF',
             size: 'md',
             weight: 'bold',
@@ -2247,7 +2267,7 @@ export function createContactMentalHealthStaffFlex() {
           },
           {
             type: 'text',
-            text: 'โรงพยาบาลคลองหาด',
+            text: 'โรงพยาบาลคลองหาด (ติดต่อเจ้าหน้าที่)',
             color: '#DDD6FE',
             size: 'xs',
             margin: 'xs',
@@ -2303,6 +2323,41 @@ export function createContactMentalHealthStaffFlex() {
             ],
           },
           {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FEF2F2',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FECACA',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📞 ช่องทางขอความช่วยเหลือฟรีตลอด 24 ชั่วโมง',
+                size: 'xs',
+                color: '#B91C1C',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'หากผลประเมินอยู่ในระดับเสี่ยง หรือคุณรู้สึกไม่สบายใจอย่างมาก สามารถติดต่อหน่วยงานเหล่านี้ได้ทันที:',
+                size: 'xs',
+                color: '#991B1B',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• สายด่วนสุขภาพจิต: โทร 1323 (โทรฟรีตลอด 24 ชั่วโมง)',
+                size: 'xs',
+                color: '#DC2626',
+                weight: 'bold',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
             type: 'text',
             text: 'ท่านสามารถพิมพ์ข้อความส่งในแชทนี้ได้ทันที เจ้าหน้าที่งานสุขภาพจิตและยาเสพติด รพ.คลองหาด จะทำการตอบกลับข้อความของท่านโดยเร็วที่สุดค่ะ',
             size: 'xs',
@@ -2326,6 +2381,17 @@ export function createContactMentalHealthStaffFlex() {
               type: 'uri',
               label: '📞 โทรงานสุขภาพจิต (061-3961769)',
               uri: 'tel:0613961769',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#DC2626',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🚨 สายด่วนสุขภาพจิต 1323 (ฟรี 24 ชม.)',
+              uri: 'tel:1323',
             },
           },
           {
