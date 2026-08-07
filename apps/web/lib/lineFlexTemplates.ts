@@ -2245,7 +2245,7 @@ export function createContactMentalHealthStaffFlex() {
               },
               {
                 type: 'text',
-                text: '💬 LINE ID แผนก: 061-3961769',
+                text: '💬 LINE ID: 061-3961769',
                 size: 'xs',
                 color: '#4C1D95',
                 margin: 'sm',
@@ -2253,7 +2253,7 @@ export function createContactMentalHealthStaffFlex() {
               },
               {
                 type: 'text',
-                text: '⏰ เวลาทำการ: ในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
+                text: '⏰ เวลาทำการ: \nในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
                 size: 'xs',
                 color: '#64748B',
                 margin: 'sm',
@@ -2280,17 +2280,17 @@ export function createContactMentalHealthStaffFlex() {
               uri: 'tel:0613961769',
             },
           },
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#DC2626',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '🚨 สายด่วน 1323',
-              uri: 'tel:1323',
-            },
-          },
+          // {
+          //   type: 'button',
+          //   style: 'primary',
+          //   color: '#DC2626',
+          //   height: 'sm',
+          //   action: {
+          //     type: 'uri',
+          //     label: '🚨 สายด่วน 1323',
+          //     uri: 'tel:1323',
+          //   },
+          // },
           {
             type: 'button',
             style: 'secondary',
