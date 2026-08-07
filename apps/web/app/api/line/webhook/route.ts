@@ -270,11 +270,12 @@ export async function POST(req: NextRequest) {
         if (
           text === 'คำแนะนำประเมินสุขภาพจิต' ||
           text === 'ประเมินสุขภาพจิต' ||
-          text === 'คำแนะนำความเครียดและการนอน' ||
-          text.includes('สุขภาพจิต') ||
+          text.includes('ประเมินสุขภาพจิต') ||
+          text.includes('คำแนะนำประเมินสุขภาพจิต') ||
+          text.includes('ความเครียดและการนอน') ||
+          (text.includes('สุขภาพจิต') && !text.includes('ติดต่อ')) ||
           text.includes('ความเครียด') ||
-          text.includes('การนอนหลับ') ||
-          text.includes('การนอน')
+          text.includes('การนอนหลับ')
         ) {
           const flex = createStressAndSleepAdviceFlex();
           await sendLineReplyMessage(replyToken, [flex]);
