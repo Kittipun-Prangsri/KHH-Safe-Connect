@@ -2253,7 +2253,8 @@ export function createContactMentalHealthStaffFlex() {
               },
               {
                 type: 'text',
-                text: '⏰ เวลาทำการ: \nในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
+                text: '⏰ เวลาทำการ: \n ในเวลาราชการ 08:30 น. - 16:30 น. \n (จันทร์ - ศุกร์)',
+                align: 'center',
                 size: 'xs',
                 color: '#64748B',
                 margin: 'sm',
