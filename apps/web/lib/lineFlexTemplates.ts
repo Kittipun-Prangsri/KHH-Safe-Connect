@@ -2127,6 +2127,32 @@ export function createStressAndSleepAdviceFlex() {
               },
             ],
           },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F5F3FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#DDD6FE',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📞 ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด',
+                size: 'xs',
+                color: '#5B21B6',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• เบอร์โทรแผนก: 061-3961769\n• LINE ID: 061-3961769\n• เวลาทำการ: ในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
+                size: 'xs',
+                color: '#4C1D95',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
         ],
       },
       footer: {
@@ -2160,12 +2186,146 @@ export function createStressAndSleepAdviceFlex() {
           {
             type: 'button',
             style: 'primary',
+            color: '#6D28D9',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทรงานสุขภาพจิต (061-3961769)',
+              uri: 'tel:0613961769',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
             color: '#2563EB',
             height: 'sm',
             action: {
               type: 'message',
-              label: '🎧 ปรึกษาสุขภาพจิต / พยาบาล',
+              label: '🎧 พิมพ์คุยกับเจ้าหน้าที่สุขภาพจิต',
               text: 'ปรึกษาสุขภาพจิต',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 4.1 Sub-Tile: "ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด" (Mental Health & Addiction Unit Contact Flex)
+ */
+export function createContactMentalHealthStaffFlex() {
+  return {
+    type: 'flex',
+    altText: '🧠 ช่องทางติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#6D28D9',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🧠 ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: 'โรงพยาบาลคลองหาด',
+            color: '#DDD6FE',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F5F3FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#DDD6FE',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '📞 เบอร์โทรศัพท์แผนก:',
+                size: 'xs',
+                color: '#5B21B6',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '061-3961769',
+                size: 'md',
+                color: '#6D28D9',
+                weight: 'bold',
+                margin: 'xs',
+              },
+              {
+                type: 'text',
+                text: '💬 LINE ID แผนก: 061-3961769',
+                size: 'xs',
+                color: '#4C1D95',
+                margin: 'sm',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '⏰ เวลาทำการ: ในเวลาราชการ 08:30 น. - 16:30 น. (จันทร์ - ศุกร์)',
+                size: 'xs',
+                color: '#64748B',
+                margin: 'sm',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'text',
+            text: 'ท่านสามารถพิมพ์ข้อความส่งในแชทนี้ได้ทันที เจ้าหน้าที่งานสุขภาพจิตและยาเสพติด รพ.คลองหาด จะทำการตอบกลับข้อความของท่านโดยเร็วที่สุดค่ะ',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#6D28D9',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทรงานสุขภาพจิต (061-3961769)',
+              uri: 'tel:0613961769',
             },
           },
           {

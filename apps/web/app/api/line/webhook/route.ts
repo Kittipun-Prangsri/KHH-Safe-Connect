@@ -31,6 +31,7 @@ import {
   createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
   createThaiMedicineAdviceFlex,
+  createContactMentalHealthStaffFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
   createRoleConfirmationFlex,
@@ -250,6 +251,18 @@ export async function POST(req: NextRequest) {
               text: '🌿 ติดต่อ/จองคิวบริการแพทย์แผนไทย\n\nกลุ่มงานแพทย์แผนไทยและการแพทย์ทางเลือก โรงพยาบาลคลองหาด\nให้บริการ: นวดรักษา, ประคบสมุนไพร, อบสมุนไพรสด, ทับหม้อเกลือ และจ่ายยาสมุนไพร\n\n📞 โทรติดต่อจองคิว: 06-2271-0099\n⏰ ในเวลาราชการ (จันทร์ - ศุกร์ 08:00 - 16:00 น.)',
             },
           ]);
+          continue;
+        }
+
+        // Sub-Tile 6.3.1: "ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด"
+        if (
+          text === 'ปรึกษาสุขภาพจิต' ||
+          text.includes('ปรึกษาสุขภาพจิต') ||
+          text.includes('ยาเสพติด') ||
+          text.includes('ติดต่อสุขภาพจิต')
+        ) {
+          const flex = createContactMentalHealthStaffFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
