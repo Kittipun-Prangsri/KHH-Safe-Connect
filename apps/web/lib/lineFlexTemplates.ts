@@ -2318,7 +2318,7 @@ export function createContactMentalHealthStaffFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📞 โทรงานสุขภาพจิต (061-3961769)',
+              label: '📞 โทร 0613961769',
               uri: 'tel:0613961769',
             },
           },
@@ -2329,7 +2329,7 @@ export function createContactMentalHealthStaffFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '🚨 สายด่วนสุขภาพจิต 1323 (ฟรี 24 ชม.)',
+              label: '🚨 สายด่วน 1323',
               uri: 'tel:1323',
             },
           },
