@@ -6,6 +6,19 @@
 import { KHH_CONTACTS, KHH_COLORS } from './flexConstants';
 
 /**
+ * Generate LINE Native Location Message Payload for Khlong Hat Hospital (0% Server CPU/RAM Load)
+ */
+export function createHospitalNativeLocationMessage() {
+  return {
+    type: 'location',
+    title: KHH_CONTACTS.HOSPITAL_NAME,
+    address: 'หมู่ 1 ตำบลคลองหาด อำเภอคลองหาด จังหวัดสระแก้ว 27260',
+    latitude: 13.4478,
+    longitude: 102.3081,
+  };
+}
+
+/**
  * 4. Tile 4: "ติดต่อเจ้าหน้าที่"
  */
 export function createContactStaffFlex() {

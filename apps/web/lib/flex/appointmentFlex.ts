@@ -17,10 +17,13 @@ export interface AppointmentNotificationData {
 }
 
 /**
- * Generate Hospital Standard Flex Message for Appointment Reminders (with Self Check-in QR Code)
+ * Generate Hospital Standard Flex Message for Appointment Reminders (with Self Check-in QR & 1-Click Family Share)
  */
 export function createAppointmentFlexMessage(data: AppointmentNotificationData) {
   const qrData = encodeURIComponent(`KHH-CHECKIN:${data.hn}:${data.appointmentDate}`);
+  const shareText = encodeURIComponent(
+    `🗓️ ใบนัดตรวจ รพ.คลองหาด\n👤 ผู้ป่วย: คุณ${data.patientName} (HN: ${data.hn})\n📅 วันนัด: ${data.appointmentDate}\n⏰ เวลา: ${data.appointmentTime}\n🏥 คลินิก: ${data.clinicName}\n📍 สถานที่: โรงพยาบาลคลองหาด`
+  );
 
   return {
     type: 'flex',
@@ -298,6 +301,16 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
             height: 'sm',
             action: {
               type: 'uri',
+              label: '📤 แชร์ใบนัดให้ลูกหลานช่วยจำ',
+              uri: `https://line.me/R/msg/text/?${shareText}`,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
               label: KHH_CONTACTS.MAPS_LABEL,
               uri: KHH_CONTACTS.MAPS_LOCATION_URI,
             },
@@ -422,9 +435,12 @@ export function createMyAppointmentsFlex(
     };
   }
 
-  // Active appointment exists -> Render real appointment card with Queue QR Code
+  // Active appointment exists -> Render real appointment card with Queue QR Code & Family Share
   const mainApp = appointments[0];
   const qrData = encodeURIComponent(`KHH-CHECKIN:${hn}:${mainApp.appointmentDate}`);
+  const shareText = encodeURIComponent(
+    `🗓️ ใบนัดตรวจ รพ.คลองหาด\n👤 ผู้ป่วย: คุณ${patientName} (HN: ${hn})\n📅 วันนัด: ${mainApp.appointmentDate}\n⏰ เวลา: ${mainApp.appointmentTime}\n🏥 คลินิก: ${mainApp.clinicName}\n📍 สถานที่: โรงพยาบาลคลองหาด`
+  );
 
   return {
     type: 'flex',
@@ -591,6 +607,16 @@ export function createMyAppointmentsFlex(
               type: 'message',
               label: 'ขอเลื่อนนัด',
               text: 'ขอเลื่อนนัด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📤 แชร์ใบนัดให้ลูกหลานช่วยจำ',
+              uri: `https://line.me/R/msg/text/?${shareText}`,
             },
           },
           {
