@@ -1080,12 +1080,12 @@ export function createHealthEducationMenuFlex() {
           {
             type: 'button',
             style: 'primary',
-            color: '#0D9488',
+            color: '#059669',
             height: 'sm',
             action: {
               type: 'message',
-              label: '🧘 2. ความเครียดและการนอน',
-              text: 'คำแนะนำความเครียดและการนอน',
+              label: '🌿 2. แพทย์แผนไทย',
+              text: 'คำแนะนำแพทย์แผนไทย',
             },
           },
           {
@@ -1102,23 +1102,23 @@ export function createHealthEducationMenuFlex() {
           {
             type: 'button',
             style: 'primary',
-            color: '#7C3AED',
+            color: '#EA580C',
             height: 'sm',
             action: {
-              type: 'uri',
-              label: '🧠 4. ประเมินสุขภาพจิต',
-              uri: 'https://docs.google.com/forms/d/e/1FAIpQLSddhwdT8RDyYBQ1AaTJfUVQXhJfXhyyJUASIfSSLk2z-JwVzg/viewform',
+              type: 'message',
+              label: '🏃 4. การออกกำลังกายส่งเสริมสุขภาพ',
+              text: 'คำแนะนำการออกกำลังกาย',
             },
           },
           {
             type: 'button',
             style: 'primary',
-            color: '#EA580C',
+            color: '#7C3AED',
             height: 'sm',
             action: {
               type: 'message',
-              label: '🏃 5. การออกกำลังกายส่งเสริมสุขภาพ',
-              text: 'คำแนะนำการออกกำลังกาย',
+              label: '🧠 5. ประเมินสุขภาพจิต',
+              text: 'คำแนะนำประเมินสุขภาพจิต',
             },
           },
         ],
@@ -1952,27 +1952,27 @@ export function createPharmacistFormPromptFlex() {
 export function createStressAndSleepAdviceFlex() {
   return {
     type: 'flex',
-    altText: '🧘 คำแนะนำการจัดการความเครียดและการนอนหลับ - รพ.คลองหาด',
+    altText: '🧠 คำแนะนำประเมินสุขภาพจิตและความเครียด - รพ.คลองหาด',
     contents: {
       type: 'bubble',
       size: 'mega',
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#0D9488',
+        backgroundColor: '#7C3AED',
         paddingAll: 'lg',
         contents: [
           {
             type: 'text',
-            text: '🧘 คำแนะนำความเครียดและการนอน',
+            text: '🧠 การประเมินสุขภาพจิตและความเครียด',
             color: '#FFFFFF',
             size: 'md',
             weight: 'bold',
           },
           {
             type: 'text',
-            text: 'สำหรับผู้ป่วยกลุ่มโรค NCDs (รพ.คลองหาด)',
-            color: '#CCFBF1',
+            text: 'คำแนะนำการดูแลสุขภาพจิตและการนอน (รพ.คลองหาด)',
+            color: '#EDE9FE',
             size: 'xs',
             margin: 'xs',
           },
@@ -1984,6 +1984,40 @@ export function createStressAndSleepAdviceFlex() {
         paddingAll: 'lg',
         spacing: 'md',
         contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F3E8FF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#E9D5FF',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🧘 การผ่อนคลายและจัดการความเครียดสะสม',
+                size: 'xs',
+                color: '#6B21A8',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• ความเครียดกระตุ้นฮอร์โมน คอร์ติซอล (Cortisol) ทำให้ระดับน้ำตาลในเลือดและความดันสูงขึ้นอย่างรวดเร็ว',
+                size: 'xs',
+                color: '#581C87',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ฝึกการหายใจลึก: สูดลมหายใจเข้าลึก 4 วินาที กลั้นไว้ 4 วินาที และผ่อนลมหายใจออกช้าๆ 6 วินาที (ทำซ้ำ 5-10 ครั้ง)',
+                size: 'xs',
+                color: '#581C87',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
           {
             type: 'box',
             layout: 'vertical',
@@ -2024,9 +2058,143 @@ export function createStressAndSleepAdviceFlex() {
                 margin: 'xs',
                 wrap: true,
               },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#7C3AED',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📋 แบบประเมินสุขภาพจิต (Google Form)',
+              uri: 'https://docs.google.com/forms/d/e/1FAIpQLSddhwdT8RDyYBQ1AaTJfUVQXhJfXhyyJUASIfSSLk2z-JwVzg/viewform',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📊 ประเมินความเครียด DMH Check-in',
+              uri: 'https://checkin.dmh.go.th/main/index.php?type=1',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#2563EB',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 ปรึกษาสุขภาพจิต / พยาบาล',
+              text: 'ปรึกษาสุขภาพจิต',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+export function createMentalHealthAndStressAdviceFlex() {
+  return createStressAndSleepAdviceFlex();
+}
+
+/**
+ * 6.5 Sub-Tile: "คำแนะนำการบริการแพทย์แผนไทย" (Thai Traditional Medicine Advice Flex)
+ */
+export function createThaiMedicineAdviceFlex() {
+  return {
+    type: 'flex',
+    altText: '🌿 คำแนะนำการบริการแพทย์แผนไทย - รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#059669',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🌿 การบริการแพทย์แผนไทย',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: 'กลุ่มงานแพทย์แผนไทยและการแพทย์ทางเลือก รพ.คลองหาด',
+            color: '#D1FAE5',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#ECFDF5',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#A7F3D0',
+            borderWidth: '1px',
+            contents: [
               {
                 type: 'text',
-                text: '• จัดห้องนอนให้มืด เงียบสบาย และอากาศถ่ายเทได้ดี',
+                text: '💆‍♂️ บริการหัตถการแพทย์แผนไทย',
+                size: 'xs',
+                color: '#047857',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• นวดรักษา & ประคบสมุนไพร: ลดปวดกล้ามเนื้อ ปวดหลัง ปวดคอบ่าไหล่ ออฟฟิศซินโดรม',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• อบสมุนไพรสด: ช่วยการไหลเวียนโลหิต ผ่อนคลาย ขับเหงื่อและสิ่งตกค้าง',
+                size: 'xs',
+                color: '#334155',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '• ทับหม้อเกลือ: การดูแลฟื้นฟูสุขภาพมารดาหลังคลอดบุตร',
                 size: 'xs',
                 color: '#334155',
                 margin: 'xs',
@@ -2037,32 +2205,56 @@ export function createStressAndSleepAdviceFlex() {
           {
             type: 'box',
             layout: 'vertical',
-            backgroundColor: '#F3E8FF',
+            backgroundColor: '#FEF3C7',
             cornerRadius: 'md',
             paddingAll: 'md',
-            borderColor: '#E9D5FF',
+            borderColor: '#FDE68A',
             borderWidth: '1px',
             contents: [
               {
                 type: 'text',
-                text: '🧘 การผ่อนคลายและจัดการความเครียดสะสม',
+                text: '🌱 ยาสมุนไพรและการดูแลสุขภาพผู้ป่วย NCDs',
                 size: 'xs',
-                color: '#6B21A8',
+                color: '#B45309',
                 weight: 'bold',
               },
               {
                 type: 'text',
-                text: '• ความเครียดกระตุ้นฮอร์โมน คอร์ติซอล (Cortisol) ทำให้ระดับน้ำตาลในเลือดและความดันสูงขึ้นอย่างรวดเร็ว',
+                text: '• จ่ายยาสมุนไพรในบัญชียาหลักแห่งชาติ (เช่น ขมิ้นชัน มะขามป้อม ยาน้ำมันไพล) ร่วมกับการตรวจประเมินโดยแพทย์แผนไทย',
                 size: 'xs',
-                color: '#581C87',
+                color: '#78350F',
                 margin: 'xs',
                 wrap: true,
               },
               {
                 type: 'text',
-                text: '• ฝึกการหายใจลึก: สูดลมหายใจเข้าลึก 4 วินาที กลั้นไว้ 4 วินาที และผ่อนลมหายใจออกช้าๆ 6 วินาที (ทำซ้ำ 5-10 ครั้ง)',
+                text: '• ให้คำแนะนำการปรับธาตุตามเจ้าเรือนและการใช้สมุนไพรอย่างปลอดภัยในผู้ป่วยโรคเรื้อรัง',
                 size: 'xs',
-                color: '#581C87',
+                color: '#78350F',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F3F4F6',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '💡 ข้อควรระวังก่อนรับบริการหัตถการ:',
+                size: 'xs',
+                color: '#374151',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '• งดรับบริการนวดอบประคบขณะมีไข้สูง (>38.5°C) หรือความดันโลหิตสูงจัด (>160/100 mmHg)\n• โปรดแจ้งโรคประจำตัวและภาวะตั้งครรภ์ให้เจ้าหน้าที่ทราบก่อนทุกครั้ง',
+                size: 'xs',
+                color: '#4B5563',
                 margin: 'xs',
                 wrap: true,
               },
@@ -2079,23 +2271,12 @@ export function createStressAndSleepAdviceFlex() {
           {
             type: 'button',
             style: 'primary',
-            color: '#0D9488',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '🧠 ประเมินความเครียด DMH Check-in',
-              uri: 'https://checkin.dmh.go.th/main/index.php?type=1',
-            },
-          },
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#7C3AED',
+            color: '#059669',
             height: 'sm',
             action: {
               type: 'message',
-              label: '🎧 ปรึกษาสุขภาพจิต / พยาบาล',
-              text: 'ปรึกษาสุขภาพจิต',
+              label: '🌿 ติดต่อ/จองคิวแพทย์แผนไทย',
+              text: 'ติดต่อแพทย์แผนไทย',
             },
           },
           {

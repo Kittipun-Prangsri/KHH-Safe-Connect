@@ -30,6 +30,7 @@ import {
   createPharmacistFormPromptFlex,
   createContactPharmacistFlex,
   createStressAndSleepAdviceFlex,
+  createThaiMedicineAdviceFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
   createRoleConfirmationFlex,
@@ -226,9 +227,38 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Sub-Tile 6.3: "คำแนะนำความเครียดและการนอน"
+        // Sub-Tile 6.2.2: "คำแนะนำแพทย์แผนไทย"
         if (
+          text === 'คำแนะนำแพทย์แผนไทย' ||
+          text.includes('แพทย์แผนไทย') ||
+          text.includes('นวดแผนไทย') ||
+          text.includes('อบสมุนไพร') ||
+          text.includes('ยาสมุนไพร')
+        ) {
+          const flex = createThaiMedicineAdviceFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
+          continue;
+        }
+
+        if (
+          text.includes('ติดต่อแพทย์แผนไทย') ||
+          text.includes('จองคิวแพทย์แผนไทย')
+        ) {
+          await sendLineReplyMessage(replyToken, [
+            {
+              type: 'text',
+              text: '🌿 ติดต่อ/จองคิวบริการแพทย์แผนไทย\n\nกลุ่มงานแพทย์แผนไทยและการแพทย์ทางเลือก โรงพยาบาลคลองหาด\nให้บริการ: นวดรักษา, ประคบสมุนไพร, อบสมุนไพรสด, ทับหม้อเกลือ และจ่ายยาสมุนไพร\n\n📞 โทรติดต่อจองคิว: 06-2271-0099\n⏰ ในเวลาราชการ (จันทร์ - ศุกร์ 08:00 - 16:00 น.)',
+            },
+          ]);
+          continue;
+        }
+
+        // Sub-Tile 6.3: "คำแนะนำประเมินสุขภาพจิต (รวมความเครียดและการนอน)"
+        if (
+          text === 'คำแนะนำประเมินสุขภาพจิต' ||
+          text === 'ประเมินสุขภาพจิต' ||
           text === 'คำแนะนำความเครียดและการนอน' ||
+          text.includes('สุขภาพจิต') ||
           text.includes('ความเครียด') ||
           text.includes('การนอนหลับ') ||
           text.includes('การนอน')
