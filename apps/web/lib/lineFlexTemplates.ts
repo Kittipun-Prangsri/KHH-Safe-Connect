@@ -2199,7 +2199,7 @@ export function createStressAndSleepAdviceFlex() {
             height: 'sm',
             action: {
               type: 'uri',
-              label: '📞 โทรปรึกษาสุขภาพจิต',
+              label: '📞 โทรงานสุขภาพจิต (061-3961769)',
               uri: 'tel:0613961769',
             },
           },
@@ -2212,17 +2212,6 @@ export function createStressAndSleepAdviceFlex() {
               type: 'uri',
               label: '🚨 สายด่วนสุขภาพจิต 1323 (ฟรี 24 ชม.)',
               uri: 'tel:1323',
-            },
-          },
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#2563EB',
-            height: 'sm',
-            action: {
-              type: 'message',
-              label: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
-              text: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
             },
           },
           {
