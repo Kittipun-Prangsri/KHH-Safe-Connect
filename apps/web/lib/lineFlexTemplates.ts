@@ -2003,7 +2003,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• เกณฑ์ 2 สัปดาห์: ย้อนนึกถึงความรู้สึกใน 14 วันที่ผ่านมาเท่านั้น ไม่ใช่แค่ความรู้สึกชั่ววูบวันนี้',
+                text: '• เกณฑ์ 2 สัปดาห์: \nย้อนนึกถึงความรู้สึกใน 14 วันที่ผ่านมาเท่านั้น ไม่ใช่แค่ความรู้สึกชั่ววูบวันนี้',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2011,7 +2011,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ตอบตามความจริง: ซื่อสัตย์กับตนเอง ห้ามลดหรือเพิ่มระดับอาการ',
+                text: '• ตอบตามความจริง: \nซื่อสัตย์กับตนเอง ห้ามลดหรือเพิ่มระดับอาการ',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2019,7 +2019,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• เลือกเวลาที่พร้อม: ทำขณะสมองโปร่ง หลีกเลี่ยงทำหลังเผชิญเหตุสะเทือนใจสดๆ',
+                text: '• เลือกเวลาที่พร้อม: \nทำขณะสมองโปร่ง หลีกเลี่ยงทำหลังเผชิญเหตุสะเทือนใจสดๆ',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2027,7 +2027,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ความถี่: ไม่มีเลย | บางวัน | มีบ่อย | มีเกือบทุกวัน',
+                text: '• ความถี่: \nไม่มีเลย | บางวัน | มีบ่อย | มีเกือบทุกวัน',
                 size: 'xs',
                 color: '#1E3A8A',
                 margin: 'xs',
@@ -2053,7 +2053,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• ไม่ใช่การวินิจฉัยโรค: เป็นการคัดกรองเบื้องต้น ไม่สามารถระบุว่าเป็นโรคซึมเศร้า',
+                text: '• ไม่ใช่การวินิจฉัยโรค: \nเป็นการคัดกรองเบื้องต้น ไม่สามารถระบุว่าเป็นโรคซึมเศร้า',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2061,7 +2061,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• อาการจากโรคทางกาย: อ่อนเพลีย/นอนไม่หลับ อาจเกิดจากไทรอยด์ต่ำ หรือผลข้างเคียงยา',
+                text: '• อาการจากโรคทางกาย: \nอ่อนเพลีย/นอนไม่หลับ อาจเกิดจากไทรอยด์ต่ำ หรือผลข้างเคียงยา',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2069,7 +2069,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '• อารมณ์เศร้าตามธรรมชาติ: ความโศกเศร้าจากการสูญเสียทำให้คะแนนสูงชั่วคราวได้',
+                text: '• อารมณ์เศร้าตามธรรมชาติ: \nความโศกเศร้าจากการสูญเสียทำให้คะแนนสูงชั่วคราวได้',
                 size: 'xs',
                 color: '#991B1B',
                 margin: 'xs',
@@ -2077,7 +2077,7 @@ export function createStressAndSleepAdviceFlex() {
               },
               {
                 type: 'text',
-                text: '🚨 คิดทำร้ายตนเอง: หากมีข้อถามถึงความคิดอยากตาย แล้วตอบว่า "มี" ควรรีบขอความช่วยเหลือทันที!',
+                text: '🚨 คิดทำร้ายตนเอง: \nหากมีข้อถามถึงความคิดอยากตาย แล้วตอบว่า "มี" ควรรีบขอความช่วยเหลือทันที!',
                 size: 'xs',
                 color: '#DC2626',
                 weight: 'bold',
@@ -2086,32 +2086,32 @@ export function createStressAndSleepAdviceFlex() {
               },
             ],
           },
-          {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#F5F3FF',
-            cornerRadius: 'md',
-            paddingAll: 'md',
-            borderColor: '#DDD6FE',
-            borderWidth: '1px',
-            contents: [
-              {
-                type: 'text',
-                text: '📞 ติดต่อขอความช่วยเหลือ (ฟรีตลอด 24 ชม.)',
-                size: 'xs',
-                color: '#5B21B6',
-                weight: 'bold',
-              },
-              {
-                type: 'text',
-                text: '• งานสุขภาพจิต รพ.คลองหาด: 061-3961769 (08:30-16:30 น.)\n• 🚨 สายด่วนสุขภาพจิต: โทร 1323 (ฟรีตลอด 24 ชั่วโมง)',
-                size: 'xs',
-                color: '#4C1D95',
-                margin: 'xs',
-                wrap: true,
-              },
-            ],
-          },
+          // {
+          //   type: 'box',
+          //   layout: 'vertical',
+          //   backgroundColor: '#F5F3FF',
+          //   cornerRadius: 'md',
+          //   paddingAll: 'md',
+          //   borderColor: '#DDD6FE',
+          //   borderWidth: '1px',
+          //   contents: [
+          //     {
+          //       type: 'text',
+          //       text: '📞 ติดต่อขอความช่วยเหลือ (ฟรีตลอด 24 ชม.)',
+          //       size: 'xs',
+          //       color: '#5B21B6',
+          //       weight: 'bold',
+          //     },
+          //     {
+          //       type: 'text',
+          //       text: '• งานสุขภาพจิต รพ.คลองหาด: 061-3961769 (08:30-16:30 น.)\n• 🚨 สายด่วนสุขภาพจิต: โทร 1323 (ฟรีตลอด 24 ชั่วโมง)',
+          //       size: 'xs',
+          //       color: '#4C1D95',
+          //       margin: 'xs',
+          //       wrap: true,
+          //     },
+          //   ],
+          // },
         ],
       },
       footer: {
@@ -2145,11 +2145,22 @@ export function createStressAndSleepAdviceFlex() {
           {
             type: 'button',
             style: 'primary',
+            color: '#6D28D9',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '📞 ติดต่อเจ้าหน้าที่สุขภาพจิต',
+              text: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
+            },
+          },
+          {
+            type: 'button',
+            style: 'primary',
             color: '#DC2626',
             height: 'sm',
             action: {
               type: 'uri',
-              label: '🚨 สายด่วนสุขภาพจิต 1323 (ฟรี 24 ชม.)',
+              label: '🚨 สายด่วนสุขภาพจิต 1323',
               uri: 'tel:1323',
             },
           },

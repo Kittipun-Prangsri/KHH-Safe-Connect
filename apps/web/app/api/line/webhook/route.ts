@@ -256,10 +256,12 @@ export async function POST(req: NextRequest) {
 
         // Sub-Tile 6.3.1: "ติดต่อเจ้าหน้าที่งานสุขภาพจิตและยาเสพติด"
         if (
+          text === 'ติดต่อเจ้าหน้าที่สุขภาพจิต' ||
           text === 'ปรึกษาสุขภาพจิต' ||
           text.includes('ปรึกษาสุขภาพจิต') ||
           text.includes('ยาเสพติด') ||
-          text.includes('ติดต่อสุขภาพจิต')
+          text.includes('ติดต่อสุขภาพจิต') ||
+          text.includes('ติดต่อเจ้าหน้าที่สุขภาพจิต')
         ) {
           const flex = createContactMentalHealthStaffFlex();
           await sendLineReplyMessage(replyToken, [flex]);
