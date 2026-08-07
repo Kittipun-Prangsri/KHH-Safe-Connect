@@ -30,6 +30,10 @@ export const KHH_CONTACTS = {
   HOTLINE_1323_URI: 'tel:1323',
   EMERGENCY_1669_DISPLAY: '🚑 โทรฉุกเฉิน 1669 ทันที',
   EMERGENCY_1669_URI: 'tel:1669',
+
+  // Hospital Navigation & Location
+  MAPS_LOCATION_URI: 'https://www.google.com/maps/search/?api=1&query=โรงพยาบาลคลองหาด',
+  MAPS_LABEL: '🗺️ นำทางมาโรงพยาบาลคลองหาด',
 };
 
 export const KHH_COLORS = {
@@ -46,6 +50,11 @@ export const KHH_COLORS = {
   EXERCISE_ORANGE: '#EA580C',
   MENTAL_PURPLE: '#7C3AED',
   MENTAL_DARK_PURPLE: '#6D28D9',
+
+  // Gamification & Badges
+  GOLD_BADGE: '#D97706',
+  SILVER_BADGE: '#475569',
+  BRONZE_BADGE: '#B45309',
 
   // Alerts & Statuses
   EMERGENCY_RED: '#DC2626',

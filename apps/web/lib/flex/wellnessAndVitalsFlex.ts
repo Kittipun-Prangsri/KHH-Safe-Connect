@@ -1,9 +1,33 @@
 /**
- * Patient Lab Results, Vitals, Preparation Guide & Wellness LINE Flex Message Templates
+ * Patient Lab Results, Vitals, Preparation Guide, Wellness & Gamification Badges
  * Hospital: Khlong Hat Hospital (โรงพยาบาลคลองหาด)
  */
 
 import { KHH_CONTACTS, KHH_COLORS } from './flexConstants';
+
+/**
+ * Helper to build visual health progress gauge bar for Flex Message
+ */
+function createGaugeBar(percentage: number, fillColor: string) {
+  const boundedPct = Math.min(Math.max(percentage, 5), 100);
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    backgroundColor: '#E2E8F0',
+    height: '8px',
+    cornerRadius: 'md',
+    margin: 'xs',
+    contents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: fillColor,
+        width: `${boundedPct}%`,
+        cornerRadius: 'md',
+      },
+    ],
+  };
+}
 
 /**
  * 5. Tile 5: "การเตรียมตัวก่อนพบแพทย์"
@@ -87,7 +111,7 @@ export function createPreparationGuideFlex() {
 }
 
 /**
- * Generate Full Patient Vitals & Lab Results Flex Card (Weight, Height, BMI, BP, FBS, HbA1c, eGFR)
+ * Generate Full Patient Vitals & Lab Results Flex Card with Visual Progress Gauges
  */
 export function createPatientVitalsFlex(
   patientName: string = 'สมชาย ดีเลิศ',
@@ -118,15 +142,30 @@ export function createPatientVitalsFlex(
     checkDate: vitals?.checkDate || 'ล่าสุดสดจาก HOSxP',
   };
 
+  // Calculations for Visual Gauge Bars
   const bmiVal = parseFloat(v.bmi) || 22.9;
   const bmiStatusLabel = bmiVal < 18.5 ? '🔴 น้ำหนักน้อยกว่าเกณฑ์' : bmiVal <= 22.9 ? '🟢 น้ำหนักอยู่ในเกณฑ์ปกติ' : bmiVal <= 24.9 ? '🟡 น้ำหนักเกิน (ท้วม)' : '🔴 ภาวะอ้วน (เสี่ยง NCDs)';
   const bmiBg = bmiVal <= 22.9 && bmiVal >= 18.5 ? '#DCFCE7' : bmiVal <= 24.9 ? '#FEF3C7' : '#FEE2E2';
   const bmiColor = bmiVal <= 22.9 && bmiVal >= 18.5 ? '#15803D' : bmiVal <= 24.9 ? '#B45309' : '#B91C1C';
+  const bmiGaugePct = Math.min((bmiVal / 35) * 100, 100);
 
   const bpsVal = parseInt(v.bps) || 124;
   const bpStatusLabel = bpsVal < 120 ? '🟢 ความดันโลหิตปกติ (<120/80)' : bpsVal <= 139 ? '🟡 ความดันเริ่มสูง (120-139)' : '🔴 ความดันสูงกว่าเกณฑ์ (≥140)';
   const bpBg = bpsVal < 120 ? '#DCFCE7' : bpsVal <= 139 ? '#FEF3C7' : '#FEE2E2';
   const bpColor = bpsVal < 120 ? '#15803D' : bpsVal <= 139 ? '#B45309' : '#B91C1C';
+  const bpGaugePct = Math.min((bpsVal / 180) * 100, 100);
+
+  const fbsVal = parseFloat(v.fbs) || 112;
+  const fbsGaugePct = Math.min((fbsVal / 200) * 100, 100);
+  const fbsColor = fbsVal < 100 ? '#15803D' : fbsVal <= 125 ? '#B45309' : '#B91C1C';
+
+  const hba1cVal = parseFloat(v.hba1c) || 6.5;
+  const hba1cGaugePct = Math.min((hba1cVal / 12) * 100, 100);
+  const hba1cColor = hba1cVal < 6.5 ? '#15803D' : hba1cVal <= 7.0 ? '#B45309' : '#B91C1C';
+
+  const egfrVal = parseFloat(v.egfr) || 88;
+  const egfrGaugePct = Math.min((egfrVal / 120) * 100, 100);
+  const egfrColor = egfrVal >= 60 ? '#15803D' : egfrVal >= 30 ? '#B45309' : '#B91C1C';
 
   return {
     type: 'flex',
@@ -199,7 +238,7 @@ export function createPatientVitalsFlex(
             ],
           },
 
-          // Section 1: Body Measurements & BMI
+          // Section 1: Body Measurements & Visual BMI Gauge
           {
             type: 'box',
             layout: 'vertical',
@@ -246,6 +285,7 @@ export function createPatientVitalsFlex(
                   },
                 ],
               },
+              createGaugeBar(bmiGaugePct, bmiColor),
               {
                 type: 'box',
                 layout: 'vertical',
@@ -267,7 +307,7 @@ export function createPatientVitalsFlex(
             ],
           },
 
-          // Section 2: Blood Pressure
+          // Section 2: Blood Pressure & Visual BP Gauge
           {
             type: 'box',
             layout: 'vertical',
@@ -311,6 +351,7 @@ export function createPatientVitalsFlex(
                   },
                 ],
               },
+              createGaugeBar(bpGaugePct, bpColor),
               {
                 type: 'box',
                 layout: 'vertical',
@@ -332,7 +373,7 @@ export function createPatientVitalsFlex(
             ],
           },
 
-          // Section 3: Laboratory Results (FBS, HbA1c, eGFR, Cholesterol)
+          // Section 3: Laboratory Results (FBS, HbA1c, eGFR, Cholesterol) with Visual Gauges
           {
             type: 'box',
             layout: 'vertical',
@@ -345,7 +386,7 @@ export function createPatientVitalsFlex(
             contents: [
               {
                 type: 'text',
-                text: '🧪 ผลแล็บห้องปฏิบัติการ (Lab Results)',
+                text: '🧪 ผลแล็บห้องปฏิบัติการ (Lab Results Gauges)',
                 size: 'sm',
                 color: '#1E40AF',
                 weight: 'bold',
@@ -371,12 +412,13 @@ export function createPatientVitalsFlex(
                   },
                   {
                     type: 'text',
-                    text: `${v.fbs} mg/dL  (🟡 100-125 mg/dL = เสี่ยงเบาหวาน)`,
+                    text: `${v.fbs} mg/dL  (เกณฑ์ปกติ 70-99 mg/dL)`,
                     size: 'xs',
                     color: KHH_COLORS.TEXT_MAIN,
                     margin: 'xs',
                     wrap: true,
                   },
+                  createGaugeBar(fbsGaugePct, fbsColor),
                 ],
               },
 
@@ -399,13 +441,14 @@ export function createPatientVitalsFlex(
                   },
                   {
                     type: 'text',
-                    text: `${v.hba1c} %  (🟢 < 6.5% = ควบคุมน้ำตาลได้ดี)`,
+                    text: `${v.hba1c} %  (เกณฑ์คุมดี < 6.5%)`,
                     size: 'xs',
-                    color: KHH_COLORS.SUCCESS_GREEN,
+                    color: hba1cColor,
                     weight: 'bold',
                     margin: 'xs',
                     wrap: true,
                   },
+                  createGaugeBar(hba1cGaugePct, hba1cColor),
                 ],
               },
 
@@ -428,13 +471,14 @@ export function createPatientVitalsFlex(
                   },
                   {
                     type: 'text',
-                    text: `${v.egfr} mL/min/1.73m²  (🟢 ≥ 60 = ไตทำงานดี)`,
+                    text: `${v.egfr} mL/min/1.73m²  (เกณฑ์ปกติ ≥ 60)`,
                     size: 'xs',
-                    color: KHH_COLORS.SUCCESS_GREEN,
+                    color: egfrColor,
                     weight: 'bold',
                     margin: 'xs',
                     wrap: true,
                   },
+                  createGaugeBar(egfrGaugePct, egfrColor),
                 ],
               },
 
@@ -457,7 +501,7 @@ export function createPatientVitalsFlex(
                   },
                   {
                     type: 'text',
-                    text: `${v.cholesterol} mg/dL  (🟢 < 200 mg/dL = ปกติ)`,
+                    text: `${v.cholesterol} mg/dL  (เกณฑ์ปกติ < 200 mg/dL)`,
                     size: 'xs',
                     color: KHH_COLORS.SUCCESS_GREEN,
                     weight: 'bold',
@@ -495,6 +539,148 @@ export function createPatientVitalsFlex(
               type: 'message',
               label: '🌿 อ่านคู่มือการดูแลสุขภาพดี',
               text: 'ข้อมูลสุขภาพดี',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate Health Gamification & Digital Badge Flex Card
+ */
+export function createHealthGamificationBadgeFlex(params: {
+  patientName: string;
+  hn: string;
+  badgeTitle: string;        // e.g. "🥇 ผู้ป่วย NCDs ดีเด่น"
+  badgeSubtitle: string;     // e.g. "มาตรงนัดหมายตรวจติดตามติดต่อกัน 3 ครั้ง"
+  badgeCategory: 'appointment' | 'hba1c' | 'bp' | 'general';
+}) {
+  const { patientName, hn, badgeTitle, badgeSubtitle, badgeCategory } = params;
+
+  let badgeIcon = '🏆';
+  let badgeColor = KHH_COLORS.GOLD_BADGE;
+  let badgeBg = '#FEF3C7';
+
+  if (badgeCategory === 'hba1c') {
+    badgeIcon = '🌟';
+    badgeColor = KHH_COLORS.SUCCESS_GREEN;
+    badgeBg = '#DCFCE7';
+  } else if (badgeCategory === 'bp') {
+    badgeIcon = '🩺';
+    badgeColor = KHH_COLORS.MEDICATION_BLUE;
+    badgeBg = '#E0F2FE';
+  }
+
+  return {
+    type: 'flex',
+    altText: `🏆 ขอแสดงความยินดี! คุณ${patientName} ได้รับตราสัญลักษณ์ ${badgeTitle}`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: badgeColor,
+        paddingAll: 'lg',
+        alignItems: 'center',
+        contents: [
+          {
+            type: 'text',
+            text: badgeIcon,
+            size: '3xl',
+            align: 'center',
+          },
+          {
+            type: 'text',
+            text: 'เกียรติบัตรสุขภาพดี รพ.คลองหาด',
+            color: '#FFFFFF',
+            size: 'xs',
+            weight: 'bold',
+            margin: 'sm',
+          },
+          {
+            type: 'text',
+            text: badgeTitle,
+            color: '#FFFFFF',
+            size: 'lg',
+            weight: 'bold',
+            align: 'center',
+            wrap: true,
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        alignItems: 'center',
+        contents: [
+          {
+            type: 'text',
+            text: `ขอแสดงความยินดีกับ คุณ${patientName}`,
+            size: 'md',
+            weight: 'bold',
+            color: KHH_COLORS.TEXT_MAIN,
+            align: 'center',
+          },
+          {
+            type: 'text',
+            text: `หมายเลข HN: ${hn}`,
+            size: 'xs',
+            color: KHH_COLORS.TEXT_MUTED,
+            align: 'center',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: badgeBg,
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: badgeColor,
+            borderWidth: '1px',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'text',
+                text: badgeSubtitle,
+                size: 'xs',
+                color: KHH_COLORS.TEXT_MAIN,
+                weight: 'bold',
+                align: 'center',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: 'ทีมแพทย์และพยาบาลขอชื่นชมและเป็นกำลังใจในการดูแลสุขภาพอย่างยั่งยืนค่ะ 💚',
+                size: 'xs',
+                color: KHH_COLORS.TEXT_MUTED,
+                align: 'center',
+                margin: 'sm',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: badgeColor,
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💚 อ่านคู่มือดูแลสุขภาพดีต่อเนื่อง',
+              text: 'คำแนะนำสุขภาพ',
             },
           },
         ],

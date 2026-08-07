@@ -86,6 +86,16 @@ export function createContactStaffFlex() {
               uri: KHH_CONTACTS.NCD_CLINIC_PHONE_URI,
             },
           },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
+            },
+          },
         ],
       },
     },
@@ -599,6 +609,16 @@ export function createEmergencySymptomsFlex() {
               type: 'uri',
               label: KHH_CONTACTS.EMERGENCY_1669_DISPLAY,
               uri: KHH_CONTACTS.EMERGENCY_1669_URI,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
             },
           },
         ],

@@ -17,9 +17,11 @@ export interface AppointmentNotificationData {
 }
 
 /**
- * Generate Hospital Standard Flex Message for Appointment Reminders
+ * Generate Hospital Standard Flex Message for Appointment Reminders (with Self Check-in QR Code)
  */
 export function createAppointmentFlexMessage(data: AppointmentNotificationData) {
+  const qrData = encodeURIComponent(`KHH-CHECKIN:${data.hn}:${data.appointmentDate}`);
+
   return {
     type: 'flex',
     altText: `🗓️ แจ้งเตือนนัดหมายตรวจติดตามอาการ: คุณ${data.patientName} (${data.appointmentDate})`,
@@ -193,6 +195,46 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
               },
             ],
           },
+
+          // Self Check-in Kiosk QR Code Innovation
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFFFFF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'text',
+                text: '📲 สแกน QR Code รับคิวอัตโนมัติ (KHH Self Check-in)',
+                size: 'xs',
+                color: KHH_COLORS.PRIMARY_TEAL,
+                weight: 'bold',
+                align: 'center',
+                wrap: true,
+              },
+              {
+                type: 'image',
+                url: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrData}`,
+                size: 'sm',
+                aspectRatio: '1:1',
+                margin: 'sm',
+              },
+              {
+                type: 'text',
+                text: 'สแกน QR Code หน้าจอนี้ที่ตู้คิวอัตโนมัติหน้าคลินิก NCDs เพื่อรับคิวตรวจได้ทันที',
+                size: 'xs',
+                color: KHH_COLORS.TEXT_MUTED,
+                align: 'center',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+
           {
             type: 'separator',
             color: '#E2E8F0',
@@ -248,6 +290,16 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
               type: 'message',
               label: '🟡 ขอเลื่อนวันนัด',
               text: `ขอเลื่อนนัด`,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
             },
           },
         ],
@@ -370,8 +422,9 @@ export function createMyAppointmentsFlex(
     };
   }
 
-  // Active appointment exists -> Render real appointment card
+  // Active appointment exists -> Render real appointment card with Queue QR Code
   const mainApp = appointments[0];
+  const qrData = encodeURIComponent(`KHH-CHECKIN:${hn}:${mainApp.appointmentDate}`);
 
   return {
     type: 'flex',
@@ -455,6 +508,36 @@ export function createMyAppointmentsFlex(
               },
             ],
           },
+
+          // Self Check-in Kiosk QR Code
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFFFFF',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#CCFBF1',
+            borderWidth: '1px',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'text',
+                text: '📲 สแกน QR Code รับคิวอัตโนมัติ',
+                size: 'xs',
+                color: KHH_COLORS.PRIMARY_TEAL,
+                weight: 'bold',
+                align: 'center',
+              },
+              {
+                type: 'image',
+                url: `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`,
+                size: 'xs',
+                aspectRatio: '1:1',
+                margin: 'xs',
+              },
+            ],
+          },
+
           {
             type: 'box',
             layout: 'vertical',
@@ -485,7 +568,7 @@ export function createMyAppointmentsFlex(
       },
       footer: {
         type: 'box',
-        layout: 'horizontal',
+        layout: 'vertical',
         spacing: 'sm',
         paddingAll: 'md',
         contents: [
@@ -508,6 +591,16 @@ export function createMyAppointmentsFlex(
               type: 'message',
               label: 'ขอเลื่อนนัด',
               text: 'ขอเลื่อนนัด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
             },
           },
         ],
@@ -568,6 +661,24 @@ export function createConfirmSuccessFlex(patientName: string = 'สมชาย 
             color: '#B45309',
             wrap: true,
             margin: 'md',
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
+            },
           },
         ],
       },
