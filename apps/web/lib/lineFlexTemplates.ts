@@ -2145,17 +2145,6 @@ export function createStressAndSleepAdviceFlex() {
           {
             type: 'button',
             style: 'primary',
-            color: '#6D28D9',
-            height: 'sm',
-            action: {
-              type: 'message',
-              label: '📞 ติดต่อเจ้าหน้าที่สุขภาพจิต',
-              text: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
-            },
-          },
-          {
-            type: 'button',
-            style: 'primary',
             color: '#DC2626',
             height: 'sm',
             action: {
@@ -2164,6 +2153,18 @@ export function createStressAndSleepAdviceFlex() {
               uri: 'tel:1323',
             },
           },
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#6D28D9',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '📞 ติดต่อเจ้าหน้าที่สุขภาพจิต',
+              text: 'ติดต่อเจ้าหน้าที่สุขภาพจิต',
+            },
+          },
+          
           {
             type: 'button',
             style: 'secondary',
