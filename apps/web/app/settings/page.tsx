@@ -206,7 +206,7 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-7">
         {/* Settings Command Center */}
         <section className="relative overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950 p-5 text-white shadow-xl shadow-slate-900/10 md:p-6">
           <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full bg-teal-400/20 blur-3xl" />
@@ -280,18 +280,18 @@ export default function SettingsPage() {
         </nav>
 
         {/* Card 0: User Role & PDPA Control Settings */}
-        <section id="settings-access" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-slate-900 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <section id="settings-access" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex flex-col gap-3 border-b border-slate-100 border-l-4 border-l-slate-900 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-slate-900 text-teal-400 border border-slate-800">
                 <Activity className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">สิทธิ์ผู้ใช้งานและการควบคุมโหมด PDPA (PDPA Role Control)</p>
-                <p className="text-xs text-slate-400 mt-0.5">เฉพาะสิทธิ์ ITsuperadmin เท่านั้นที่สามารถสลับโหมดเปิดแสดงข้อมูลเต็มได้</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">สิทธิ์ผู้ใช้งานและการควบคุมโหมด PDPA</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">เฉพาะสิทธิ์ ITsuperadmin เท่านั้นที่สามารถสลับโหมดเปิดแสดงข้อมูลเต็มได้</p>
               </div>
             </div>
-            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full border ${
+            <span className={`inline-flex self-start shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[10px] font-bold sm:self-center ${
               currentUserRole === 'ITsuperadmin'
                 ? 'bg-slate-900 text-teal-400 border-slate-800'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -300,8 +300,8 @@ export default function SettingsPage() {
             </span>
           </div>
 
-          <div className="p-6 space-y-4 text-xs">
-            <label className="block font-bold text-slate-700">เลือกสิทธิ์การทดสอบใช้งานของผู้ใช้ (User Role Permission):</label>
+          <div className="space-y-4 p-5 text-xs md:p-6">
+            <label className="block font-bold text-slate-700">เลือกสิทธิ์การทดสอบใช้งานของผู้ใช้</label>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Option 1: General Staff (Nurse) */}
@@ -314,11 +314,11 @@ export default function SettingsPage() {
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-extrabold text-slate-800 text-sm">1. พยาบาล / เจ้าหน้าที่ทั่วไป (General Staff)</span>
+                    <span className="font-extrabold text-slate-800 text-sm">พยาบาล / เจ้าหน้าที่ทั่วไป</span>
                   {currentUserRole !== 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
                 </div>
                 <p className="text-slate-600 text-xs leading-relaxed">
-                  🔒 ข้อมูลผู้ป่วยจะถูก **ซ่อนตามกฎหมาย PDPA เสมอ** (ชื่อ-นามสกุล, CID, Phone ถูกเซ็นเซอร์) และ **ไม่เห็นปุ่มปลดล็อก**
+                  ข้อมูลผู้ป่วยจะถูกซ่อนตามกฎหมาย PDPA เสมอ รวมถึงชื่อ-นามสกุล CID และหมายเลขโทรศัพท์
                 </p>
               </div>
 
@@ -333,12 +333,12 @@ export default function SettingsPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className={`font-extrabold text-sm ${currentUserRole === 'ITsuperadmin' ? 'text-teal-400' : 'text-slate-800'}`}>
-                    2. ITsuperadmin (ผู้ดูแลระบบสูงสุด)
+                    ITsuperadmin (ผู้ดูแลระบบสูงสุด)
                   </span>
                   {currentUserRole === 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-400" />}
                 </div>
                 <p className={`${currentUserRole === 'ITsuperadmin' ? 'text-slate-300' : 'text-slate-600'} text-xs leading-relaxed`}>
-                  🔓 สิทธิ์ระดับแอดมินสูงสุด สามารถมองเห็นและสลับปุ่ม **`[🔒 PDPA (สิทธิ์ ITsuperadmin)]`** เพื่อเปิดดูข้อมูลเต็มได้
+                  สิทธิ์ระดับแอดมินสูงสุด สามารถเปิดดูข้อมูลเต็มผ่านการควบคุม PDPA ได้
                 </p>
               </div>
             </div>
@@ -346,23 +346,23 @@ export default function SettingsPage() {
         </section>
 
         {/* Card 1: HOSxP Database Connection (REAL HOSXP DB) */}
-        <section id="settings-hosxp" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-teal-600 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <section id="settings-hosxp" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex flex-col gap-3 border-b border-slate-100 border-l-4 border-l-teal-600 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-100">
                 <HardDrive className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">การเชื่อมต่อฐานข้อมูล HOSxP (Hospital Information System)</p>
-                <p className="text-xs text-slate-400 mt-0.5">เชื่อมต่อฐานข้อมูลจริงตาราง patient และ oapp_moph_appointment_log</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">การเชื่อมต่อฐานข้อมูล HOSxP</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">เชื่อมต่อฐานข้อมูลจริงของตาราง patient และ oapp_moph_appointment_log</p>
               </div>
             </div>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">
+            <span className="inline-flex self-start shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 sm:self-center">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ONLINE (97,859 รายชื่อ)
             </span>
           </div>
 
-          <form onSubmit={handleSaveHosxpSettings} className="px-6 py-5 space-y-4 text-xs">
+          <form onSubmit={handleSaveHosxpSettings} className="space-y-5 p-5 text-xs md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-slate-700 font-bold mb-1">HOSxP Database Host (IP)</label>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleTestHosxpConnection}
@@ -473,18 +473,18 @@ export default function SettingsPage() {
         </section>
 
         {/* Card 1.5: Superadmin Daily Sync & Offline Backup Control Card */}
-        <section id="settings-sync" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-emerald-600 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <section id="settings-sync" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex flex-col gap-3 border-b border-slate-100 border-l-4 border-l-emerald-600 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <RefreshCw className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">การซิงก์ข้อมูลอัตโนมัติประจำวัน (HOSxP ➔ Supabase Daily Sync)</p>
-                <p className="text-xs text-slate-400 mt-0.5">สำรองข้อมูลผู้ป่วย NCDs และนัดหมายเข้า Supabase สำหรับใช้กรณีออฟไลน์/เซิร์ฟเวอร์ LAN ปิด</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">การซิงก์ข้อมูลอัตโนมัติประจำวัน</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">สำรองข้อมูลผู้ป่วย NCDs และนัดหมายเข้า Supabase สำหรับใช้เมื่อระบบ LAN ไม่พร้อมใช้งาน</p>
               </div>
             </div>
-            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1 rounded-full border ${
+            <span className={`inline-flex self-start shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[10px] font-bold sm:self-center ${
               syncConfig.auto_sync_enabled
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -493,7 +493,7 @@ export default function SettingsPage() {
             </span>
           </div>
 
-          <div className="p-6 space-y-5 text-xs">
+          <div className="space-y-5 p-5 text-xs md:p-6">
             {/* Last Sync Status Banner */}
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -586,21 +586,21 @@ export default function SettingsPage() {
         </section>
 
         {/* Card 2: Google Sheets Connection */}
-        <section id="settings-sheets" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-teal-500 px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
+        <section id="settings-sheets" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="border-b border-slate-100 border-l-4 border-l-teal-500 px-5 py-4 md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-teal-50 text-teal-600 border border-teal-100">
                 <FileSpreadsheet className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">การเชื่อมต่อ Google Sheets</p>
-                <p className="text-xs text-slate-400 mt-0.5">ซิงค์ข้อมูลผู้ป่วยและรายการนัดหมายไปยังชีต Telemed69 โดยอัตโนมัติ</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">การเชื่อมต่อ Google Sheets</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">ซิงค์ข้อมูลผู้ป่วยและรายการนัดหมายไปยังชีต Telemed69 โดยอัตโนมัติ</p>
               </div>
             </div>
           </div>
 
-          <div className="px-6 py-5 space-y-4 text-xs">
-            <div className="flex items-center justify-between">
+          <div className="space-y-4 p-5 text-xs md:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                 Google Apps Script Web App URL
               </label>
@@ -636,7 +636,7 @@ export default function SettingsPage() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-1">
+            <div className="flex border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={handleTestSheetConnection}
@@ -655,20 +655,20 @@ export default function SettingsPage() {
         </section>
 
         {/* Card 3: Supabase Database Integration */}
-        <section id="settings-cloud" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-emerald-500 px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
+        <section id="settings-cloud" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="border-b border-slate-100 border-l-4 border-l-emerald-500 px-5 py-4 md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
                 <Database className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">ฐานข้อมูล Supabase</p>
-                <p className="text-xs text-slate-400 mt-0.5">ข้อมูลการเชื่อมต่อ Cloud Database (อ่านได้อย่างเดียว)</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">ฐานข้อมูล Supabase</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">ข้อมูลการเชื่อมต่อ Cloud Database แบบอ่านได้อย่างเดียว</p>
               </div>
             </div>
           </div>
 
-          <div className="px-6 py-5 space-y-3 divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 space-y-3 p-5 md:p-6">
             <div className="flex items-center justify-between py-2">
               <span className="text-xs font-semibold text-slate-500">สถานะการเชื่อมต่อ</span>
               <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -696,21 +696,21 @@ export default function SettingsPage() {
         </section>
 
         {/* Card 4: System Information */}
-        <section id="settings-system" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-          <div className="border-l-4 border-l-amber-500 px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
+        <section id="settings-system" className="scroll-mt-24 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="border-b border-slate-100 border-l-4 border-l-amber-500 px-5 py-4 md:px-6">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
                 <Server className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">ข้อมูลระบบ (System Information)</p>
-                <p className="text-xs text-slate-400 mt-0.5">สถานะและรายละเอียดของ Backend Server และสภาพแวดล้อมระบบ</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-snug text-slate-800">ข้อมูลระบบ</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">สถานะและรายละเอียดของ Backend Server และสภาพแวดล้อมระบบ</p>
               </div>
             </div>
           </div>
 
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-5 md:p-6">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
               <div className="bg-slate-50/70 border border-slate-200/50 rounded-xl p-4">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Server Port</p>
                 <p className="text-2xl font-extrabold text-slate-800">:3000</p>
