@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  HeartHandshake,
   LayoutDashboard,
   Users,
   Calendar,
@@ -17,8 +16,6 @@ import {
   LogOut,
   X,
   Database,
-  ShieldCheck,
-  Menu,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -60,35 +57,80 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     return () => clearInterval(interval);
   }, [pathname]);
 
-  const navItems = [
-    { href: '/dashboard', label: 'ภาพรวมระบบ (Dashboard)', icon: LayoutDashboard },
-    { href: '/registry', label: 'ทะเบียน & ติดตามการรักษา', icon: Database },
-    { href: '/patients', label: 'ทะเบียนผู้ป่วย NCDs', icon: Users },
-    { href: '/appointments', label: 'รายการนัดหมาย', icon: Calendar },
-    { href: '/follow-ups', label: 'งานติดตามผู้ป่วย', icon: PhoneCall },
+  const navGroups: {
+    label: string;
+    items: {
+      href: string;
+      label: string;
+      icon: React.ElementType;
+      description?: string;
+      multiline?: boolean;
+      badge?: string;
+      badgeVariant?: 'alert' | 'live' | 'priority';
+    }[];
+  }[] = [
     {
-      href: '/reply',
-      label: 'กล่องข้อความ Reply',
-      icon: MessageSquare,
-      // Dynamic badge from real data
-      badge: replyUnreadCount > 0 ? (replyUnreadCount > 99 ? '99+' : String(replyUnreadCount)) : undefined,
+      label: 'ภาพรวม',
+      items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
     },
-    { href: '/education', label: 'คำแนะนำสุขภาพ', icon: BookOpen },
-    { href: '/reports', label: 'พิมพ์รายงาน PDF', icon: BarChart3 },
-    { href: '/imports', label: 'นำเข้า Excel / CSV', icon: Upload },
-    { href: '/settings', label: 'การตั้งค่าระบบ', icon: Settings },
+    {
+      label: 'ผู้ป่วย & นัดหมาย',
+      items: [
+        { href: '/registry', label: 'ทะเบียน & ติดตามการรักษา', icon: Database },
+        { href: '/patients', label: 'ทะเบียนผู้ป่วย NCDs', icon: Users },
+        {
+          href: '/appointments',
+          label: 'รายการนัดหมายผู้ป่วย',
+          description: 'HOSxP Real Database',
+          icon: Calendar,
+          badge: 'LIVE',
+          badgeVariant: 'live',
+        },
+        {
+          href: '/follow-ups',
+          label: 'งานติดตามผู้ป่วยขาดนัด NCDs',
+          description: 'Missed appointment follow-up',
+          multiline: true,
+          icon: PhoneCall,
+          badge: 'NCDs',
+          badgeVariant: 'priority',
+        },
+      ],
+    },
+    {
+      label: 'การสื่อสาร',
+      items: [
+        {
+          href: '/reply',
+          label: 'กล่องข้อความ Reply',
+          icon: MessageSquare,
+          // Dynamic badge from real data
+          badge: replyUnreadCount > 0 ? (replyUnreadCount > 99 ? '99+' : String(replyUnreadCount)) : undefined,
+        },
+        { href: '/education', label: 'คำแนะนำสุขภาพ', icon: BookOpen },
+      ],
+    },
+    {
+      label: 'ระบบ',
+      items: [
+        { href: '/reports', label: 'พิมพ์รายงาน PDF', icon: BarChart3 },
+        { href: '/imports', label: 'นำเข้า Excel / CSV', icon: Upload },
+        { href: '/settings', label: 'การตั้งค่าระบบ', icon: Settings },
+      ],
+    },
   ];
 
   const SidebarContent = (
     <div className="flex flex-col justify-between h-full bg-slate-900 text-slate-300 select-none">
-      <div>
+      <div className="min-h-0 flex flex-col">
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800/60 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
+        <div className="relative p-5 border-b border-slate-800/60 flex items-center justify-between overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 -top-10 h-24 bg-clinical-gradient opacity-30 blur-2xl" />
+          <Link href="/dashboard" className="relative flex items-center gap-3 group">
             <img
               src="/khh-safe-connect-symbol.svg"
               alt="KHH Safe-Connect Logo"
-              className="w-10 h-10 group-hover:scale-105 transition-transform"
+              className="w-10 h-10 group-hover:scale-105 transition-transform drop-shadow-[0_0_10px_rgba(20,184,166,0.35)]"
             />
             <div>
               <h1 className="text-xs font-extrabold text-white tracking-wider uppercase">KHH SAFE-CONNECT</h1>
@@ -100,7 +142,7 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
           {setMobileOpen && (
             <button
               onClick={() => setMobileOpen(false)}
-              className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              className="relative lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -108,39 +150,69 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
         </div>
 
         {/* Nav Items List */}
-        <nav className="p-4 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname?.startsWith(item.href);
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-5">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="px-3 mb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname?.startsWith(item.href);
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen && setMobileOpen(false)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 stroke-[2] ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className="bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse min-w-[18px] text-center">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen && setMobileOpen(false)}
+                      className={`group flex items-center justify-between gap-2 pl-3 pr-3 py-2.5 border-l-[3px] rounded-r-xl text-xs font-bold transition-all duration-200 ${
+                        isActive
+                          ? 'border-teal-400 bg-gradient-to-r from-teal-500/20 to-cyan-500/5 text-white shadow-[0_8px_20px_-14px_rgba(45,212,191,0.9)]'
+                          : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/60 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-colors ${
+                            isActive
+                              ? 'bg-teal-500 text-white shadow-sm shadow-teal-900/40'
+                              : 'bg-slate-800/70 text-slate-400 group-hover:text-teal-400 group-hover:bg-slate-800'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className={`block ${item.multiline ? 'line-clamp-2 leading-4' : 'truncate'}`}>{item.label}</span>
+                          {item.description && (
+                            <span className={`mt-0.5 block truncate text-[9px] font-semibold tracking-wide ${isActive ? 'text-teal-300/90' : 'text-slate-500 group-hover:text-slate-400'}`}>
+                              {item.description}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {item.badge && (
+                        <span className={`${
+                          item.badgeVariant === 'live'
+                            ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30'
+                            : item.badgeVariant === 'priority'
+                              ? 'bg-amber-400/15 text-amber-200 ring-1 ring-amber-300/30'
+                              : 'bg-rose-500 text-white shadow-sm shadow-rose-900/40 animate-pulse'
+                        } text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shrink-0`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </div>
 
       {/* Footer Info Box */}
-      <div className="p-4 border-t border-slate-800/60 space-y-3 bg-slate-950/30">
+      <div className="p-4 border-t border-slate-800/60 space-y-3 bg-slate-950/30 shrink-0">
         <div className="flex items-center justify-between text-xs bg-slate-800/50 border border-slate-800/60 rounded-xl p-3">
           <div className="flex items-center gap-2">
             <Database className="w-3.5 h-3.5 text-teal-400" />
@@ -184,4 +256,3 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     </>
   );
 }
-

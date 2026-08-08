@@ -287,23 +287,56 @@ export default function ReplyPage() {
     return matchesSearch && matchesDept;
   });
 
+  const communicationSummary = {
+    total: conversations.length,
+    unread: conversations.reduce((total, chat) => total + chat.unreadCount, 0),
+    urgent: conversations.filter((chat) => chat.priority === 'urgent' || chat.priority === 'high').length,
+    showing: filteredConversations.length,
+  };
+
   return (
     <AppLayout>
       <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-90px)] space-y-3 md:space-y-4">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm sm:text-base md:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2 truncate">
-              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 shrink-0" />
-              <span className="truncate">ศูนย์สื่อสารสหวิชาชีพและตอบกลับผู้ป่วย</span>
-              <span className="hidden md:inline text-slate-500 font-bold text-sm">(Multi-Disciplinary Staff Chat Hub)</span>
-            </h1>
-            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 hidden sm:flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-              <span className="truncate">ระบบตอบกลับแชตตรงถึง LINE ผู้ป่วย พร้อมระบบแยกตามสาขาวิชาชีพ</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+        {/* Communication Command Center */}
+        <section className="relative overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-cyan-50/80 p-4 shadow-sm md:p-5">
+          <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-teal-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/4 h-40 w-40 rounded-full bg-cyan-200/30 blur-3xl" />
+          <div className="relative flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div className="min-w-0">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[9px] font-extrabold tracking-wider text-emerald-700 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                MULTI-DISCIPLINARY · LINE CONNECTED
+              </div>
+              <h1 className="flex items-center gap-2.5 text-lg font-black tracking-tight text-slate-800 md:text-2xl">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-lg shadow-teal-600/20">
+                  <MessageSquare className="h-5 w-5" />
+                </span>
+                <span>ศูนย์สื่อสารสหวิชาชีพและตอบกลับผู้ป่วย</span>
+              </h1>
+              <p className="mt-1.5 text-[11px] font-medium text-slate-500 md:text-xs">
+                Multi-Disciplinary Staff Chat Hub · ตอบกลับ LINE ผู้ป่วยและประสานทีมดูแลในจุดเดียว
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { label: 'บทสนทนาทั้งหมด', value: communicationSummary.total, icon: MessageSquare, tone: 'bg-teal-100 text-teal-700' },
+                  { label: 'ยังไม่ได้อ่าน', value: communicationSummary.unread, icon: AlertCircle, tone: 'bg-blue-100 text-blue-700' },
+                  { label: 'ต้องติดตามด่วน', value: communicationSummary.urgent, icon: HeartHandshake, tone: 'bg-rose-100 text-rose-700' },
+                  { label: 'รายการที่แสดง', value: communicationSummary.showing, icon: Filter, tone: 'bg-violet-100 text-violet-700' },
+                ].map((stat) => {
+                  const StatIcon = stat.icon;
+                  return (
+                    <div key={stat.label} className="rounded-2xl border border-white/90 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">
+                      <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-md ${stat.tone}`}><StatIcon className="h-3 w-3" /></span>
+                        {stat.label}
+                      </div>
+                      <p className="mt-1 text-lg font-black leading-none text-slate-800">{loading ? '—' : stat.value}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => fetchLiveHosxpConversations(searchTerm)}
               className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer border border-slate-200"
@@ -318,8 +351,9 @@ export default function ReplyPage() {
               <Info className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">คู่มือการใช้งาน</span>
             </button>
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* Staff Role Selector Bar */}
         <div className="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md border border-slate-800 flex flex-col gap-2 sm:gap-3">

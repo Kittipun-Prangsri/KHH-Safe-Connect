@@ -282,210 +282,229 @@ export default function RegistryPage() {
           </div>
         </div>
 
-        {/* Overview Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* DM Registry Card */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ทะเบียนเบาหวาน (DM 001)</span>
-                <div className="text-2xl font-black text-slate-800 mt-1">{stats.dmTotal.toLocaleString()} <span className="text-xs font-semibold text-slate-500">คน</span></div>
-              </div>
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                <Droplet className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500 font-medium">คุมน้ำตาลได้ดี (FBS &lt; 130)</span>
-              <span className="font-extrabold text-emerald-600 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> {stats.dmControlRate}%
-              </span>
-            </div>
-          </div>
+        {/* Main two-column layout: filter sidebar (left) + content (right) */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* ============ Filter Sidebar ============ */}
+          <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-6 space-y-5">
+            {/* Urgent Alerts */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2.5">
+              <h3 className="px-1 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" /> การแจ้งเตือนด่วน
+              </h3>
 
-          {/* HT Registry Card */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ทะเบียนความดัน (HT 002)</span>
-                <div className="text-2xl font-black text-slate-800 mt-1">{stats.htTotal.toLocaleString()} <span className="text-xs font-semibold text-slate-500">คน</span></div>
-              </div>
-              <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
-                <Heart className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500 font-medium">คุมความดันได้ดี (BP &lt; 140/90)</span>
-              <span className="font-extrabold text-emerald-600 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> {stats.htControlRate}%
-              </span>
-            </div>
-          </div>
-
-          {/* ALERT CARD: Over 1 Year Missed Hospital Visit (🚨 ขาดนัด > 1 ปี) */}
-          <div
-            onClick={() => setControlFilter('over_1year')}
-            className={`p-5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
-              controlFilter === 'over_1year'
-                ? 'bg-rose-900 text-white border-rose-900 shadow-xl ring-2 ring-rose-500'
-                : 'bg-rose-50/80 border-rose-200 hover:bg-rose-100/70 shadow-sm'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <span className={`text-[11px] font-bold uppercase tracking-wider ${controlFilter === 'over_1year' ? 'text-rose-200' : 'text-rose-700'}`}>
-                  🚨 เตือนขาดนัดเกิน 1 ปี
-                </span>
-                <div className={`text-2xl font-black mt-1 ${controlFilter === 'over_1year' ? 'text-white' : 'text-rose-900'}`}>
-                  {stats.overOneYearCount} <span className="text-xs font-semibold">ราย</span>
-                </div>
-              </div>
-              <div className="p-3 bg-rose-500 text-white rounded-xl shadow-md animate-pulse">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-rose-200/40 flex items-center justify-between text-xs">
-              <span className={controlFilter === 'over_1year' ? 'text-rose-200' : 'text-rose-700'}>หลุดติดตามระบบ &gt;365 วัน</span>
-              <span className="font-extrabold underline text-rose-600 bg-white px-2 py-0.5 rounded shadow-xs">ต้องตามด่วน</span>
-            </div>
-          </div>
-
-          {/* ALERT CARD: Pending Annual Screening (⚠️ ค้างตรวจคัดกรอง ตา/เท้า) */}
-          <div
-            onClick={() => setControlFilter('pending_screening')}
-            className={`p-5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
-              controlFilter === 'pending_screening'
-                ? 'bg-amber-900 text-white border-amber-900 shadow-xl ring-2 ring-amber-500'
-                : 'bg-amber-50/80 border-amber-200 hover:bg-amber-100/70 shadow-sm'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <span className={`text-[11px] font-bold uppercase tracking-wider ${controlFilter === 'pending_screening' ? 'text-amber-200' : 'text-amber-800'}`}>
-                  ⚠️ ค้างตรวจคัดกรองประจำปี
-                </span>
-                <div className={`text-2xl font-black mt-1 ${controlFilter === 'pending_screening' ? 'text-white' : 'text-amber-900'}`}>
-                  {stats.pendingScreeningCount} <span className="text-xs font-semibold">ราย</span>
-                </div>
-              </div>
-              <div className="p-3 bg-amber-500 text-white rounded-xl shadow-md">
-                <Activity className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-amber-200/40 flex items-center justify-between text-xs">
-              <span className={controlFilter === 'pending_screening' ? 'text-amber-200' : 'text-amber-800'}>ยังไม่ตรวจตา / เท้า / Lab</span>
-              <span className="font-extrabold text-amber-700 bg-white px-2 py-0.5 rounded shadow-xs">นัดตรวจประจำปี</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter and Search Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Clinic Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              {[
-                { id: 'all', label: 'ทั้งหมด (NCDs)' },
-                { id: '001', label: '🩸 คลินิกเบาหวาน (001)' },
-                { id: '002', label: '🫀 คลินิกความดัน (002)' },
-                { id: '030', label: '🧪 โรคไตเรื้อรัง (030)' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveClinic(tab.id as any)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                    activeClinic === tab.id
-                      ? 'bg-teal-600 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="ค้นหา HN, เลข CID หรือ ชื่อ-นามสกุล..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Sub-filter: Control Status & Alert Filters */}
-          <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs flex-wrap">
-            <span className="text-slate-500 font-bold flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-slate-400" /> กรอง:
-            </span>
-            {[
-              { id: 'all', label: 'ทั้งหมด' },
-              { id: 'controlled', label: '🟢 คุมได้ดี' },
-              { id: 'uncontrolled', label: '🔴 คุมไม่ได้' },
-              { id: 'over_1year', label: '🚨 ขาดนัด >1 ปี' },
-              { id: 'pending_screening', label: '⚠️ ค้างตรวจ' },
-              { id: 'discontinued_med', label: '💊 หยุดยา' },
-            ].map((st) => (
+              {/* ALERT: Over 1 Year Missed Hospital Visit */}
               <button
-                key={st.id}
-                onClick={() => setControlFilter(st.id as any)}
-                className={`px-3 py-1 rounded-lg font-bold border transition-all cursor-pointer ${
-                  controlFilter === st.id
-                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                onClick={() => setControlFilter(controlFilter === 'over_1year' ? 'all' : 'over_1year')}
+                className={`w-full text-left p-3.5 rounded-xl border cursor-pointer transition-all relative overflow-hidden ${
+                  controlFilter === 'over_1year'
+                    ? 'bg-rose-900 text-white border-rose-900 shadow-lg ring-2 ring-rose-500'
+                    : 'bg-rose-50/80 border-rose-200 hover:bg-rose-100/70'
                 }`}
               >
-                {st.label}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider block truncate ${controlFilter === 'over_1year' ? 'text-rose-200' : 'text-rose-700'}`}>
+                      🚨 ขาดนัดเกิน 1 ปี
+                    </span>
+                    <div className={`text-xl font-black mt-0.5 ${controlFilter === 'over_1year' ? 'text-white' : 'text-rose-900'}`}>
+                      {stats.overOneYearCount} <span className="text-xs font-semibold">ราย</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 bg-rose-500 text-white rounded-xl shadow-md animate-pulse shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className={`mt-2.5 pt-2 border-t text-[10px] ${controlFilter === 'over_1year' ? 'border-rose-700/60 text-rose-200' : 'border-rose-200/60 text-rose-700'}`}>
+                  หลุดติดตามระบบ &gt;365 วัน — ต้องตามด่วน
+                </div>
               </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Registry Patients Table */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <Users className="w-4 h-4 text-teal-600" />
-              <span>รายชื่อผู้ป่วยในทะเบียนติดตามการรักษา</span>
-            </h3>
-            <span className="text-xs font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
-              พบ {patients.length} รายการ
-            </span>
-          </div>
+              {/* ALERT: Pending Annual Screening */}
+              <button
+                onClick={() => setControlFilter(controlFilter === 'pending_screening' ? 'all' : 'pending_screening')}
+                className={`w-full text-left p-3.5 rounded-xl border cursor-pointer transition-all relative overflow-hidden ${
+                  controlFilter === 'pending_screening'
+                    ? 'bg-amber-900 text-white border-amber-900 shadow-lg ring-2 ring-amber-500'
+                    : 'bg-amber-50/80 border-amber-200 hover:bg-amber-100/70'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider block truncate ${controlFilter === 'pending_screening' ? 'text-amber-200' : 'text-amber-800'}`}>
+                      ⚠️ ค้างตรวจคัดกรอง
+                    </span>
+                    <div className={`text-xl font-black mt-0.5 ${controlFilter === 'pending_screening' ? 'text-white' : 'text-amber-900'}`}>
+                      {stats.pendingScreeningCount} <span className="text-xs font-semibold">ราย</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md shrink-0">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className={`mt-2.5 pt-2 border-t text-[10px] ${controlFilter === 'pending_screening' ? 'border-amber-700/60 text-amber-200' : 'border-amber-200/60 text-amber-800'}`}>
+                  ยังไม่ตรวจตา / เท้า / Lab ประจำปี
+                </div>
+              </button>
+            </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/70 text-slate-600 border-b border-slate-200 font-bold uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="p-3.5">ผู้ป่วย / HN</th>
-                  <th className="p-3.5">โรค</th>
-                  <th className="p-3.5">BP / FBS / CVD Risk</th>
-                  <th className="p-3.5">สถานะ</th>
-                  <th className="p-3.5">นัดครั้งต่อไป</th>
-                  <th className="p-3.5 text-center">ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-teal-600" />
-                      กำลังดึงข้อมูลทะเบียนผู้ป่วยจาก HOSxP...
-                    </td>
-                  </tr>
-                ) : patients.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      ไม่พบข้อมูลผู้ป่วยตามเงื่อนไขที่เลือก
-                    </td>
-                  </tr>
-                ) : (
-                  patients.map((p) => (
-                    <tr key={p.hn} className="hover:bg-slate-50/80 transition-colors">
+            {/* Search */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2.5">
+              <h3 className="px-1 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5" /> ค้นหาผู้ป่วย
+              </h3>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="HN, เลข CID หรือ ชื่อ-นามสกุล..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-800 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Clinic Filter */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2.5">
+              <h3 className="px-1 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Stethoscope className="w-3.5 h-3.5" /> คลินิก
+              </h3>
+              <div className="space-y-1">
+                {[
+                  { id: 'all', label: 'ทั้งหมด (NCDs)' },
+                  { id: '001', label: '🩸 คลินิกเบาหวาน (001)' },
+                  { id: '002', label: '🫀 คลินิกความดัน (002)' },
+                  { id: '030', label: '🧪 โรคไตเรื้อรัง (030)' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveClinic(tab.id as any)}
+                    className={`w-full text-left px-3.5 py-2.5 border-l-[3px] rounded-r-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      activeClinic === tab.id
+                        ? 'border-teal-500 bg-teal-50 text-teal-800'
+                        : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Control Status Filter */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2.5">
+              <h3 className="px-1 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5" /> สถานะการควบคุม
+              </h3>
+              <div className="space-y-1">
+                {[
+                  { id: 'all', label: 'ทั้งหมด' },
+                  { id: 'controlled', label: '🟢 คุมได้ดี' },
+                  { id: 'uncontrolled', label: '🔴 คุมไม่ได้' },
+                  { id: 'over_1year', label: '🚨 ขาดนัด >1 ปี' },
+                  { id: 'pending_screening', label: '⚠️ ค้างตรวจ' },
+                  { id: 'discontinued_med', label: '💊 หยุดยา' },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    onClick={() => setControlFilter(st.id as any)}
+                    className={`w-full text-left px-3.5 py-2.5 border-l-[3px] rounded-r-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      controlFilter === st.id
+                        ? 'border-slate-800 bg-slate-100 text-slate-900'
+                        : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-200'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* ============ Content Column ============ */}
+          <div className="flex-1 min-w-0 space-y-6">
+            {/* DM / HT Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* DM Registry Card */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ทะเบียนเบาหวาน (DM 001)</span>
+                    <div className="text-2xl font-black text-slate-800 mt-1">{stats.dmTotal.toLocaleString()} <span className="text-xs font-semibold text-slate-500">คน</span></div>
+                  </div>
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <Droplet className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">คุมน้ำตาลได้ดี (FBS &lt; 130)</span>
+                  <span className="font-extrabold text-emerald-600 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5" /> {stats.dmControlRate}%
+                  </span>
+                </div>
+              </div>
+
+              {/* HT Registry Card */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ทะเบียนความดัน (HT 002)</span>
+                    <div className="text-2xl font-black text-slate-800 mt-1">{stats.htTotal.toLocaleString()} <span className="text-xs font-semibold text-slate-500">คน</span></div>
+                  </div>
+                  <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                    <Heart className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">คุมความดันได้ดี (BP &lt; 140/90)</span>
+                  <span className="font-extrabold text-emerald-600 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5" /> {stats.htControlRate}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Registry Patients Table */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Users className="w-4 h-4 text-teal-600" />
+                  <span>รายชื่อผู้ป่วยในทะเบียนติดตามการรักษา</span>
+                </h3>
+                <span className="text-xs font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+                  พบ {patients.length} รายการ
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100/70 text-slate-600 border-b border-slate-200 font-bold uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="p-3.5">ผู้ป่วย / HN</th>
+                      <th className="p-3.5">โรค</th>
+                      <th className="p-3.5">BP / FBS / CVD Risk</th>
+                      <th className="p-3.5">สถานะ</th>
+                      <th className="p-3.5">นัดครั้งต่อไป</th>
+                      <th className="p-3.5 text-center">ดำเนินการ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-teal-600" />
+                          กำลังดึงข้อมูลทะเบียนผู้ป่วยจาก HOSxP...
+                        </td>
+                      </tr>
+                    ) : patients.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                          ไม่พบข้อมูลผู้ป่วยตามเงื่อนไขที่เลือก
+                        </td>
+                      </tr>
+                    ) : (
+                      patients.map((p, idx) => (
+                    <tr key={`${p.hn}-${p.diseaseType}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                       {/* Patient Name & HN — click to open profile popup */}
                       <td className="p-3.5">
                         <button
@@ -624,6 +643,10 @@ export default function RegistryPage() {
             </table>
           </div>
         </div>
+          </div>
+          {/* ============ /Content Column ============ */}
+        </div>
+        {/* ============ /Main two-column layout ============ */}
 
         {/* Patient History Modal */}
         {selectedPatientForHistory && (

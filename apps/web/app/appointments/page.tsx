@@ -194,6 +194,13 @@ export default function AppointmentsPage() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  const appointmentSummary = {
+    total: filteredAppointments.length,
+    confirmed: filteredAppointments.filter((app) => app.status === 'confirmed').length,
+    pending: filteredAppointments.filter((app) => app.status === 'scheduled').length,
+    missed: filteredAppointments.filter((app) => app.status === 'missed').length,
+  };
+
   const getStatusBadge = (status: Appointment['status']) => {
     switch (status) {
       case 'confirmed':
@@ -308,19 +315,49 @@ export default function AppointmentsPage() {
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-              <CalendarIcon className="w-7 h-7 text-teal-600" />
-              <span>รายการนัดหมายผู้ป่วย (HOSxP Real Database)</span>
-            </h1>
-            <p className="text-slate-500 text-xs sm:text-sm flex items-center gap-1.5 mt-0.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>ดึงข้อมูลนัดหมายสดจากระบบ HOSxP</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+        {/* Appointment Command Center */}
+        <section className="relative overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-cyan-50/70 p-5 md:p-6 shadow-sm">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-teal-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rounded-full bg-cyan-200/25 blur-3xl" />
+
+          <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                HOSxP REAL DATABASE · LIVE CONNECTION
+              </div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-800 md:text-3xl flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-lg shadow-teal-600/20">
+                  <CalendarIcon className="w-5 h-5" />
+                </span>
+                รายการนัดหมายผู้ป่วย
+              </h1>
+              <p className="mt-2 text-xs font-medium text-slate-500 md:text-sm">
+                ตรวจสอบนัดหมาย ติดตามสถานะ และส่งการแจ้งเตือนจากข้อมูล HOSxP ล่าสุด
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { label: 'รายการที่แสดง', value: appointmentSummary.total, icon: CalendarIcon, tone: 'text-teal-700 bg-teal-100' },
+                  { label: 'ยืนยันแล้ว', value: appointmentSummary.confirmed, icon: CheckCircle2, tone: 'text-emerald-700 bg-emerald-100' },
+                  { label: 'รอยืนยัน', value: appointmentSummary.pending, icon: Clock, tone: 'text-amber-700 bg-amber-100' },
+                  { label: 'ขาดนัด', value: appointmentSummary.missed, icon: AlertCircle, tone: 'text-rose-700 bg-rose-100' },
+                ].map((stat) => {
+                  const StatIcon = stat.icon;
+                  return (
+                    <div key={stat.label} className="min-w-[112px] rounded-2xl border border-white/90 bg-white/80 px-3 py-2.5 shadow-sm backdrop-blur">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-md ${stat.tone}`}><StatIcon className="h-3 w-3" /></span>
+                        <span>{stat.label}</span>
+                      </div>
+                      <p className="mt-1 text-lg font-extrabold leading-none text-slate-800">{loading ? '—' : stat.value}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 xl:max-w-md xl:justify-end">
             {canControlPdpa && (
               <button
                 onClick={() => setIsPdpaActive(!isPdpaActive)}
@@ -356,8 +393,9 @@ export default function AppointmentsPage() {
             >
               <span>สร้างรายการนัดหมายใหม่</span>
             </button>
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* Batch Notice Result Banner */}
         {batchNoticeResult && (

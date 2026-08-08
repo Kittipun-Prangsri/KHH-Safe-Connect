@@ -274,31 +274,68 @@ export default function EducationPage() {
     );
   });
 
+  const educationSummary = {
+    topics: topics.length,
+    records: counselingLogs.length,
+    followUps: counselingLogs.filter((log) => log.comprehension === 'needs_followup').length,
+    lineSent: counselingLogs.filter((log) => log.lineNotified).length,
+  };
+
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-              <BookOpen className="w-7 h-7 text-teal-600" />
-              <span>คลังคำแนะนำสุขภาพและการบันทึก (Health Education & Counseling)</span>
-            </h1>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-              คำแนะนำเฉพาะบุคคล 3 หมวดหลัก (อาหาร, ความเครียด/การนอน, การใช้ยา) และระบบบันทึกติดตามการได้รับคำแนะนำของผู้ป่วย NCDs
-            </p>
+        {/* Education Command Center */}
+        <section className="relative overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-cyan-50/80 p-5 shadow-sm md:p-6">
+          <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full bg-teal-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/4 h-48 w-48 rounded-full bg-cyan-200/30 blur-3xl" />
+          <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/85 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-teal-700 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                HEALTH EDUCATION &amp; COUNSELING
+              </div>
+              <h1 className="flex items-center gap-3 text-2xl font-extrabold tracking-tight text-slate-800 md:text-3xl">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-lg shadow-teal-600/20">
+                  <BookOpen className="h-5 w-5" />
+                </span>
+                <span>คลังคำแนะนำสุขภาพและการบันทึก</span>
+              </h1>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-slate-500 md:text-sm">
+                เลือกคำแนะนำมาตรฐาน บันทึกการให้คำปรึกษา และติดตามความเข้าใจของผู้ป่วย NCDs ในที่เดียว
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { label: 'หัวข้อคำแนะนำ', value: educationSummary.topics, icon: BookOpen, tone: 'bg-teal-100 text-teal-700' },
+                  { label: 'บันทึกทั้งหมด', value: educationSummary.records, icon: History, tone: 'bg-indigo-100 text-indigo-700' },
+                  { label: 'ต้องติดตามซ้ำ', value: educationSummary.followUps, icon: AlertCircle, tone: 'bg-rose-100 text-rose-700' },
+                  { label: 'ส่ง LINE แล้ว', value: educationSummary.lineSent, icon: MessageSquare, tone: 'bg-emerald-100 text-emerald-700' },
+                ].map((stat) => {
+                  const StatIcon = stat.icon;
+                  return (
+                    <div key={stat.label} className="min-w-[118px] rounded-2xl border border-white/90 bg-white/80 px-3 py-2.5 shadow-sm backdrop-blur">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-md ${stat.tone}`}><StatIcon className="h-3 w-3" /></span>
+                        {stat.label}
+                      </div>
+                      <p className="mt-1 text-lg font-extrabold leading-none text-slate-800">{stat.value}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              onClick={() => handleOpenCounselingModal()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-teal-600/20 transition-all hover:bg-teal-700 hover:shadow-lg cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>บันทึกการให้คำแนะนำ</span>
+            </button>
           </div>
-          <button
-            onClick={() => handleOpenCounselingModal()}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>บันทึกการให้คำแนะนำ</span>
-          </button>
-        </div>
+        </section>
 
         {/* Category Tabs */}
-        <div className="flex gap-2 border-b border-slate-200 pb-2">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm">
+          <div className="flex gap-2 overflow-x-auto">
           {[
             { id: 'diet', label: '1. การรับประทานอาหาร', icon: Utensils },
             { id: 'stress', label: '2. ความเครียดและการนอน', icon: Heart },
@@ -310,10 +347,10 @@ export default function EducationPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex min-w-max items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-teal-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800'
+                    ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -321,15 +358,17 @@ export default function EducationPage() {
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* Topics List Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredTopics.map((topic) => (
-            <div key={topic.id} className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4 hover-grow">
+            <article key={topic.id} className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg hover:shadow-teal-900/5 flex flex-col justify-between space-y-4">
+              <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-[4rem] bg-teal-50 opacity-0 transition-opacity group-hover:opacity-100" />
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] text-teal-600 font-mono font-bold">{topic.code}</span>
+                  <span className="rounded-md bg-teal-50 px-2 py-1 text-[10px] font-mono font-bold text-teal-700 ring-1 ring-teal-100">{topic.code}</span>
                   <div className="flex gap-1">
                     {topic.targetDiseases.map((d) => (
                       <span key={d} className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
@@ -338,8 +377,8 @@ export default function EducationPage() {
                     ))}
                   </div>
                 </div>
-                <h3 className="text-base font-bold text-slate-800 mb-2">{topic.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/60">{topic.content}</p>
+                <h3 className="text-base font-bold leading-snug text-slate-800 mb-3">{topic.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">{topic.content}</p>
               </div>
 
               <div className="pt-2 flex justify-between items-center">
@@ -354,7 +393,7 @@ export default function EducationPage() {
                   <span>บันทึกส่งให้ผู้ป่วย</span>
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 

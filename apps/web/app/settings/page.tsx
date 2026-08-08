@@ -206,32 +206,81 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
-        {/* Top Header */}
-        <div className="flex items-center justify-between pb-1">
-          <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-              <SettingsIcon className="w-6 h-6 text-teal-600" />
-              <span>การตั้งค่าระบบ (Settings)</span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              จัดการสิทธิ์การเข้าถึง PDPA, การเชื่อมต่อฐานข้อมูล HOSxP และ LINE API
-            </p>
+      <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+        {/* Settings Command Center */}
+        <section className="relative overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950 p-5 text-white shadow-xl shadow-slate-900/10 md:p-6">
+          <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full bg-teal-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-44 w-44 rounded-full bg-cyan-400/10 blur-3xl" />
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/10 px-2.5 py-1 text-[10px] font-extrabold tracking-widest text-teal-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                SYSTEM CONTROL CENTER
+              </div>
+              <h1 className="flex items-center gap-3 text-2xl font-extrabold tracking-tight md:text-3xl">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-900/40">
+                  <SettingsIcon className="h-5 w-5" />
+                </span>
+                การตั้งค่าระบบ
+              </h1>
+              <p className="mt-2 max-w-2xl text-xs font-medium leading-relaxed text-slate-300 md:text-sm">
+                จัดการสิทธิ์ PDPA การเชื่อมต่อ HOSxP และการสำรองข้อมูลจากจุดเดียวอย่างปลอดภัย
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setLoading(true);
+                setTimeout(() => setLoading(false), 500);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white transition-all hover:bg-white/20 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-300' : ''}`} />
+              <span>รีเฟรชสถานะ</span>
+            </button>
           </div>
-          <button
-            onClick={() => {
-              setLoading(true);
-              setTimeout(() => setLoading(false), 500);
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-all cursor-pointer shadow-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-600' : ''}`} />
-            <span>รีเฟรช</span>
-          </button>
-        </div>
+          <div className="relative mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {[
+              { label: 'สิทธิ์ที่ใช้งาน', value: currentUserRole === 'ITsuperadmin' ? 'ITsuperadmin' : 'General Staff', icon: Activity, tone: 'text-teal-300 bg-teal-400/10' },
+              { label: 'HOSxP Database', value: 'Online', icon: HardDrive, tone: 'text-emerald-300 bg-emerald-400/10' },
+              { label: 'Daily Sync', value: syncConfig.auto_sync_enabled ? `ทุกวัน ${syncConfig.daily_sync_time}` : 'ปิดใช้งาน', icon: RefreshCw, tone: 'text-cyan-300 bg-cyan-400/10' },
+            ].map((item) => {
+              const ItemIcon = item.icon;
+              return (
+                <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3.5 py-3 backdrop-blur-sm">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${item.tone}`}><ItemIcon className="h-4 w-4" /></span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>
+                    <p className="truncate text-xs font-extrabold text-white">{item.value}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <nav aria-label="เมนูการตั้งค่าระบบ" className="sticky top-3 z-10 -mx-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white/85 p-2 shadow-sm backdrop-blur-xl">
+          <div className="flex min-w-max gap-1">
+            {[
+              { href: '#settings-access', label: 'สิทธิ์ & PDPA', icon: Activity },
+              { href: '#settings-hosxp', label: 'HOSxP Database', icon: HardDrive },
+              { href: '#settings-sync', label: 'Daily Sync', icon: RefreshCw },
+              { href: '#settings-sheets', label: 'Google Sheets', icon: FileSpreadsheet },
+              { href: '#settings-cloud', label: 'Supabase', icon: Database },
+              { href: '#settings-system', label: 'ข้อมูลระบบ', icon: Server },
+            ].map((item) => {
+              const NavIcon = item.icon;
+              return (
+                <a key={item.href} href={item.href} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-600 transition-colors hover:bg-teal-50 hover:text-teal-700 focus:bg-teal-50 focus:text-teal-700 focus:outline-none">
+                  <NavIcon className="h-3.5 w-3.5" />
+                  {item.label}
+                </a>
+              );
+            })}
+          </div>
+        </nav>
 
         {/* Card 0: User Role & PDPA Control Settings */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-access" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-slate-900 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-slate-900 text-teal-400 border border-slate-800">
@@ -294,10 +343,10 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Card 1: HOSxP Database Connection (REAL HOSXP DB) */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-hosxp" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-teal-600 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-100">
@@ -421,10 +470,10 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
-        </div>
+        </section>
 
         {/* Card 1.5: Superadmin Daily Sync & Offline Backup Control Card */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-sync" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-emerald-600 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -534,10 +583,10 @@ export default function SettingsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </section>
 
         {/* Card 2: Google Sheets Connection */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-sheets" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-teal-500 px-6 py-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-teal-50 text-teal-600 border border-teal-100">
@@ -603,10 +652,10 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Card 3: Supabase Database Integration */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-cloud" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-emerald-500 px-6 py-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
@@ -644,10 +693,10 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Card 4: System Information */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <section id="settings-system" className="scroll-mt-24 bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           <div className="border-l-4 border-l-amber-500 px-6 py-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
@@ -682,7 +731,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </AppLayout>
   );
