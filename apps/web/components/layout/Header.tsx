@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, LogOut, Settings, User, ShieldCheck } from 'lucide-react';
+import { Menu, LogOut, Settings } from 'lucide-react';
 import { PRESET_USERS, UserProfile } from '@/lib/rbac';
 
 interface HeaderProps {
@@ -30,10 +30,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 lg:hidden transition-colors cursor-pointer"
+          className="p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 lg:hidden transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
           title="เปิดเมนู"
+          aria-label="เปิดเมนูนำทาง"
         >
-          <Menu className="w-5 h-5 stroke-[2.2]" />
+          <Menu className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />
         </button>
 
         <span className="hidden sm:inline-flex text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200/60 px-2.5 py-1 rounded-md">

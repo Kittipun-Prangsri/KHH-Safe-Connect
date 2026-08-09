@@ -5,7 +5,6 @@ import AppLayout from '@/components/layout/AppLayout';
 import {
   MessageSquare,
   Send,
-  User,
   Clock,
   Search,
   Filter,
@@ -13,7 +12,6 @@ import {
   HeartHandshake,
   RefreshCw,
   Database,
-  ShieldCheck,
   CheckCircle2,
   Info,
   Stethoscope,
@@ -23,10 +21,9 @@ import {
   Building2,
   UserCheck,
   Sparkles,
-  Lock,
-  Tag,
+  Inbox,
 } from 'lucide-react';
-import { maskName, maskPhone } from '@/lib/pdpaMasking';
+import { maskName } from '@/lib/pdpaMasking';
 
 interface ChatMessage {
   id: string;
@@ -463,34 +460,61 @@ export default function ReplyPage() {
                   <p>กำลังดึงรายการข้อความสดจาก HOSxP...</p>
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">ไม่พบรายการสนทนาในแผนกนี้</div>
+                <div className="p-8 flex flex-col items-center justify-center gap-2 text-center">
+                  <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300">
+                    <Inbox className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-500">ไม่พบรายการสนทนาในแผนกนี้</p>
+                </div>
               ) : (
                 filteredConversations.map((chat) => {
                   const deptConfig = staffRoles.find((r) => r.id === chat.department) || staffRoles[0];
                   const DeptIcon = deptConfig.icon;
+                  const isActive = activeChat?.id === chat.id;
+                  const maskedName = maskName(chat.patientName);
+                  const priorityBar =
+                    chat.priority === 'urgent' ? 'bg-rose-500' : chat.priority === 'high' ? 'bg-amber-500' : 'bg-transparent';
 
                   return (
                     <div
                       key={chat.id}
                       onClick={() => setActiveChat(chat)}
-                      className={`p-3.5 cursor-pointer transition-all hover:bg-slate-100/60 ${
-                        activeChat?.id === chat.id ? 'bg-teal-50/80 border-l-4 border-teal-600' : ''
+                      className={`group relative flex gap-2.5 p-3.5 pl-2.5 cursor-pointer transition-all hover:bg-slate-100/60 ${
+                        isActive ? 'bg-teal-50/80' : ''
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-slate-800 text-xs">{chat.patientName}</span>
-                        <span className="text-[10px] text-slate-400">{chat.lastMessageTime}</span>
+                      <span className={`w-1 shrink-0 rounded-full ${isActive ? 'bg-teal-600' : priorityBar}`} />
+
+                      <div className="w-9 h-9 rounded-full bg-teal-600/10 text-teal-700 border border-teal-200 flex items-center justify-center font-black text-xs shrink-0">
+                        {maskedName.trim().charAt(0) || '?'}
                       </div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-teal-600 font-mono font-bold">{chat.hn}</span>
-                        <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1 border ${deptConfig.badgeBg}`}
-                        >
-                          <DeptIcon className="w-2.5 h-2.5" />
-                          <span>{deptConfig.label}</span>
-                        </span>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <span className="font-bold text-slate-800 text-xs truncate">{maskedName}</span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5 shrink-0">
+                            <Clock className="w-2.5 h-2.5" />
+                            {chat.lastMessageTime}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[10px] text-teal-600 font-mono font-bold truncate">{chat.hn}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1 border shrink-0 ${deptConfig.badgeBg}`}
+                          >
+                            <DeptIcon className="w-2.5 h-2.5" />
+                            <span>{deptConfig.label}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs text-slate-600 truncate font-medium">{chat.subject}</p>
+                          {chat.unreadCount > 0 && (
+                            <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-extrabold flex items-center justify-center">
+                              {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-600 truncate font-medium">{chat.subject}</p>
                     </div>
                   );
                 })
@@ -506,7 +530,7 @@ export default function ReplyPage() {
               <div className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <span>{activeChat.patientName}</span>
+                    <span>{maskName(activeChat.patientName)}</span>
                     <span className="text-xs font-mono text-teal-600 font-bold">({activeChat.hn})</span>
                     <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
                       <Database className="w-3 h-3" /> HOSxP Live
@@ -574,6 +598,7 @@ export default function ReplyPage() {
                       <button
                         key={i}
                         onClick={() => setInputText(tpl)}
+                        title={tpl}
                         className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 text-slate-700 rounded-xl border border-slate-200 whitespace-nowrap cursor-pointer transition-all text-[11px]"
                       >
                         {tpl.slice(0, 35)}...
@@ -624,8 +649,14 @@ export default function ReplyPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400 text-xs p-8">
-              กรุณาเลือกรายการผู้ป่วยทางซ้ายมือเพื่อเริ่มการสนทนา
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
+              <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300">
+                <Inbox className="w-7 h-7" />
+              </div>
+              <p className="text-sm font-bold text-slate-500">ยังไม่ได้เลือกบทสนทนา</p>
+              <p className="text-xs text-slate-400 max-w-[220px]">
+                เลือกรายการผู้ป่วยทางด้านซ้ายเพื่อเริ่มอ่านและตอบกลับข้อความ
+              </p>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -26,6 +26,47 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarProps) {
   const pathname = usePathname();
   const [replyUnreadCount, setReplyUnreadCount] = useState<number>(0);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Mobile drawer: lock background scroll, move focus in, and close on Escape
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileOpen && setMobileOpen(false);
+        return;
+      }
+      // Basic focus trap within the drawer
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [mobileOpen, setMobileOpen]);
 
   // Fetch real unread count from HOSxP/Supabase
   const fetchUnreadCount = async () => {
@@ -120,13 +161,16 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     },
   ];
 
-  const SidebarContent = (
+  const renderSidebarContent = (isMobileInstance: boolean) => (
     <div className="flex flex-col justify-between h-full bg-slate-900 text-slate-300 select-none">
       <div className="min-h-0 flex flex-col">
         {/* Brand Header */}
         <div className="relative p-5 border-b border-slate-800/60 flex items-center justify-between overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-10 h-24 bg-clinical-gradient opacity-30 blur-2xl" />
-          <Link href="/dashboard" className="relative flex items-center gap-3 group">
+          <Link
+            href="/dashboard"
+            className="relative flex items-center gap-3 group rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          >
             <img
               src="/khh-safe-connect-symbol.svg"
               alt="KHH Safe-Connect Logo"
@@ -141,19 +185,21 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
           </Link>
           {setMobileOpen && (
             <button
+              ref={isMobileInstance ? closeButtonRef : undefined}
               onClick={() => setMobileOpen(false)}
-              className="relative lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              aria-label="ปิดเมนูนำทาง"
+              className="relative lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           )}
         </div>
 
         {/* Nav Items List */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-5">
+        <nav aria-label="เมนูนำทางหลัก" className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-5">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <p className="px-3 mb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
+              <p className="px-3 mb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
                 {group.label}
               </p>
               <div className="space-y-1">
@@ -166,7 +212,8 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileOpen && setMobileOpen(false)}
-                      className={`group flex items-center justify-between gap-2 pl-3 pr-3 py-2.5 border-l-[3px] rounded-r-xl text-xs font-bold transition-all duration-200 ${
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`group flex items-center justify-between gap-2 pl-3 pr-3 py-2.5 border-l-[3px] rounded-r-xl text-xs font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-inset ${
                         isActive
                           ? 'border-teal-400 bg-gradient-to-r from-teal-500/20 to-cyan-500/5 text-white shadow-[0_8px_20px_-14px_rgba(45,212,191,0.9)]'
                           : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/60 hover:border-slate-700'
@@ -180,7 +227,7 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
                               : 'bg-slate-800/70 text-slate-400 group-hover:text-teal-400 group-hover:bg-slate-800'
                           }`}
                         >
-                          <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
+                          <Icon className="w-3.5 h-3.5 stroke-[2.2]" aria-hidden="true" />
                         </span>
                         <span className="min-w-0">
                           <span className={`block ${item.multiline ? 'line-clamp-2 leading-4' : 'truncate'}`}>{item.label}</span>
@@ -215,19 +262,22 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
       <div className="p-4 border-t border-slate-800/60 space-y-3 bg-slate-950/30 shrink-0">
         <div className="flex items-center justify-between text-xs bg-slate-800/50 border border-slate-800/60 rounded-xl p-3">
           <div className="flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-teal-400" />
+            <Database className="w-3.5 h-3.5 text-teal-400" aria-hidden="true" />
             <span className="font-semibold text-slate-400 text-[11px]">Database Cloud</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
             <span className="font-bold text-[10px] text-emerald-400 uppercase">Live</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold px-1">
           <span>KHH Primary Care Platform v1.2</span>
-          <Link href="/" className="text-rose-400 hover:underline flex items-center gap-1">
-            <LogOut className="w-3 h-3" /> ออกจากระบบ
+          <Link
+            href="/"
+            className="text-rose-400 hover:underline flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          >
+            <LogOut className="w-3 h-3" aria-hidden="true" /> ออกจากระบบ
           </Link>
         </div>
       </div>
@@ -238,7 +288,7 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     <>
       {/* Desktop Fixed Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-300 border-r border-slate-800 shrink-0 h-screen sticky top-0 select-none">
-        {SidebarContent}
+        {renderSidebarContent(false)}
       </aside>
 
       {/* Mobile Backdrop & Drawer */}
@@ -247,9 +297,16 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
           <div
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileOpen && setMobileOpen(false)}
+            aria-hidden="true"
           />
-          <div className="relative w-64 max-w-xs bg-slate-900 h-full shadow-2xl z-10">
-            {SidebarContent}
+          <div
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="เมนูนำทาง"
+            className="relative w-64 max-w-xs bg-slate-900 h-full shadow-2xl z-10"
+          >
+            {renderSidebarContent(true)}
           </div>
         </div>
       )}

@@ -17,10 +17,7 @@ import {
   Edit3,
   Save,
   RefreshCw,
-  Database,
-  User,
   Stethoscope,
-  Building,
   Check,
   Send,
   Shield,
@@ -542,69 +539,94 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        {/* Appointments Table */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th className="pb-3 font-semibold">HN / ชื่อผู้ป่วย</th>
-                  <th className="pb-3 font-semibold">วัน-เวลานัดหมาย</th>
-                  <th className="pb-3 font-semibold">คลินิก / แพทย์</th>
-                  <th className="pb-3 font-semibold">สถานะนัดหมาย</th>
-                  <th className="pb-3 font-semibold text-right">การจัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-                        <span>กำลังดึงรายการนัดหมายจากระบบ HOSxP...</span>
+        {/* Appointments List */}
+        <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="p-4 md:p-5 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-teal-600" />
+              <span>รายการนัดหมายทั้งหมด</span>
+            </h3>
+            <span className="text-xs font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+              พบ {filteredAppointments.length} รายการ
+            </span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 md:p-5 flex items-center gap-4 animate-pulse">
+                  <div className="w-11 h-11 rounded-full bg-slate-100 shrink-0" />
+                  <div className="flex-1 space-y-2 min-w-0">
+                    <div className="h-3 w-1/3 max-w-[160px] bg-slate-100 rounded" />
+                    <div className="h-2.5 w-1/4 max-w-[100px] bg-slate-100 rounded" />
+                  </div>
+                  <div className="h-6 w-24 bg-slate-100 rounded-full shrink-0" />
+                </div>
+              ))
+            ) : filteredAppointments.length === 0 ? (
+              <div className="py-16 flex flex-col items-center justify-center text-center gap-2">
+                <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300">
+                  <CalendarIcon className="w-7 h-7" />
+                </div>
+                <p className="text-sm font-bold text-slate-500">ไม่พบรายการนัดหมายตามเงื่อนไข</p>
+                <p className="text-xs text-slate-400">ลองปรับตัวกรองค้นหา สถานะ หรือช่วงวันที่ใหม่</p>
+              </div>
+            ) : (
+              filteredAppointments.map((app) => {
+                const maskedName = maskPatientName(app.patientName, isPdpaActive);
+                return (
+                  <div
+                    key={app.id}
+                    className="group p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 hover:bg-slate-50/70 transition-all"
+                  >
+                    {/* Patient */}
+                    <div className="flex items-center gap-3 md:w-56 shrink-0 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-teal-600/10 text-teal-700 border border-teal-200 flex items-center justify-center font-black text-sm shrink-0">
+                        {maskedName?.replace(/^นาย|^น\.ส\.|^นาง/, '').trim().charAt(0) || '?'}
                       </div>
-                    </td>
-                  </tr>
-                ) : filteredAppointments.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">
-                      ไม่พบรายการนัดหมายตามเงื่อนไข
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAppointments.map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50 transition-all group">
-                      <td className="py-4 pr-3">
-                        <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
-                          {maskPatientName(app.patientName, isPdpaActive)}
-                        </span>
-                        <span className="block text-[10px] text-teal-600 font-mono font-bold">{app.hn}</span>
-                      </td>
-                      <td className="py-4">
-                        <span className="block font-bold text-slate-800">{app.date}</span>
-                        <span className="block text-[11px] text-amber-700 font-semibold">{app.time}</span>
-                      </td>
-                      <td className="py-4">
-                        <span className="block font-medium text-slate-700">{app.clinic}</span>
-                        <span className="block text-[10px] text-slate-400">{app.provider}</span>
-                      </td>
-                      <td className="py-4">{getStatusBadge(app.status)}</td>
-                      <td className="py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setEditingAppointment(app)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 rounded-lg transition-all text-xs font-semibold border border-slate-200 cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-teal-600" />
-                            <span>แก้ไข</span>
-                          </button>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-800 text-sm group-hover:text-teal-700 transition-colors truncate">
+                          {maskedName}
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        <div className="text-[10px] text-teal-600 font-mono font-bold">{app.hn}</div>
+                      </div>
+                    </div>
+
+                    {/* Date / Time */}
+                    <div className="flex items-center gap-2 md:w-32 shrink-0">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-800 text-xs truncate">{app.date}</div>
+                        <div className="text-[10px] text-amber-700 font-semibold truncate">{app.time}</div>
+                      </div>
+                    </div>
+
+                    {/* Clinic / Provider */}
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <Stethoscope className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-700 truncate">{app.clinic}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{app.provider}</div>
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="shrink-0">{getStatusBadge(app.status)}</div>
+
+                    {/* Action */}
+                    <div className="shrink-0">
+                      <button
+                        onClick={() => setEditingAppointment(app)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 rounded-lg transition-all text-xs font-semibold border border-slate-200 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-teal-600" />
+                        <span>แก้ไข</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
