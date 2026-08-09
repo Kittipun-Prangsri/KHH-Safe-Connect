@@ -33,13 +33,19 @@ export default function LoginPage() {
         throw new Error(data.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
       }
 
-      // Save Real User Session
+      // The server already set an httpOnly session cookie on this response —
+      // that's what actually gates access. localStorage here is just for
+      // client-side UI display (e.g. the header's name/role badge).
       if (typeof window !== 'undefined') {
         localStorage.setItem('khh_user_session', JSON.stringify(data.user));
-        document.cookie = `user_role=${data.user.role}; path=/; max-age=86400`;
       }
 
-      window.location.href = '/dashboard';
+      // Honor the page the user was originally trying to reach (set by
+      // middleware when it redirected an unauthenticated request here).
+      // Only allow relative paths, to avoid an open-redirect.
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirectTo');
+      window.location.href = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/dashboard';
     } catch (err: any) {
       setErrorMsg(err.message || 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์กับฐานข้อมูล HOSxP');
     } finally {

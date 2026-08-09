@@ -6,8 +6,26 @@ import {
   provisionHosxpUserToStore,
   createDynamicStandbyProfile,
 } from '@/lib/userProvisioningService';
+import { createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Issue a signed, httpOnly session cookie on the response for a
+ * successfully authenticated user. httpOnly means client-side JS can't
+ * read or forge it — this is what the middleware actually trusts.
+ */
+async function withSessionCookie(response: NextResponse, user: { id: string; role: string; name: string; roleLabel?: string }) {
+  const token = await createSessionToken(user);
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  });
+  return response;
+}
 
 /**
  * Determine Role from HOSxP opduser entryposition, groupname, doctorcode
@@ -74,13 +92,16 @@ export async function POST(request: Request) {
     // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
     const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
     if (duplicatedProfile) {
-      return NextResponse.json({
-        success: true,
-        message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
-        user: duplicatedProfile,
-        isZeroDbAuth: true,
-        source: 'Supabase / Duplicated Store',
-      });
+      return withSessionCookie(
+        NextResponse.json({
+          success: true,
+          message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
+          user: duplicatedProfile,
+          isZeroDbAuth: true,
+          source: 'Supabase / Duplicated Store',
+        }),
+        duplicatedProfile
+      );
     }
 
     // 2. STEP 2: Query user from HOSxP opduser / opduser_Ncd database
@@ -135,13 +156,16 @@ export async function POST(request: Request) {
       // Auto-provision dynamic standby profile for ANY username when DB is unreachable
       const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
 
-      return NextResponse.json({
-        success: true,
-        message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
-        user: standbyProfile,
-        isStandbyMode: true,
-        source: 'Supabase Standby Store',
-      });
+      return withSessionCookie(
+        NextResponse.json({
+          success: true,
+          message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
+          user: standbyProfile,
+          isStandbyMode: true,
+          source: 'Supabase Standby Store',
+        }),
+        standbyProfile
+      );
     }
 
     if (!rows || rows.length === 0) {
@@ -219,13 +243,16 @@ export async function POST(request: Request) {
       opduserNcdSyncedAt: nowIso,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
-      user: provisionedUser,
-      isAutoProvisioned: true,
-      isFromNcdTable,
-    });
+    return withSessionCookie(
+      NextResponse.json({
+        success: true,
+        message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
+        user: provisionedUser,
+        isAutoProvisioned: true,
+        isFromNcdTable,
+      }),
+      provisionedUser
+    );
   } catch (error: any) {
     console.error('❌ HOSxP Login Auth Error:', error);
     return NextResponse.json(

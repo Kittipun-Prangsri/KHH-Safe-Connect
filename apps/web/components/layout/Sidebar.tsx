@@ -83,6 +83,22 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
     }
   };
 
+  // httpOnly session cookies can't be cleared by client JS directly, so
+  // logout has to go through the API route that issues the Set-Cookie.
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/hosxp/auth/logout', { method: 'POST' });
+    } catch {
+      // Even if the request fails, still clear local state and redirect —
+      // worst case the cookie expires naturally after SESSION_MAX_AGE_SECONDS.
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('khh_user_session');
+        window.location.href = '/';
+      }
+    }
+  };
+
   useEffect(() => {
     // When user is on /reply, reset badge to 0 (they've seen the messages)
     if (pathname?.startsWith('/reply')) {
@@ -273,12 +289,12 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
 
         <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold px-1">
           <span>KHH Primary Care Platform v1.2</span>
-          <Link
-            href="/"
-            className="text-rose-400 hover:underline flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          <button
+            onClick={handleLogout}
+            className="text-rose-400 hover:underline flex items-center gap-1 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             <LogOut className="w-3 h-3" aria-hidden="true" /> ออกจากระบบ
-          </Link>
+          </button>
         </div>
       </div>
     </div>
