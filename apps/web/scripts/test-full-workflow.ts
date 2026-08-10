@@ -52,7 +52,8 @@ async function runFullWorkflowTest() {
   console.log('====================================================\n');
 
   const testCases = [
-    { title: '1. Patient Registration via 13-digit CID', input: '1234567890123' },
+    { title: '1. Patient Registration Step 1 (13-digit CID)', input: '1234567890123' },
+    { title: '1b. Patient Registration Step 2 (Birth Year 2495)', input: 'Y2495' },
     { title: '2. Diet Advice Flex Request', input: 'คำแนะนำการรับประทานอาหาร' },
     { title: '3. Medication Advice Flex Request', input: 'คำแนะนำการใช้ยา' },
     { title: '4. Pharmacist Patient Form Prompt Request', input: 'แบบฟอร์มข้อมูลคนไข้สำหรับประกอบการปรึกษากับเภสัช' },

@@ -8,6 +8,8 @@ import {
   fetchPatientUpcomingAppointmentsFromHosxp,
   getPatientLatestLabAndVitals,
   recordIncomingLineMessage,
+  verifyPatientBirthYear,
+  getActiveBindingCountForHn,
 } from '@/lib/lineUserService';
 import {
   createRoleSelectionFlexMessage,
@@ -35,7 +37,11 @@ import {
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
   createContactPhysicalTherapyFlex,
+  createBirthYearVerificationPromptFlex,
+  createMaxBindingReachedFlex,
 } from '@/lib/lineFlexTemplates';
+
+const pendingVerificationStore = new Map<string, { hn: string; patientName: string; userRole: 'patient' | 'caregiver' }>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -417,6 +423,86 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Birth Year Verification Input (e.g. Y2495 or 4-digit BE year 2400-2600 when pending)
+        const cleanDigitsOnly = text.replace(/[^0-9]/g, '');
+        const isYearInput =
+          text.toUpperCase().startsWith('Y') ||
+          (cleanDigitsOnly.length === 4 &&
+            parseInt(cleanDigitsOnly, 10) >= 2400 &&
+            parseInt(cleanDigitsOnly, 10) <= 2600);
+
+        if ((isYearInput || pendingVerificationStore.has(lineUserId)) && cleanDigitsOnly.length === 4) {
+          const pending = pendingVerificationStore.get(lineUserId);
+          const targetHn = pending?.hn || '';
+
+          if (targetHn) {
+            const verifyRes = await verifyPatientBirthYear(targetHn, cleanDigitsOnly);
+
+            if (verifyRes.valid) {
+              // Verified! Check 3-account limit
+              if (verifyRes.activeCount >= 3) {
+                const maxFlex = createMaxBindingReachedFlex(verifyRes.patientName, verifyRes.hn, verifyRes.activeCount);
+                await sendLineReplyMessage(replyToken, [maxFlex]);
+                pendingVerificationStore.delete(lineUserId);
+                continue;
+              }
+
+              const userRole = pending?.userRole || 'patient';
+              await bindLineUserToHn(lineUserId, verifyRes.hn, verifyRes.patientName, {
+                userRole,
+                overrideExisting: userRole === 'patient',
+              });
+              pendingVerificationStore.delete(lineUserId);
+
+              const patientMatch = await findPatientByHnOrCidInHosxp(verifyRes.hn);
+              const rawCid = patientMatch.cid || targetHn;
+              const maskedCid =
+                rawCid.length === 13
+                  ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
+                  : rawCid;
+
+              const roleNotice = userRole === 'caregiver' ? '👥 ลงทะเบียนในฐานะ: ญาติ / ผู้ดูแล' : '👤 ลงทะเบียนในฐานะ: ผู้ป่วยหลัก';
+              const infoFlex = createPatientInfoVerificationFlex(
+                patientMatch.patientName,
+                patientMatch.hn,
+                maskedCid,
+                patientMatch.clinics,
+                (patientMatch as any).vitals
+              );
+
+              const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
+              const replyMessages: any[] = [
+                {
+                  type: 'text',
+                  text: `✅ ${roleNotice}\nยืนยันปี พ.ศ. เกิดถูกต้อง! ผูกบัญชี LINE เรียบร้อยแล้วค่ะ`,
+                },
+                infoFlex,
+              ];
+
+              if (isEnrolledInClinic) {
+                replyMessages.push(createRiskAssessmentAndMenuFlex());
+              }
+
+              await sendLineReplyMessage(replyToken, replyMessages);
+              continue;
+            } else {
+              const retryFlex = createBirthYearVerificationPromptFlex(
+                verifyRes.patientName || pending?.patientName || 'ผู้ป่วย',
+                targetHn,
+                pending?.userRole || 'patient'
+              );
+              await sendLineReplyMessage(replyToken, [
+                {
+                  type: 'text',
+                  text: `❌ ปี พ.ศ. เกิดไม่ถูกต้อง!\n\nปีเกิด "${cleanDigitsOnly}" ไม่ตรงกับข้อมูลในระบบ HOSxP รพ.คลองหาด\nกรุณาตรวจสอบปีเกิด 4 หลัก จากบัตรประชาชนของผู้ป่วยและลองใหม่อีกครั้งค่ะ`,
+                },
+                retryFlex,
+              ]);
+              continue;
+            }
+          }
+        }
+
         // Interactive Role Selection Handling: REGISTER_SELF:HN-XXXXX / REGISTER_CAREGIVER:HN-XXXXX
         if (text.startsWith('REGISTER_SELF:') || text.startsWith('REGISTER_CAREGIVER:')) {
           const isCaregiver = text.startsWith('REGISTER_CAREGIVER:');
@@ -424,40 +510,27 @@ export async function POST(req: NextRequest) {
           const patientMatch = await findPatientByHnOrCidInHosxp(targetHn);
 
           if (patientMatch.found) {
-            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName, {
-              userRole: isCaregiver ? 'caregiver' : 'patient',
-              overrideExisting: !isCaregiver,
-            });
+            const activeCount = await getActiveBindingCountForHn(patientMatch.hn);
 
-            const rawCid = patientMatch.cid || targetHn;
-            const maskedCid =
-              rawCid.length === 13
-                ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
-                : rawCid;
-
-            const roleNotice = isCaregiver ? '👥 ลงทะเบียนในฐานะ: ญาติ / ผู้ดูแล' : '👤 ลงทะเบียนในฐานะ: ผู้ป่วยหลัก';
-            const infoFlex = createPatientInfoVerificationFlex(
-              patientMatch.patientName,
-              patientMatch.hn,
-              maskedCid,
-              patientMatch.clinics,
-              (patientMatch as any).vitals
-            );
-
-            const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
-            const replyMessages: any[] = [
-              {
-                type: 'text',
-                text: `✅ ${roleNotice}\nระบบทำการผูกบัญชี LINE เรียบร้อยแล้วค่ะ`,
-              },
-              infoFlex,
-            ];
-
-            if (isEnrolledInClinic) {
-              replyMessages.push(createRiskAssessmentAndMenuFlex());
+            if (activeCount >= 3) {
+              const maxFlex = createMaxBindingReachedFlex(patientMatch.patientName, patientMatch.hn, activeCount);
+              await sendLineReplyMessage(replyToken, [maxFlex]);
+              continue;
             }
 
-            await sendLineReplyMessage(replyToken, replyMessages);
+            // Save pending verification and prompt for 4-digit Birth Year
+            pendingVerificationStore.set(lineUserId, {
+              hn: patientMatch.hn,
+              patientName: patientMatch.patientName,
+              userRole: isCaregiver ? 'caregiver' : 'patient',
+            });
+
+            const promptFlex = createBirthYearVerificationPromptFlex(
+              patientMatch.patientName,
+              patientMatch.hn,
+              isCaregiver ? 'caregiver' : 'patient'
+            );
+            await sendLineReplyMessage(replyToken, [promptFlex]);
           }
           continue;
         }
@@ -472,42 +545,27 @@ export async function POST(req: NextRequest) {
           const patientMatch = await findPatientByHnOrCidInHosxp(text);
 
           if (patientMatch.found) {
-            // Automatically bind LINE User ID to matched HOSxP HN as primary patient
-            await bindLineUserToHn(lineUserId, patientMatch.hn, patientMatch.patientName, {
-              userRole: 'patient',
-              overrideExisting: true,
-            });
+            const activeCount = await getActiveBindingCountForHn(patientMatch.hn);
 
-            const rawCid = patientMatch.cid || cleanDigitsStr;
-            const maskedCid =
-              rawCid.length === 13
-                ? `${rawCid.substring(0, 1)}-${rawCid.substring(1, 5)}-XXXXX-${rawCid.substring(10, 12)}-${rawCid.substring(12)}`
-                : rawCid;
-
-            // 1. Patient Info Verification Card (Full Name, HN, CID, Registered Clinics)
-            const infoFlex = createPatientInfoVerificationFlex(
-              patientMatch.patientName,
-              patientMatch.hn,
-              maskedCid,
-              patientMatch.clinics,
-              (patientMatch as any).vitals
-            );
-
-            const isEnrolledInClinic = patientMatch.clinics && patientMatch.clinics.length > 0;
-            const replyMessages: any[] = [
-              {
-                type: 'text',
-                text: `✅ ลงทะเบียนสำเร็จเรียบร้อยค่ะ!\nยินดีต้อนรับ คุณ${patientMatch.patientName} (${patientMatch.hn})`,
-              },
-              infoFlex,
-            ];
-
-            // 2. Automatic Interactive Risk Menu (ONLY sent if enrolled in a chronic clinic)
-            if (isEnrolledInClinic) {
-              replyMessages.push(createRiskAssessmentAndMenuFlex());
+            if (activeCount >= 3) {
+              const maxFlex = createMaxBindingReachedFlex(patientMatch.patientName, patientMatch.hn, activeCount);
+              await sendLineReplyMessage(replyToken, [maxFlex]);
+              continue;
             }
 
-            await sendLineReplyMessage(replyToken, replyMessages);
+            // Save pending verification and prompt for 4-digit Birth Year
+            pendingVerificationStore.set(lineUserId, {
+              hn: patientMatch.hn,
+              patientName: patientMatch.patientName,
+              userRole: 'patient',
+            });
+
+            const promptFlex = createBirthYearVerificationPromptFlex(
+              patientMatch.patientName,
+              patientMatch.hn,
+              'patient'
+            );
+            await sendLineReplyMessage(replyToken, [promptFlex]);
           } else {
             await sendLineReplyMessage(replyToken, [
               {

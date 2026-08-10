@@ -18,7 +18,7 @@ export interface PatientAppointmentInfo {
 }
 
 export interface LineUserBindingResult {
-  status: 'SUCCESS' | 'ALREADY_BOUND' | 'REBOUND_TRANSFERRED' | 'INVALID_VERIFICATION' | 'ERROR';
+  status: 'SUCCESS' | 'ALREADY_BOUND' | 'REBOUND_TRANSFERRED' | 'INVALID_VERIFICATION' | 'LIMIT_EXCEEDED' | 'ERROR';
   message: string;
   hn: string;
   patientName: string;
@@ -105,6 +105,17 @@ export async function bindLineUserToHn(
     };
   }
 
+  // Check active binding count for this HN (Max 3 active bound accounts per patient)
+  const activeCount = await getActiveBindingCountForHn(formattedHn);
+  if (activeCount >= 3 && !existingUserBinding) {
+    return {
+      status: 'LIMIT_EXCEEDED',
+      message: `ไม่สามารถผูกบัญชีได้: หมายเลข ${formattedHn} มีการผูกบัญชี LINE ครบตามโควตา 3 บัญชีแล้ว`,
+      hn: formattedHn,
+      patientName,
+    };
+  }
+
   // 2. Save/Update in-memory store
   const binding = {
     hn: formattedHn,
@@ -158,6 +169,21 @@ export async function bindLineUserToHn(
   };
 }
 
+function parseBirthYearBE(birthdayValue: any): string {
+  if (!birthdayValue) return '';
+  const d = new Date(birthdayValue);
+  if (isNaN(d.getTime())) {
+    const match = String(birthdayValue).match(/^(\d{4})/);
+    if (!match) return '';
+    let year = parseInt(match[1], 10);
+    if (year < 2200) year += 543;
+    return String(year);
+  }
+  let year = d.getFullYear();
+  if (year < 2200) year += 543;
+  return String(year);
+}
+
 /**
  * Search HOSxP patient database by HN or 13-digit Citizen ID (CID)
  * Checks HOSxP MySQL first, with fallback to Supabase PostgreSQL patients table.
@@ -177,7 +203,8 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       SELECT hn, 
              CONVERT(CONCAT(COALESCE(pname,''), COALESCE(fname,''), ' ', COALESCE(lname,'')) USING utf8mb4) AS patient_name,
              COALESCE(mobile_phone_number, hometel, informtel) AS phone,
-             cid
+             cid,
+             birthday
       FROM patient 
       WHERE hn = ? OR cid = ? OR hn = LPAD(?, 7, '0') OR hn = LPAD(?, 9, '0')
       LIMIT 1
@@ -211,6 +238,8 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
         clinics = [];
       }
 
+      const birthYearBE = parseBirthYearBE(p.birthday);
+
       return {
         found: true,
         hn: p.hn.startsWith('HN-') ? p.hn : `HN-${p.hn}`,
@@ -218,6 +247,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
         patientName: p.patient_name || 'ผู้ป่วย รพ.คลองหาด',
         phone: p.phone || '-',
         cid: p.cid || '-',
+        birthYearBE,
         clinics,
       };
     }
@@ -242,6 +272,8 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
           ? diseaseType.split(',').map((d: string) => `🩺 คลินิก${d.trim()}`)
           : ['🩺 คลินิกเบาหวาน (DM)', '🩺 คลินิกความดันโลหิตสูง (HT)'];
 
+        const birthYearBE = String(data.birth_year || parseBirthYearBE(data.birthday) || '');
+
         return {
           found: true,
           hn: data.hn || formattedHn,
@@ -249,6 +281,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
           patientName: data.patient_name || 'ผู้ป่วย รพ.คลองหาด',
           phone: data.phone || '-',
           cid: data.cid || '-',
+          birthYearBE,
           clinics,
         };
       }
@@ -257,7 +290,70 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
     }
   }
 
-  return { found: false, hn: '', patientName: '', clinics: [] };
+  return { found: false, hn: '', patientName: '', clinics: [], birthYearBE: '' };
+}
+
+/**
+ * Count active bound LINE accounts for a given patient HN (Limit: max 3)
+ */
+export async function getActiveBindingCountForHn(hn: string): Promise<number> {
+  const formattedHn = hn.toUpperCase().startsWith('HN-') ? hn.toUpperCase() : `HN-${hn}`;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { count, error } = await supabase
+        .from('patient_line_users')
+        .select('*', { count: 'exact', head: true })
+        .eq('hn', formattedHn)
+        .eq('is_active', true);
+
+      if (!error && typeof count === 'number') {
+        return count;
+      }
+    } catch (err) {
+      console.warn('⚠️ Error counting active bindings in Supabase:', err);
+    }
+  }
+
+  // Count in local in-memory store as fallback
+  let localCount = 0;
+  for (const b of lineUserBindingStore.values()) {
+    if (b.hn === formattedHn) localCount++;
+  }
+  return localCount;
+}
+
+/**
+ * Verify a 4-digit input year against patient's actual birth year in HOSxP/Supabase
+ */
+export async function verifyPatientBirthYear(
+  hnOrCid: string,
+  inputYear: string
+): Promise<{ valid: boolean; patientName: string; hn: string; birthYearBE: string; activeCount: number }> {
+  const cleanInputYear = inputYear.replace(/[^0-9]/g, '');
+  const patient = await findPatientByHnOrCidInHosxp(hnOrCid);
+
+  if (!patient.found) {
+    return { valid: false, patientName: '', hn: '', birthYearBE: '', activeCount: 0 };
+  }
+
+  const actualYear = (patient as any).birthYearBE || '';
+  const activeCount = await getActiveBindingCountForHn(patient.hn);
+
+  // Match 4-digit birth year in BE or last 4 digits of CID/Phone as fallback
+  const isValid =
+    (actualYear && cleanInputYear === actualYear) ||
+    (patient.cid && patient.cid.replace(/[^0-9]/g, '').endsWith(cleanInputYear)) ||
+    (patient.phone && patient.phone.replace(/[^0-9]/g, '').endsWith(cleanInputYear));
+
+  return {
+    valid: isValid,
+    patientName: patient.patientName,
+    hn: patient.hn,
+    birthYearBE: actualYear,
+    activeCount,
+  };
 }
 
 /**

@@ -867,3 +867,239 @@ export function createPdpaPinPromptFlex(patientName: string = 'ผู้ป่�
     },
   };
 }
+
+/**
+ * Generate 2-Step Birth Year Verification Prompt Flex Card (ปี พ.ศ. เกิด 4 หลัก)
+ */
+export function createBirthYearVerificationPromptFlex(
+  patientName: string,
+  hn: string,
+  targetRole: 'patient' | 'caregiver' = 'patient'
+) {
+  const roleText = targetRole === 'caregiver' ? '👥 ญาติ / ผู้ดูแล' : '👤 ผู้ป่วยหลัก';
+
+  return {
+    type: 'flex',
+    altText: `🔒 ยืนยันปี พ.ศ. เกิด 4 หลัก: คุณ${patientName} (${hn})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#0D9488',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '🔒 ยืนยันตัวตนก่อนผูกบัญชี LINE',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'เพื่อคุ้มครองข้อมูลการแพทย์ส่วนบุคคลตาม พ.ร.บ. PDPA',
+            color: '#CCFBF1',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: KHH_COLORS.LIGHT_TEAL_BG,
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: KHH_COLORS.LIGHT_TEAL_BORDER,
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: `${roleText} | ${hn}`,
+                size: 'xs',
+                color: '#0F766E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `คุณ${patientName}`,
+                size: 'sm',
+                color: KHH_COLORS.TEXT_MAIN,
+                weight: 'bold',
+                margin: 'xs',
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: KHH_COLORS.BG_LIGHT_AMBER,
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FDE68A',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: '🎂 โปรดพิมพ์ ปี พ.ศ. เกิด 4 หลัก ของผู้ป่วย',
+                size: 'xs',
+                color: '#92400E',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: 'กรุณาตรวจสอบปี พ.ศ. เกิด จากบัตรประชาชนของผู้ป่วย แล้วพิมพ์เลข 4 หลัก ส่งในแชทนี้ค่ะ',
+                size: 'xs',
+                color: '#78350F',
+                margin: 'xs',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: '💡 ตัวอย่าง: เกิด พ.ศ. 2495 ให้พิมพ์ Y2495 หรือ 2495',
+                size: 'xs',
+                color: '#B45309',
+                weight: 'bold',
+                margin: 'sm',
+                wrap: true,
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0D9488',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🔑 พิมพ์ปี พ.ศ. เกิด (เช่น Y2495)',
+              uri: `https://line.me/R/oaMessage/${(process.env.NEXT_PUBLIC_LINE_OA_BASIC_ID || '@745sionk').trim()}/?Y`,
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Generate Max 3 LINE Accounts Quota Reached Warning Flex Card
+ */
+export function createMaxBindingReachedFlex(patientName: string, hn: string, activeCount: number = 3) {
+  return {
+    type: 'flex',
+    altText: `⚠️ ผูกบัญชีครบโควตา 3 บัญชีแล้ว: คุณ${patientName} (${hn})`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#C2410C',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '⚠️ ผูกบัญชีครบโควตา 3 บัญชีแล้ว',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'มาตรการความปลอดภัยและคุ้มครองข้อมูลส่วนบุคคล (PDPA)',
+            color: '#FFEDD5',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFF7ED',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FED7AA',
+            borderWidth: '1px',
+            contents: [
+              {
+                type: 'text',
+                text: `คุณ${patientName} (${hn})`,
+                size: 'sm',
+                color: '#C2410C',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: `มีการผูกบัญชี LINE ใช้งานอยู่แล้ว ${activeCount} บัญชี (สิทธิ์สูงสุด 3 บัญชีต่อคนไข้ 1 คน)`,
+                size: 'xs',
+                color: '#9A3412',
+                margin: 'xs',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'text',
+            text: 'หากต้องการยกเลิกการผูกบัญชีเดิม หรือเปลี่ยนเครื่องมือถือใหม่ โปรดติดต่อพยาบาล/เจ้าหน้าที่ รพ.คลองหาด เพื่อปลดล็อกให้ค่ะ',
+            size: 'xs',
+            color: '#475569',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#C2410C',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🎧 ติดต่อเจ้าหน้าที่เพื่อปลดล็อก',
+              text: 'ติดต่อเจ้าหน้าที่',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทร 037-445099 ต่อ 116',
+              uri: 'tel:037445099,116',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
