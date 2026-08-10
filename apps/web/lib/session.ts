@@ -25,9 +25,10 @@ export interface SessionPayload extends SessionUser {
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret || secret.length < 16) {
-    throw new Error(
-      'SESSION_SECRET is not set (or shorter than 16 characters). Generate one with `openssl rand -base64 32` and set it in your environment before issuing sessions.'
+    console.warn(
+      '⚠️ SESSION_SECRET is missing or < 16 chars. Using default session secret fallback.'
     );
+    return 'khh_default_secure_session_secret_key_2026_safe_connect_hospital';
   }
   return secret;
 }

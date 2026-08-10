@@ -8,6 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5188,
+        SESSION_SECRET: 'FHOnR6DquYZDo3Dvwi5bHkCHnBP1qevYCgK4+nemLZ0=',
       },
     },
     {
@@ -18,6 +19,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5003,
+        SESSION_SECRET: 'FHOnR6DquYZDo3Dvwi5bHkCHnBP1qevYCgK4+nemLZ0=',
       },
     },
   ],
