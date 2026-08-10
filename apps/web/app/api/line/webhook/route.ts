@@ -34,7 +34,7 @@ import {
   createContactMentalHealthStaffFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
-  createPhysicalTherapyRequestFlex,
+  createContactPhysicalTherapyFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
           text.includes('นัดหมายกายภาพบำบัด') ||
           text.includes('กายภาพบำบัด')
         ) {
-          const flex = createPhysicalTherapyRequestFlex();
+          const flex = createContactPhysicalTherapyFlex();
           await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
