@@ -553,6 +553,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // All replies have been sent by now — safe to wait for the queued
+    // Supabase log writes before the serverless invocation ends.
+    await Promise.allSettled(pendingLogWrites);
+
     return NextResponse.json({ status: 'ok', processed: events.length });
   } catch (error: any) {
     console.error('❌ Webhook error:', error);
