@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
     const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
     if (duplicatedProfile) {
-      return withSessionCookie(
+      return await withSessionCookie(
         NextResponse.json({
           success: true,
           message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
       // Auto-provision dynamic standby profile for ANY username when DB is unreachable
       const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
 
-      return withSessionCookie(
+      return await withSessionCookie(
         NextResponse.json({
           success: true,
           message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
@@ -243,7 +243,7 @@ export async function POST(request: Request) {
       opduserNcdSyncedAt: nowIso,
     });
 
-    return withSessionCookie(
+    return await withSessionCookie(
       NextResponse.json({
         success: true,
         message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
