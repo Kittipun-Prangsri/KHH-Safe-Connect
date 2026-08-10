@@ -669,7 +669,7 @@ export function createExerciseAdviceFlex() {
             height: 'md',
             action: {
               type: 'message',
-              label: '🦴 นัดหมายกายภาพบำบัด',
+              label: '📅 นัดหมายกายภาพบำบัด',
               text: 'ขอนัดหมายกายภาพบำบัด',
             },
           },
@@ -843,8 +843,8 @@ export function createThaiMedicineAdviceFlex() {
             height: 'sm',
             action: {
               type: 'message',
-              label: '🌿 ติดต่อ/จองคิวแพทย์แผนไทย',
-              text: 'ติดต่อแพทย์แผนไทย',
+              label: '🌿 ติดต่อ/คุยกับแพทย์แผนไทย',
+              text: 'คุยกับแพทย์แผนไทย',
             },
           },
           {
