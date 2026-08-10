@@ -34,7 +34,6 @@ import {
   createContactMentalHealthStaffFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
-  createRoleConfirmationFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
