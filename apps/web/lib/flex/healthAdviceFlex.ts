@@ -1074,3 +1074,110 @@ export function createStressAndSleepAdviceFlex() {
 export function createMentalHealthAndStressAdviceFlex() {
   return createStressAndSleepAdviceFlex();
 }
+
+/**
+ * 6.4.1 Sub-Tile: "รับคำขอนัดหมายกายภาพบำบัด" (Physical Therapy Request Flex Card)
+ */
+export function createPhysicalTherapyRequestFlex() {
+  return {
+    type: 'flex',
+    altText: '📅 รับคำขอนัดหมายกายภาพบำบัด — รพ.คลองหาด',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: KHH_COLORS.EXERCISE_ORANGE,
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📅 นัดหมายกายภาพบำบัด',
+            color: '#FFFFFF',
+            size: 'md',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: 'งานกายภาพบำบัด โรงพยาบาลคลองหาด',
+            color: '#FFEDD5',
+            size: 'xs',
+            margin: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: 'ทีมเจ้าหน้าที่ได้รับคำขอของคุณแล้วค่ะ จะติดต่อกลับเพื่อนัดหมายกายภาพบำบัดให้โดยเร็วที่สุด',
+            size: 'xs',
+            color: '#334155',
+            wrap: true,
+            weight: 'bold',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFF7ED',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            borderColor: '#FED7AA',
+            borderWidth: '1px',
+            spacing: 'xs',
+            contents: [
+              {
+                type: 'text',
+                text: '📞 สอบถามเพิ่มเติม: 037-445099 ต่อ 116',
+                size: 'xs',
+                color: '#C2410C',
+                weight: 'bold',
+              },
+              {
+                type: 'text',
+                text: '⏰ เวลาทำการ: ในเวลาราชการ (08:00 - 16:00 น.)',
+                size: 'xs',
+                color: KHH_COLORS.TEXT_MUTED,
+                margin: 'xs',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: KHH_COLORS.EXERCISE_ORANGE,
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📞 โทร 037-445099 ต่อ 116',
+              uri: 'tel:037445099,116',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🔙 กลับเมนูคำแนะนำสุขภาพ',
+              text: 'คำแนะนำสุขภาพ',
+            },
+          },
+        ],
+      },
+    },
+  };
+}

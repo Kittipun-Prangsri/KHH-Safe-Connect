@@ -34,6 +34,7 @@ import {
   createContactMentalHealthStaffFlex,
   createExerciseAdviceFlex,
   createEmergencySymptomsFlex,
+  createPhysicalTherapyRequestFlex,
 } from '@/lib/lineFlexTemplates';
 
 export async function POST(req: NextRequest) {
@@ -312,12 +313,8 @@ export async function POST(req: NextRequest) {
           text.includes('นัดหมายกายภาพบำบัด') ||
           text.includes('กายภาพบำบัด')
         ) {
-          await sendLineReplyMessage(replyToken, [
-            {
-              type: 'text',
-              text: '📅 นัดหมายกายภาพบำบัด\n\nทีมเจ้าหน้าที่ได้รับคำขอของคุณแล้ว จะติดต่อกลับเพื่อนัดหมายกายภาพบำบัดให้โดยเร็วที่สุด\n\n📞 สอบถามเพิ่มเติม: 037-445099 ต่อ 116\n⏰ ในเวลาราชการ 08:00 - 16:00 น.',
-            },
-          ]);
+          const flex = createPhysicalTherapyRequestFlex();
+          await sendLineReplyMessage(replyToken, [flex]);
           continue;
         }
 
