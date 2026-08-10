@@ -95,10 +95,15 @@ const DEFAULT_DUPLICATED_ACCOUNTS: UserSessionProfile[] = [
   },
 ];
 
-// Initialize Store with Seed Accounts
-DEFAULT_DUPLICATED_ACCOUNTS.forEach((account) => {
-  PROVISIONED_PROFILES_STORE.set(account.loginname.toLowerCase(), account);
-});
+// Initialize Store with Seed Accounts — dev/staging convenience only. These
+// bypass HOSxP password verification entirely (see findDuplicatedUserProfile),
+// so they must never be reachable in production, where every login has to go
+// through a real password check at least once before a profile is cached here.
+if (process.env.NODE_ENV !== 'production') {
+  DEFAULT_DUPLICATED_ACCOUNTS.forEach((account) => {
+    PROVISIONED_PROFILES_STORE.set(account.loginname.toLowerCase(), account);
+  });
+}
 
 /**
  * Create dynamic fallback standby profile when HOSxP DB is offline/unreachable
