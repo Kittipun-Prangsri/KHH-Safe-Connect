@@ -49,6 +49,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`📩 LINE Webhook Received ${events.length} event(s)`);
 
+    // Supabase conversation-log writes for each incoming message are kicked
+    // off without blocking the reply (LINE's replyToken is short-lived and
+    // single-use — nothing non-essential should delay sendLineReplyMessage),
+    // but still awaited together before the function returns, since a truly
+    // unawaited promise can get dropped when the serverless invocation ends.
+    const pendingLogWrites: Promise<any>[] = [];
+
     for (const event of events) {
       const lineUserId = event.source?.userId;
       const replyToken = event.replyToken;
