@@ -11,6 +11,7 @@ import {
   verifyPatientBirthYear,
   getActiveBindingCountForHn,
 } from '@/lib/lineUserService';
+import { notifyStaffOnIncomingPatientMessage } from '@/lib/staffNotificationService';
 import {
   createRoleSelectionFlexMessage,
   createPatientRegistrationPromptFlex,
@@ -87,9 +88,30 @@ export async function POST(req: NextRequest) {
         // Not awaited here — queued and awaited after the reply is sent (see pendingLogWrites
         // above), so this Supabase write can never delay sendLineReplyMessage below.
         pendingLogWrites.push(
-          recordIncomingLineMessage(lineUserId, text, replyToken).catch((err) =>
-            console.warn('⚠️ Failed to record incoming LINE message:', err)
-          )
+          recordIncomingLineMessage(lineUserId, text, replyToken)
+            .then(async (msg) => {
+              if (
+                msg &&
+                !text.startsWith('REGISTER_') &&
+                !text.toUpperCase().startsWith('STAFF-') &&
+                !text.toUpperCase().startsWith('PIN-')
+              ) {
+                let category = '💬 ข้อความสอบถามทั่วไป';
+                if (text.includes('กายภาพบำบัด')) category = '📅 งานกายภาพบำบัด';
+                else if (text.includes('ปรึกษายา') || text.includes('เภสัช')) category = '💊 งานเภสัชกรรม';
+                else if (text.includes('สุขภาพจิต') || text.includes('ความเครียด')) category = '🧠 งานสุขภาพจิต';
+                else if (text.includes('เลื่อนนัด') || text.includes('นัดหมาย')) category = '🗓️ ขอนัดหมาย/เลื่อนนัด';
+
+                await notifyStaffOnIncomingPatientMessage({
+                  lineUserId,
+                  hn: msg.hn,
+                  patientName: msg.patientName,
+                  text,
+                  category,
+                }).catch((err) => console.warn('⚠️ Staff alert failed:', err));
+              }
+            })
+            .catch((err) => console.warn('⚠️ Failed to record incoming LINE message:', err))
         );
 
         // --------------------------------------------------------

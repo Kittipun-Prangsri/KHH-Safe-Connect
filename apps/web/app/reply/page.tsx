@@ -605,6 +605,39 @@ export default function ReplyPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Preset Flex Cards Quick Action Buttons */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pt-1 text-[10px]">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0">ส่งการ์ด Flex:</span>
+                    <button
+                      type="button"
+                      onClick={() => setInputText('📅 แจ้งยืนยันวันนัดหมายและเวลาเข้าพบแพทย์เรียบร้อยแล้วค่ะ')}
+                      className="px-2 py-0.5 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-lg border border-teal-200 font-bold whitespace-nowrap"
+                    >
+                      📅 แจ้งวันนัดหมาย
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText('💊 คำแนะนำจากงานเภสัชกรรม รพ.คลองหาดเรื่องการทานยา')}
+                      className="px-2 py-0.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 font-bold whitespace-nowrap"
+                    >
+                      💊 คำแนะนำยา
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText('📅 เจ้าหน้าที่รับทราบคำขอนัดหมายกายภาพบำบัดเรียบร้อยแล้วค่ะ')}
+                      className="px-2 py-0.5 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg border border-orange-200 font-bold whitespace-nowrap"
+                    >
+                      📅 นัดกายภาพ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText('🔒 โปรดส่ง PIN- ตามด้วยเลข 4 หลักท้ายของบัตรประชาชนเพื่อปลดล็อกผลตรวจ')}
+                      className="px-2 py-0.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg border border-purple-200 font-bold whitespace-nowrap"
+                    >
+                      🔒 รหัส PIN ผลแล็บ
+                    </button>
+                  </div>
                 </div>
 
                 {/* Input Form */}
