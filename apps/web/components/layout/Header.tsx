@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, LogOut, Settings } from 'lucide-react';
 import { PRESET_USERS, UserProfile } from '@/lib/rbac';
+import { extractThaiInitials } from '@/lib/userProvisioningService';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -50,7 +51,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* Active User RBAC Card */}
         <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
           <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-            {user.avatarInitials || 'พย'}
+            {extractThaiInitials(user.name, user.role)}
           </div>
           <div className="text-left hidden sm:block">
             <div className="flex items-center gap-1.5">

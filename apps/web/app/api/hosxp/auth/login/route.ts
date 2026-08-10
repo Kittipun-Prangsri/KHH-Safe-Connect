@@ -35,8 +35,18 @@ function mapHosxpRole(user: any): { role: string; roleLabel: string; badgeColor:
   const pos = (user.entryposition || '').toLowerCase();
   const group = (user.groupname || '').toLowerCase();
   const login = (user.loginname || '').toLowerCase();
+  const name = (user.name || '').toLowerCase();
 
-  if (login === 'admin' || group.includes('admin') || group.includes('it') || pos.includes('สารสนเทศ')) {
+  if (
+    login === 'admin' ||
+    login.includes('kittipun') ||
+    name.includes('กิตติพันธ์') ||
+    group.includes('admin') ||
+    group.includes('it') ||
+    pos.includes('สารสนเทศ') ||
+    pos.includes('คอมพิวเตอร์') ||
+    pos.includes('ผู้ดูแลระบบ')
+  ) {
     return {
       role: 'super_admin',
       roleLabel: 'ผู้ดูแลระบบ (IT Super Admin)',
