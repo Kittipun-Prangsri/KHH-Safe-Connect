@@ -567,6 +567,26 @@ export function createContactPhysicalTherapyFlex() {
             height: 'sm',
             action: {
               type: 'message',
+              label: '💬 พิมพ์ข้อความถึงนักกายภาพ',
+              text: 'พิมพ์ข้อความถึงนักกายภาพบำบัด',
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: KHH_CONTACTS.MAPS_LABEL,
+              uri: KHH_CONTACTS.MAPS_LOCATION_URI,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'message',
               label: '⬅️ กลับเมนูคำแนะนำสุขภาพ',
               text: 'คำแนะนำสุขภาพ',
             },
