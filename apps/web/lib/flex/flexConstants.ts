@@ -32,7 +32,7 @@ export const KHH_CONTACTS = {
   EMERGENCY_1669_URI: 'tel:1669',
 
   // Hospital Navigation & Location
-  MAPS_LOCATION_URI: 'https://www.google.com/maps/search/?api=1&query=โรงพยาบาลคลองหาด',
+  MAPS_LOCATION_URI: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('โรงพยาบาลคลองหาด')}`,
   MAPS_LABEL: '🗺️ นำทางมาโรงพยาบาลคลองหาด',
 };
 

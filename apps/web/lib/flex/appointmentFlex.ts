@@ -21,9 +21,8 @@ export interface AppointmentNotificationData {
  */
 export function createAppointmentFlexMessage(data: AppointmentNotificationData) {
   const qrData = encodeURIComponent(`KHH-CHECKIN:${data.hn}:${data.appointmentDate}`);
-  const shareText = encodeURIComponent(
-    `🗓️ ใบนัดตรวจ รพ.คลองหาด\n👤 ผู้ป่วย: คุณ${data.patientName} (HN: ${data.hn})\n📅 วันนัด: ${data.appointmentDate}\n⏰ เวลา: ${data.appointmentTime}\n🏥 คลินิก: ${data.clinicName}\n📍 สถานที่: โรงพยาบาลคลองหาด`
-  );
+  const rawShareText = `🗓️ใบนัดตรวจ รพ.คลองหาด\nคุณ${data.patientName.slice(0, 30)} (${data.hn})\n📅 ${data.appointmentDate.slice(0, 40)}\n⏰ ${data.appointmentTime}\n🏥 ${data.clinicName.slice(0, 30)}`;
+  const shareUri = `https://line.me/R/msg/text/?${encodeURIComponent(rawShareText)}`;
 
   return {
     type: 'flex',
@@ -302,7 +301,7 @@ export function createAppointmentFlexMessage(data: AppointmentNotificationData) 
             action: {
               type: 'uri',
               label: '📤 แชร์ใบนัดให้ลูกหลานช่วยจำ',
-              uri: `https://line.me/R/msg/text/?${shareText}`,
+              uri: shareUri,
             },
           },
           {
@@ -438,9 +437,8 @@ export function createMyAppointmentsFlex(
   // Active appointment exists -> Render real appointment card with Queue QR Code & Family Share
   const mainApp = appointments[0];
   const qrData = encodeURIComponent(`KHH-CHECKIN:${hn}:${mainApp.appointmentDate}`);
-  const shareText = encodeURIComponent(
-    `🗓️ ใบนัดตรวจ รพ.คลองหาด\n👤 ผู้ป่วย: คุณ${patientName} (HN: ${hn})\n📅 วันนัด: ${mainApp.appointmentDate}\n⏰ เวลา: ${mainApp.appointmentTime}\n🏥 คลินิก: ${mainApp.clinicName}\n📍 สถานที่: โรงพยาบาลคลองหาด`
-  );
+  const rawShareText = `🗓️ใบนัดตรวจ รพ.คลองหาด\nคุณ${patientName.slice(0, 30)} (${hn})\n📅 ${mainApp.appointmentDate.slice(0, 40)}\n⏰ ${mainApp.appointmentTime}\n🏥 ${mainApp.clinicName.slice(0, 30)}`;
+  const shareUri = `https://line.me/R/msg/text/?${encodeURIComponent(rawShareText)}`;
 
   return {
     type: 'flex',
@@ -616,7 +614,7 @@ export function createMyAppointmentsFlex(
             action: {
               type: 'uri',
               label: '📤 แชร์ใบนัดให้ลูกหลานช่วยจำ',
-              uri: `https://line.me/R/msg/text/?${shareText}`,
+              uri: shareUri,
             },
           },
           {
@@ -732,10 +730,10 @@ export function createRescheduleSuccessFlex(params: {
     clinic = 'คลินิก NCDs โรงพยาบาลคลองหาด',
   } = params;
 
-  // Build Google Calendar Event URL
-  const calTitle = encodeURIComponent(`นัดตรวจคลินิก NCDs - คุณ${patientName} (${hn})`);
+  // Build Google Calendar Event URL (Guaranteed valid & < 1000 chars for LINE API limit)
+  const calTitle = encodeURIComponent(`นัดตรวจ NCDs คุณ${patientName.slice(0, 20)}`);
   const calDetails = encodeURIComponent(
-    `ใบนัดตรวจติดตามคลินิก NCDs โรงพยาบาลคลองหาด\nผู้ป่วย: คุณ${patientName} (${hn})\nวันนัดใหม่: ${newDate}\nเวลา: ${newTime}\nแพทย์: ${doctor}\nสถานที่: ${clinic}`
+    `ใบนัดตรวจ NCDs รพ.คลองหาด\nคุณ${patientName.slice(0, 20)} (${hn})\nวันนัดใหม่: ${newDate.slice(0, 30)} (${newTime})`
   );
   const calLocation = encodeURIComponent(KHH_CONTACTS.HOSPITAL_NAME);
   const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${calTitle}&details=${calDetails}&location=${calLocation}`;

@@ -106,7 +106,7 @@ async function runLinePushAudit() {
   // --------------------------------------------------------
   console.log('🚀 Step 3: Executing Test LINE Push Notification...');
 
-  const sampleTargetUid = testLineUserId || 'U1234567890abcdef1234567890abcdef';
+  const sampleTargetUid = testLineUserId || process.env.TEST_LINE_USER_ID || 'Uf636cf9137cbd32ff2c18773591be46a';
   console.log(`📱 Sending test notification to: ${sampleTargetUid}`);
 
   const testAppointmentData = {
