@@ -77,8 +77,14 @@ export async function POST(req: NextRequest) {
         const text = event.message.text.trim();
 
         // Save incoming patient message + replyToken to conversation log for Reply web portal
-        // replyToken stored in Supabase patient_line_users so staff can use free LINE Reply API
-        await recordIncomingLineMessage(lineUserId, text, replyToken);
+        // replyToken stored in Supabase patient_line_users so staff can use free LINE Reply API.
+        // Not awaited here — queued and awaited after the reply is sent (see pendingLogWrites
+        // above), so this Supabase write can never delay sendLineReplyMessage below.
+        pendingLogWrites.push(
+          recordIncomingLineMessage(lineUserId, text, replyToken).catch((err) =>
+            console.warn('⚠️ Failed to record incoming LINE message:', err)
+          )
+        );
 
         // --------------------------------------------------------
         // Rich Menu 6 Tile Interactions
