@@ -27,7 +27,16 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
 
-      const data = await res.json();
+      // Read as text first — an interrupted connection (e.g. the dev server
+      // reloading mid-request) can leave the body empty or truncated, which
+      // makes res.json() throw a raw, meaningless error straight at the user.
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error('การเชื่อมต่อกับเซิร์ฟเวอร์ขาดหาย กรุณาลองเข้าสู่ระบบอีกครั้ง');
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
