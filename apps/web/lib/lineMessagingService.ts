@@ -36,13 +36,80 @@ export async function logLineNotificationToSupabase(logData: {
   }
 }
 
+/**
+ * Helper to fetch a valid, non-expired replyToken from Supabase for a given user/HN
+ */
+export async function getValidReplyTokenForUser(lineUserId: string, hn?: string): Promise<string | null> {
+  if (!isSupabaseConfigured() || !lineUserId) return null;
+  try {
+    const supabase = getSupabaseAdminClient();
+    const cleanHn = hn ? hn.replace(/^HN-/i, '') : null;
+
+    let query = supabase
+      .from('patient_line_users')
+      .select('latest_reply_token, reply_token_expires_at')
+      .eq('is_active', true);
+
+    if (cleanHn && hn) {
+      query = query.or(`line_user_id.eq.${lineUserId},hn.eq.${hn},hn.eq.${cleanHn}`);
+    } else {
+      query = query.eq('line_user_id', lineUserId);
+    }
+
+    const { data } = await query
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (data && data.length > 0 && data[0].latest_reply_token) {
+      const token = data[0].latest_reply_token;
+      const expiresAt = data[0].reply_token_expires_at;
+      const isValid =
+        token &&
+        token.length > 10 &&
+        token !== '00000000000000000000000000000000' &&
+        token !== '11111111111111111111111111111111' &&
+        (!expiresAt || new Date(expiresAt) > new Date());
+
+      if (isValid) return token;
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not fetch valid replyToken from Supabase:', err);
+  }
+  return null;
+}
+
 export async function sendLineAppointmentReminder(
   lineUserId: string,
   appointmentData: AppointmentNotificationData,
-  channelAccessToken?: string
+  channelAccessToken?: string,
+  replyToken?: string | null
 ) {
   const token = (channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim();
   const startTime = Date.now();
+
+  // Reply-First Strategy: Check if active replyToken is available (Free quota)
+  const activeReplyToken = replyToken || (await getValidReplyTokenForUser(lineUserId, appointmentData.hn));
+  if (activeReplyToken) {
+    console.log(`💬 Attempting LINE Reply API (free quota) for appointment reminder to HN: ${appointmentData.hn}`);
+    const replyRes = await replyLineAppointmentReminder(activeReplyToken, appointmentData, channelAccessToken);
+    if (replyRes.success && !replyRes.simulated) {
+      await logLineNotificationToSupabase({
+        lineUserId,
+        hn: appointmentData.hn,
+        messageType: 'reply_flex',
+        status: 'SUCCESS',
+        httpStatus: 200,
+        latencyMs: Date.now() - startTime,
+      });
+      return {
+        success: true,
+        method: 'reply' as const,
+        simulated: false,
+        message: `LINE Flex Message sent via Reply API (free) to ${appointmentData.patientName}`,
+      };
+    }
+    console.warn(`⚠️ LINE Reply failed (token expired), falling back to Push for ${appointmentData.patientName}`);
+  }
 
   if (!token) {
     console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN is missing. Returning simulated notification response.');
@@ -199,7 +266,9 @@ export async function replyLineAppointmentReminder(
 export async function sendLinePushTextMessage(
   lineUserId: string,
   text: string,
-  channelAccessToken?: string
+  channelAccessToken?: string,
+  replyToken?: string | null,
+  hn?: string
 ) {
   const token = (
     channelAccessToken ||
@@ -207,6 +276,29 @@ export async function sendLinePushTextMessage(
     '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
   ).trim();
   const startTime = Date.now();
+
+  // Reply-First Strategy: Check if active replyToken is available (Free quota)
+  const activeReplyToken = replyToken || (await getValidReplyTokenForUser(lineUserId, hn));
+  if (activeReplyToken) {
+    console.log(`💬 Attempting LINE Reply API (free quota) for text message to UID: ${lineUserId}`);
+    const replyRes = await sendLineReplyTextMessage(activeReplyToken, text, channelAccessToken);
+    if (replyRes.success && !replyRes.simulated) {
+      await logLineNotificationToSupabase({
+        lineUserId,
+        hn,
+        messageType: 'reply_text',
+        status: 'SUCCESS',
+        httpStatus: 200,
+        latencyMs: Date.now() - startTime,
+      });
+      return {
+        success: true,
+        method: 'reply' as const,
+        simulated: false,
+        message: 'LINE Text Message sent via Reply API (free)',
+      };
+    }
+  }
 
   if (!token || !lineUserId) {
     await logLineNotificationToSupabase({
@@ -317,7 +409,11 @@ export async function sendStaffReplyToPatient(params: {
   quotaExceeded?: boolean;
   error?: string;
 }> {
-  const { lineUserId, replyToken, replyTokenExpiresAt, text, hn } = params;
+  let { lineUserId, replyToken, replyTokenExpiresAt, text, hn } = params;
+
+  if (!replyToken) {
+    replyToken = await getValidReplyTokenForUser(lineUserId, hn);
+  }
 
   // Check if replyToken is still valid (within 25 seconds of expiry buffer)
   const canUseReply =
@@ -387,15 +483,20 @@ export async function sendStaffRescheduleConfirmation(params: {
     clinic: params.clinic,
   });
 
+  let activeReplyToken = params.replyToken;
+  if (!activeReplyToken) {
+    activeReplyToken = await getValidReplyTokenForUser(params.lineUserId, params.hn);
+  }
+
   const canUseReply =
-    params.replyToken &&
-    params.replyToken.length > 10 &&
-    params.replyToken !== '00000000000000000000000000000000' &&
-    params.replyToken !== '11111111111111111111111111111111' &&
+    activeReplyToken &&
+    activeReplyToken.length > 10 &&
+    activeReplyToken !== '00000000000000000000000000000000' &&
+    activeReplyToken !== '11111111111111111111111111111111' &&
     (!params.replyTokenExpiresAt || new Date(params.replyTokenExpiresAt) > new Date());
 
   if (canUseReply) {
-    const res = await sendLineReplyMessage(params.replyToken!, [flexCard], params.channelAccessToken);
+    const res = await sendLineReplyMessage(activeReplyToken!, [flexCard], params.channelAccessToken);
     if (res.success && !res.simulated) return { success: true, method: 'reply' as const };
   }
 
