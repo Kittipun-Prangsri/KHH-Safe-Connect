@@ -16,6 +16,7 @@ import {
   LogOut,
   X,
   Database,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarProps) {
   const pathname = usePathname();
   const [replyUnreadCount, setReplyUnreadCount] = useState<number>(0);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -98,6 +100,19 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
       }
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('khh_user_session');
+      if (saved) {
+        const user = JSON.parse(saved);
+        setIsSuperAdmin(user.role === 'super_admin');
+      }
+    } catch {
+      // Ignore malformed session data
+    }
+  }, []);
 
   useEffect(() => {
     // When user is on /reply, reset badge to 0 (they've seen the messages)
@@ -173,6 +188,9 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen }: SidebarPr
         { href: '/reports', label: 'พิมพ์รายงาน PDF', icon: BarChart3 },
         { href: '/imports', label: 'นำเข้า Excel / CSV', icon: Upload },
         { href: '/settings', label: 'การตั้งค่าระบบ', icon: Settings },
+        ...(isSuperAdmin
+          ? [{ href: '/activity-log', label: 'ประวัติการเข้าใช้งาน', icon: ShieldCheck }]
+          : []),
       ],
     },
   ];

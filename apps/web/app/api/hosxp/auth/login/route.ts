@@ -7,6 +7,7 @@ import {
   createDynamicStandbyProfile,
 } from '@/lib/userProvisioningService';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
+import { recordLoginActivity, extractClientIp } from '@/lib/loginActivityLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,8 @@ function mapHosxpRole(user: any): { role: string; roleLabel: string; badgeColor:
 
 export async function POST(request: Request) {
   let cleanUsername = '';
+  const clientIp = extractClientIp(request);
+  const userAgent = request.headers.get('user-agent') || 'unknown';
   try {
     const body = await request.json();
     const { username, password } = body;
@@ -92,6 +95,14 @@ export async function POST(request: Request) {
     // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
     const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
     if (duplicatedProfile) {
+      recordLoginActivity({
+        loginname: duplicatedProfile.loginname,
+        name: duplicatedProfile.name,
+        role: duplicatedProfile.role,
+        source: 'Supabase / Duplicated Store',
+        ipAddress: clientIp,
+        userAgent,
+      });
       return await withSessionCookie(
         NextResponse.json({
           success: true,
@@ -155,6 +166,15 @@ export async function POST(request: Request) {
 
       // Auto-provision dynamic standby profile for ANY username when DB is unreachable
       const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
+
+      recordLoginActivity({
+        loginname: standbyProfile.loginname,
+        name: standbyProfile.name,
+        role: standbyProfile.role,
+        source: 'Supabase Standby Store (HOSxP Offline)',
+        ipAddress: clientIp,
+        userAgent,
+      });
 
       return await withSessionCookie(
         NextResponse.json({
@@ -241,6 +261,15 @@ export async function POST(request: Request) {
       badgeColor: roleInfo.badgeColor,
       lastLoginAt: nowIso,
       opduserNcdSyncedAt: nowIso,
+    });
+
+    recordLoginActivity({
+      loginname: provisionedUser.loginname,
+      name: provisionedUser.name,
+      role: provisionedUser.role,
+      source: isFromNcdTable ? 'HOSxP DB (opduser_Ncd)' : 'HOSxP DB (opduser)',
+      ipAddress: clientIp,
+      userAgent,
     });
 
     return await withSessionCookie(
