@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
             else if (textToAnalyze.includes('เลื่อนนัด') || textToAnalyze.includes('ขอเปลี่ยน')) priority = 'high';
 
             const isTokenValid = u.reply_token_expires_at ? new Date(u.reply_token_expires_at).getTime() > Date.now() : false;
+            const hasBeenReplied = Boolean(u.last_replied_at);
 
             conversationsMap.set(u.hn, {
               id: `conv-${u.hn}`,
@@ -69,7 +70,11 @@ export async function GET(req: NextRequest) {
               category: department === 'pharmacist' ? 'ปรึกษาเรื่องยา' : department === 'psychiatrist' ? 'ปรึกษาสุขภาพจิต' : 'สอบถามทั่วไป',
               department,
               priority,
-              unreadCount: lastMsg ? 1 : 0,
+              status: hasBeenReplied ? 'replied' : 'pending',
+              lastRepliedByName: u.last_replied_by_name || null,
+              lastRepliedByRole: u.last_replied_by_role || null,
+              lastRepliedAt: u.last_replied_at ? new Date(u.last_replied_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : null,
+              unreadCount: hasBeenReplied ? 0 : (lastMsg ? 1 : 0),
               lastMessageTime: lastMsg ? lastMsg.time : new Date(u.created_at || Date.now()).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
               messages: userMessages.length > 0 ? userMessages : [
                 {

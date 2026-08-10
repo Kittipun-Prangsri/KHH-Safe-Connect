@@ -44,6 +44,10 @@ interface Conversation {
   category: string;
   department: 'nurse' | 'pharmacist' | 'psychiatrist' | 'public_health' | 'dietitian';
   priority: 'urgent' | 'high' | 'normal';
+  status?: 'pending' | 'replied';
+  lastRepliedByName?: string | null;
+  lastRepliedByRole?: string | null;
+  lastRepliedAt?: string | null;
   unreadCount: number;
   lastMessageTime: string;
   messages: ChatMessage[];
@@ -258,6 +262,10 @@ export default function ReplyPage() {
         return {
           ...c,
           unreadCount: 0,
+          status: 'replied' as const,
+          lastRepliedByName: `${currentRoleConfig.titlePrefix}${staffNameInput}`,
+          lastRepliedByRole: currentRoleConfig.label,
+          lastRepliedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
           messages: [...c.messages, newMessage],
         };
       }
@@ -267,6 +275,10 @@ export default function ReplyPage() {
     setConversations(updated);
     setActiveChat({
       ...activeChat,
+      status: 'replied' as const,
+      lastRepliedByName: `${currentRoleConfig.titlePrefix}${staffNameInput}`,
+      lastRepliedByRole: currentRoleConfig.label,
+      lastRepliedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
       messages: [...activeChat.messages, newMessage],
     });
     setInputText('');
@@ -506,11 +518,24 @@ export default function ReplyPage() {
                             <span>{deptConfig.label}</span>
                           </span>
                         </div>
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2 mb-1">
                           <p className="text-xs text-slate-600 truncate font-medium">{chat.subject}</p>
                           {chat.unreadCount > 0 && (
                             <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-extrabold flex items-center justify-center">
                               {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="pt-0.5">
+                          {chat.lastRepliedByName ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md truncate max-w-full">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span>ตอบแล้วโดย: {chat.lastRepliedByRole ? `${chat.lastRepliedByRole} ` : ''}{chat.lastRepliedByName} ({chat.lastRepliedAt || 'ล่าสุด'})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                              <span>🔴 รอการตอบกลับ</span>
                             </span>
                           )}
                         </div>
@@ -527,29 +552,50 @@ export default function ReplyPage() {
           {activeChat ? (
             <div className="flex-1 flex flex-col bg-white">
               {/* Active Chat Header */}
-              <div className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <span>{maskName(activeChat.patientName)}</span>
-                    <span className="text-xs font-mono text-teal-600 font-bold">({activeChat.hn})</span>
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Database className="w-3 h-3" /> HOSxP Live
+              <div className="p-3.5 border-b border-slate-200 space-y-2 bg-slate-50/50">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                      <span>{maskName(activeChat.patientName)}</span>
+                      <span className="text-xs font-mono text-teal-600 font-bold">({activeChat.hn})</span>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">
+                        <Database className="w-3 h-3" /> HOSxP Live
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{activeChat.subject}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border flex items-center gap-1.5 ${currentRoleConfig.badgeBg}`}>
+                      {React.createElement(currentRoleConfig.icon, { className: 'w-3.5 h-3.5' })}
+                      <span>ผู้ตอบ: {currentRoleConfig.titlePrefix}{staffNameInput}</span>
                     </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{activeChat.subject}</p>
+                    <button
+                      onClick={() => alert(`ปิดเรื่องข้อความของ "${activeChat.patientName}" (${activeChat.hn}) เรียบร้อยแล้ว`)}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer border border-slate-200"
+                    >
+                      ปิดเรื่อง
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border flex items-center gap-1.5 ${currentRoleConfig.badgeBg}`}>
-                    {React.createElement(currentRoleConfig.icon, { className: 'w-3.5 h-3.5' })}
-                    <span>ผู้ตอบ: {currentRoleConfig.titlePrefix}{staffNameInput}</span>
-                  </span>
-                  <button
-                    onClick={() => alert(`ปิดเรื่องข้อความของ "${activeChat.patientName}" (${activeChat.hn}) เรียบร้อยแล้ว`)}
-                    className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer border border-slate-200"
-                  >
-                    ปิดเรื่อง
-                  </button>
-                </div>
+
+                {/* Staff Collision Prevention Status Banner */}
+                {activeChat.lastRepliedByName ? (
+                  <div className="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-[11px] font-bold text-emerald-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>เคสนี้ได้รับการตอบกลับแล้วโดย: <strong className="text-emerald-950 font-extrabold">{activeChat.lastRepliedByRole ? `${activeChat.lastRepliedByRole} ` : ''}{activeChat.lastRepliedByName}</strong></span>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-normal shrink-0">เมื่อ {activeChat.lastRepliedAt || 'ล่าสุด'} น.</span>
+                  </div>
+                ) : (
+                  <div className="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-[11px] font-bold text-rose-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 animate-pulse" />
+                      <span>เคสนี้ยังรอการตอบกลับจากเจ้าหน้าที่ (Pending Staff Response)</span>
+                    </div>
+                    <span className="text-[10px] text-rose-600 font-semibold shrink-0">โปรดเลือกบทบาทวิชาชีพแล้วพิมพ์ตอบกลับด้านล่าง</span>
+                  </div>
+                )}
               </div>
 
               {/* Messages Stream */}

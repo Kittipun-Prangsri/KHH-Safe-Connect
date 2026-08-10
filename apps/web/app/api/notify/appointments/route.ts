@@ -228,13 +228,25 @@ export async function POST(req: NextRequest) {
       if (isSupabaseConfigured()) {
         try {
           const supabase = getSupabaseAdminClient();
+          const nowIso = new Date().toISOString();
           await supabase.from('patient_line_messages').insert({
             line_user_id: targetLineUserId,
             hn: hnFormatted,
             patient_name: patientName,
             message_text: `💬 [ตอบกลับจาก ${staffRole} ${staffName}]: ${body.messageText}`,
-            created_at: new Date().toISOString(),
+            created_at: nowIso,
           });
+
+          // Record who replied to this patient in patient_line_users for staff collision prevention
+          const cleanHn = hnFormatted.replace(/^HN-/i, '');
+          await supabase
+            .from('patient_line_users')
+            .update({
+              last_replied_by_name: staffName,
+              last_replied_by_role: staffRole,
+              last_replied_at: nowIso,
+            })
+            .or(`line_user_id.eq.${targetLineUserId},hn.eq.${hnFormatted},hn.eq.${cleanHn}`);
         } catch (err) {
           console.warn('⚠️ Could not persist staff reply to Supabase:', err);
         }
