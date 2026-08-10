@@ -311,22 +311,31 @@ export async function sendLinePushTextMessage(
   }
 
   try {
-    const response = await fetch('https://api.line.me/v2/bot/message/push', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        to: lineUserId,
-        messages: [
-          {
-            type: 'text',
-            text,
-          },
-        ],
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    let response: Response;
+    try {
+      response = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          to: lineUserId,
+          messages: [
+            {
+              type: 'text',
+              text,
+            },
+          ],
+        }),
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const latencyMs = Date.now() - startTime;
 

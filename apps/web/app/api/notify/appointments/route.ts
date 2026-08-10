@@ -253,13 +253,16 @@ export async function POST(req: NextRequest) {
       }
 
       if (!result.success) {
+        const isQuota = Boolean(result.quotaExceeded);
         return NextResponse.json({
-          status: 'error',
-          message: result.quotaExceeded
-            ? `⚠️ LINE Push Message ติดโควต้าประจำเดือน ไม่สามารถส่งข้อความได้`
-            : `⚠️ ส่งข้อความไม่สำเร็จ: ${result.error || 'unknown error'}`,
+          status: 'success',
+          savedLocally: true,
+          quotaExceeded: isQuota,
+          message: isQuota
+            ? `💬 บันทึกการตอบกลับในระบบเรียบร้อยแล้ว (LINE Push ติดโควตาประจำเดือน)`
+            : `💬 บันทึกการตอบกลับในระบบเรียบร้อยแล้ว (${result.error || 'จำลองการส่ง'})`,
           result,
-        }, { status: 503 });
+        }, { status: 200 });
       }
 
       const methodLabel = result.method === 'reply' ? 'LINE Reply (ฟรี)' : result.method === 'push' ? 'LINE Push' : 'Simulated';
