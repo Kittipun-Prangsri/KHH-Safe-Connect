@@ -285,6 +285,36 @@ export default function ReplyPage() {
     setSending(false);
   };
 
+  const handleClearAllUnread = async () => {
+    try {
+      await fetch('/api/hosxp/conversations/unread-count', { method: 'POST' });
+      const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const cleared = conversations.map((c) => ({
+        ...c,
+        unreadCount: 0,
+        status: 'replied' as const,
+        lastRepliedByName: c.lastRepliedByName || `${currentRoleConfig.titlePrefix}${staffNameInput}`,
+        lastRepliedByRole: c.lastRepliedByRole || currentRoleConfig.label,
+        lastRepliedAt: c.lastRepliedAt || nowStr,
+      }));
+      setConversations(cleared);
+      if (activeChat) {
+        setActiveChat({
+          ...activeChat,
+          unreadCount: 0,
+          status: 'replied' as const,
+          lastRepliedByName: activeChat.lastRepliedByName || `${currentRoleConfig.titlePrefix}${staffNameInput}`,
+          lastRepliedByRole: activeChat.lastRepliedByRole || currentRoleConfig.label,
+          lastRepliedAt: activeChat.lastRepliedAt || nowStr,
+        });
+      }
+      setSendSuccessToast('✓ เคลียร์รายการแจ้งเตือนทั้งหมดเรียบร้อยแล้ว');
+      setTimeout(() => setSendSuccessToast(null), 3000);
+    } catch (err) {
+      console.warn('Error clearing all unread:', err);
+    }
+  };
+
   const filteredConversations = conversations.filter((c) => {
     const matchesSearch =
       c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -461,6 +491,14 @@ export default function ReplyPage() {
                     {r.label}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={handleClearAllUnread}
+                  className="px-2 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg font-bold border border-rose-200 transition-all cursor-pointer whitespace-nowrap ml-auto"
+                  title="ล้างสถานะข้อความค้างตอบกลับทั้งหมดเป็นรับทราบแล้ว"
+                >
+                  ✓ เคลียร์แจ้งเตือน
+                </button>
               </div>
             </div>
 

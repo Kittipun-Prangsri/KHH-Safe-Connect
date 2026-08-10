@@ -1,52 +1,64 @@
 import { NextResponse } from 'next/server';
-import { getHosxpPool } from '@/lib/hosxpClient';
 import { getSupabaseAdminClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/hosxp/conversations/unread-count
- * Returns the real number of "unread" conversations:
- * - HOSxP: appointments within the last 7 days (priority === 'urgent')
- * - Supabase fallback: patients with is_controlled === false
+ * Returns the real number of unreplied patient LINE conversations (last_replied_at is NULL).
  */
 export async function GET() {
   try {
-    // 1. Try HOSxP MySQL — count appointments in last 7 days (fresh/unread)
-    try {
-      const pool = getHosxpPool();
-      const sql = `
-        SELECT COUNT(*) AS cnt
-        FROM oapp o
-        LEFT JOIN patient p ON o.hn = p.hn
-        WHERE o.nextdate >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-          AND o.nextdate <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-      `;
-      const [rows]: any = await pool.execute(sql);
-      const count = parseInt(rows?.[0]?.cnt ?? '0', 10);
-      // Cap at 99 for badge display
-      return NextResponse.json({ success: true, count: Math.min(count, 99), source: 'hosxp' });
-    } catch (hosxpErr) {
-      console.warn('⚠️ HOSxP unavailable for unread-count, trying Supabase:', (hosxpErr as Error).message);
-    }
-
-    // 2. Supabase fallback — uncontrolled patients as "pending"
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseAdminClient();
       const { count, error } = await supabase
-        .from('patients')
+        .from('patient_line_users')
         .select('*', { count: 'exact', head: true })
-        .eq('is_controlled', false);
+        .eq('is_active', true)
+        .is('last_replied_at', null);
 
-      if (!error && count !== null) {
-        return NextResponse.json({ success: true, count: Math.min(count, 99), source: 'supabase' });
+      if (!error && typeof count === 'number') {
+        return NextResponse.json({ success: true, count, source: 'supabase' });
       }
     }
 
-    // No data available
     return NextResponse.json({ success: true, count: 0, source: 'none' });
   } catch (error: any) {
     console.error('❌ Unread count API error:', error);
     return NextResponse.json({ success: false, count: 0, error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/hosxp/conversations/unread-count
+ * Mark all unreplied patient LINE conversations as acknowledged/read.
+ */
+export async function POST() {
+  try {
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseAdminClient();
+      const nowIso = new Date().toISOString();
+
+      await supabase
+        .from('patient_line_users')
+        .update({
+          last_replied_at: nowIso,
+          last_replied_by_name: 'เจ้าหน้าที่ (รับทราบแล้ว)',
+          last_replied_by_role: 'ทีมสุขภาพ',
+        })
+        .eq('is_active', true)
+        .is('last_replied_at', null);
+
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        message: '✓ เคลียร์รายการแจ้งเตือนทั้งหมดเรียบร้อยแล้ว',
+      });
+    }
+
+    return NextResponse.json({ success: true, count: 0, message: '✓ เคลียร์เรียบร้อย' });
+  } catch (error: any) {
+    console.error('❌ Error clearing unread count:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -25,6 +25,15 @@ export default function FloatingStaffChatWidget() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleClearUnreadCount = async () => {
+    setUnreadCount(0);
+    try {
+      await fetch('/api/hosxp/conversations/unread-count', { method: 'POST' });
+    } catch (err) {
+      console.warn('Error clearing unread count:', err);
+    }
+  };
+
   const departments = [
     { id: 'nurse', label: 'พยาบาล NCDs', icon: Stethoscope, color: 'text-teal-700 bg-teal-50/90 border-teal-200 hover:bg-teal-100/90', desc: 'ติดตามเคสขาดนัด & ปรับพฤติกรรม' },
     { id: 'pharmacist', label: 'เภสัชกร', icon: Pill, color: 'text-sky-700 bg-sky-50/90 border-sky-200 hover:bg-sky-100/90', desc: 'ให้คำแนะนำการใช้ยา & ผลข้างเคียง' },
@@ -66,9 +75,19 @@ export default function FloatingStaffChatWidget() {
             <div className="flex justify-between items-center px-1">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">เลือกช่องทางตอบกลับผู้ป่วยตามทีม</span>
               {unreadCount > 0 && (
-                <span className="text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded-full animate-bounce">
-                  {unreadCount} ข้อความใหม่
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded-full animate-bounce">
+                    {unreadCount} ข้อความใหม่
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearUnreadCount}
+                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded-md border border-slate-300 transition-all cursor-pointer"
+                    title="ล้างตัวเลขแจ้งเตือนทั้งหมด"
+                  >
+                    ✓ เคลียร์
+                  </button>
+                </div>
               )}
             </div>
 
