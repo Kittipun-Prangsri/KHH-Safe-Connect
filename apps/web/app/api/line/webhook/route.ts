@@ -645,6 +645,5 @@ export async function GET() {
     status: 'online',
     service: 'KHH Safe-Connect LINE Webhook',
     timestamp: new Date().toISOString(),
-    testTag: 'LOCAL_SERVER_CHECK_123',
   });
 }
