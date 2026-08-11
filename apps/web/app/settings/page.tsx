@@ -184,25 +184,22 @@ export default function SettingsPage() {
     }, 600);
   };
 
-  // User Role & PDPA State
+  // User Role & PDPA State — read-only, sourced from the real signed-in
+  // session (set at login by the server). This used to be a self-service
+  // toggle any logged-in user could flip in their own browser to grant
+  // themselves unmasked access to patient PII; permission now has to come
+  // from an actual super_admin login, not a client-side flag.
   const [currentUserRole, setCurrentUserRoleState] = useState<string>('nurse');
 
   useEffect(() => {
     try {
-      const savedRole = localStorage.getItem('khh_user_role');
-      if (savedRole) {
-        setCurrentUserRoleState(savedRole);
+      const saved = localStorage.getItem('khh_user_session');
+      if (saved) {
+        const session = JSON.parse(saved);
+        setCurrentUserRoleState(session.role || 'nurse');
       }
     } catch (e) {}
   }, []);
-
-  const handleRoleChange = (newRole: string) => {
-    setCurrentUserRoleState(newRole);
-    try {
-      localStorage.setItem('khh_user_role', newRole);
-    } catch (e) {}
-    alert(`✅ สลับสิทธิ์ผู้ใช้งานเป็น "${newRole === 'ITsuperadmin' ? 'ITsuperadmin (ผู้ดูแลระบบ)' : 'พยาบาล/เจ้าหน้าที่ทั่วไป'}" เรียบร้อยแล้ว!`);
-  };
 
   return (
     <AppLayout>
@@ -288,59 +285,26 @@ export default function SettingsPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold leading-snug text-slate-800">สิทธิ์ผู้ใช้งานและการควบคุมโหมด PDPA</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">เฉพาะสิทธิ์ ITsuperadmin เท่านั้นที่สามารถสลับโหมดเปิดแสดงข้อมูลเต็มได้</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">กำหนดจากบัญชีที่ใช้เข้าสู่ระบบเท่านั้น เฉพาะ super_admin ที่เปิดดูข้อมูลเต็มในหน้าทะเบียน/นัดหมายได้</p>
               </div>
             </div>
             <span className={`inline-flex self-start shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[10px] font-bold sm:self-center ${
-              currentUserRole === 'ITsuperadmin'
+              currentUserRole === 'super_admin'
                 ? 'bg-slate-900 text-teal-400 border-slate-800'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
             }`}>
-              {currentUserRole === 'ITsuperadmin' ? '🛡️ ITsuperadmin Mode' : '👤 General Staff Mode'}
+              {currentUserRole === 'super_admin' ? '🛡️ Super Admin' : '👤 General Staff'}
             </span>
           </div>
 
-          <div className="space-y-4 p-5 text-xs md:p-6">
-            <label className="block font-bold text-slate-700">เลือกสิทธิ์การทดสอบใช้งานของผู้ใช้</label>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Option 1: General Staff (Nurse) */}
-              <div
-                onClick={() => handleRoleChange('nurse')}
-                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  currentUserRole !== 'ITsuperadmin'
-                    ? 'border-teal-600 bg-teal-50/60 shadow-md'
-                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                    <span className="font-extrabold text-slate-800 text-sm">พยาบาล / เจ้าหน้าที่ทั่วไป</span>
-                  {currentUserRole !== 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
-                </div>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  ข้อมูลผู้ป่วยจะถูกซ่อนตามกฎหมาย PDPA เสมอ รวมถึงชื่อ-นามสกุล CID และหมายเลขโทรศัพท์
-                </p>
-              </div>
-
-              {/* Option 2: ITsuperadmin */}
-              <div
-                onClick={() => handleRoleChange('ITsuperadmin')}
-                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  currentUserRole === 'ITsuperadmin'
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-xl'
-                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`font-extrabold text-sm ${currentUserRole === 'ITsuperadmin' ? 'text-teal-400' : 'text-slate-800'}`}>
-                    ITsuperadmin (ผู้ดูแลระบบสูงสุด)
-                  </span>
-                  {currentUserRole === 'ITsuperadmin' && <CheckCircle2 className="w-5 h-5 text-teal-400" />}
-                </div>
-                <p className={`${currentUserRole === 'ITsuperadmin' ? 'text-slate-300' : 'text-slate-600'} text-xs leading-relaxed`}>
-                  สิทธิ์ระดับแอดมินสูงสุด สามารถเปิดดูข้อมูลเต็มผ่านการควบคุม PDPA ได้
-                </p>
-              </div>
+          <div className="space-y-3 p-5 text-xs md:p-6">
+            <div className="flex items-center gap-2 text-slate-600">
+              <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+              <p>
+                {currentUserRole === 'super_admin'
+                  ? 'บัญชีนี้เป็น super_admin — สามารถกดปุ่ม "ยืนยันสิทธิ์" ในหน้าทะเบียนผู้ป่วย/นัดหมายเพื่อดูข้อมูลเต็มได้ชั่วคราว'
+                  : 'ข้อมูลผู้ป่วย (ชื่อ-นามสกุล, CID, เบอร์โทร, ที่อยู่) จะถูกซ่อนตามกฎหมาย PDPA เสมอสำหรับบัญชีนี้'}
+              </p>
             </div>
           </div>
         </section>

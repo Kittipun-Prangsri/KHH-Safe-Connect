@@ -8,6 +8,7 @@ import {
 } from '@/lib/userProvisioningService';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
 import { recordLoginActivity, extractClientIp } from '@/lib/loginActivityLog';
+import { checkLoginLockout, recordLoginFailure, recordLoginSuccess } from '@/lib/loginRateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,18 @@ export async function POST(request: Request) {
   let cleanUsername = '';
   const clientIp = extractClientIp(request);
   const userAgent = request.headers.get('user-agent') || 'unknown';
+
+  const lockout = checkLoginLockout(clientIp);
+  if (lockout.locked) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `เข้าสู่ระบบผิดพลาดหลายครั้งเกินไป กรุณาลองใหม่อีกครั้งใน ${Math.ceil((lockout.retryAfterSeconds || 0) / 60)} นาที`,
+      },
+      { status: 429, headers: { 'Retry-After': String(lockout.retryAfterSeconds || 0) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { username, password } = body;
@@ -105,6 +118,7 @@ export async function POST(request: Request) {
     // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
     const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
     if (duplicatedProfile) {
+      recordLoginSuccess(clientIp);
       recordLoginActivity({
         loginname: duplicatedProfile.loginname,
         name: duplicatedProfile.name,
@@ -172,11 +186,28 @@ export async function POST(request: Request) {
         rows = dbRows;
       }
     } catch (dbErr: any) {
-      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). Creating dynamic standby profile for '${cleanUsername}'...`);
+      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}) for '${cleanUsername}'`);
+
+      // Standby profile auto-provisioning skips password verification entirely
+      // (there's no DB to check it against) — acceptable for dev convenience,
+      // but in production it would let anyone in with any username when the
+      // HOSxP link is down. Fail closed there instead.
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'ไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ IT',
+          },
+          { status: 503 }
+        );
+      }
+
+      console.warn(`⚠️ Creating dynamic standby profile for '${cleanUsername}' (dev only)...`);
 
       // Auto-provision dynamic standby profile for ANY username when DB is unreachable
       const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
 
+      recordLoginSuccess(clientIp);
       recordLoginActivity({
         loginname: standbyProfile.loginname,
         name: standbyProfile.name,
@@ -199,6 +230,7 @@ export async function POST(request: Request) {
     }
 
     if (!rows || rows.length === 0) {
+      recordLoginFailure(clientIp);
       return NextResponse.json(
         { success: false, message: `ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ในระบบ HOSxP และ Supabase Store` },
         { status: 401 }
@@ -233,6 +265,7 @@ export async function POST(request: Request) {
     }
 
     if (!isPasswordValid) {
+      recordLoginFailure(clientIp);
       return NextResponse.json(
         { success: false, message: 'รหัสผ่าน HOSxP ไม่ถูกต้อง' },
         { status: 401 }
@@ -273,6 +306,7 @@ export async function POST(request: Request) {
       opduserNcdSyncedAt: nowIso,
     });
 
+    recordLoginSuccess(clientIp);
     recordLoginActivity({
       loginname: provisionedUser.loginname,
       name: provisionedUser.name,

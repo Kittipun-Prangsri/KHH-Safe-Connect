@@ -81,13 +81,17 @@ export function maskHn(hn: string, isPdpaActive: boolean = true): string {
 }
 
 /**
- * Role & PDPA Control Helper
+ * Role & PDPA Control Helper — reads the real, server-verified session
+ * (set at login from HOSxP/Supabase, see app/api/hosxp/auth/login/route.ts)
+ * rather than a separate client-writable flag.
  */
 export function getCurrentUserRole(): string {
   if (typeof window === 'undefined') return 'nurse';
   try {
-    const role = localStorage.getItem('khh_user_role');
-    return role || 'nurse'; // Default role is 'nurse' (General staff)
+    const saved = localStorage.getItem('khh_user_session');
+    if (!saved) return 'nurse';
+    const session = JSON.parse(saved);
+    return session.role || 'nurse';
   } catch (e) {
     return 'nurse';
   }
@@ -103,15 +107,13 @@ export function maskAddress(address: string, isPdpaActive: boolean = true): stri
 }
 
 /**
- * Check if current user has ITsuperadmin permission to toggle PDPA mode
+ * Check if the current user has permission to toggle PDPA masking off.
+ * Must be based on the real, server-verified role — this used to read a
+ * separate localStorage key that any logged-in user could set themselves
+ * from the Settings page, letting any staff account grant itself unmasked
+ * access to patient PII with no server-side check at all.
  */
 export function isITSuperAdmin(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const role = localStorage.getItem('khh_user_role');
-    return role === 'ITsuperadmin' || role === 'superadmin';
-  } catch (e) {
-    return false;
-  }
+  return getCurrentUserRole() === 'super_admin';
 }
 

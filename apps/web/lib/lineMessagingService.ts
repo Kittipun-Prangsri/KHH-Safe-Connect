@@ -210,11 +210,12 @@ export async function sendLineReplyMessage(
     return { success: true, simulated: true, message: '[Simulated] Dummy LINE replyToken ignored' };
   }
 
-  const token = (
-    channelAccessToken ||
-    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
-    '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
-  ).trim();
+  const token = (channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim();
+
+  if (!token) {
+    console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN is missing. Returning simulated reply response.');
+    return { success: true, simulated: true, errorMessage: 'LINE_CHANNEL_ACCESS_TOKEN missing' };
+  }
 
   try {
     const response = await fetch('https://api.line.me/v2/bot/message/reply', {
@@ -270,11 +271,7 @@ export async function sendLinePushTextMessage(
   replyToken?: string | null,
   hn?: string
 ) {
-  const token = (
-    channelAccessToken ||
-    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
-    '76+q7GG6OOaoulsZwBlYWQBzu/cX6ABJdAu4biK+oOi+TyW+TylZSEcKmsVm6uhgRAC+ZuFHnwNHSUM3hcS4rRzaAwAhzfvm7HV9uz5kTGO+6V25TLvpSilwM8Ia0GA6KSRbrHhro7duaPROVE/12gdB04t89/1O/w1cDnyilFU='
-  ).trim();
+  const token = (channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim();
   const startTime = Date.now();
 
   // Reply-First Strategy: Check if active replyToken is available (Free quota)

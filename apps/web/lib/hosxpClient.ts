@@ -9,8 +9,8 @@ export function getHosxpPool(): mysql.Pool {
   if (!pool) {
     const host = process.env.HOSXP_DB_HOST || '192.168.1.4';
     const port = Number(process.env.HOSXP_DB_PORT) || 3306;
-    const user = process.env.HOSXP_DB_USER || 'Khos';
-    const password = process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh';
+    const user = process.env.HOSXP_DB_USER || '';
+    const password = process.env.HOSXP_DB_PASSWORD || '';
     const database = process.env.HOSXP_DB_NAME || 'hos';
 
     pool = mysql.createPool({
