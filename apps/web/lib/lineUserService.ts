@@ -206,10 +206,15 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
              cid,
              birthday
       FROM patient 
-      WHERE hn = ? OR cid = ? OR hn = LPAD(?, 7, '0') OR hn = LPAD(?, 9, '0')
+      WHERE hn = ? 
+         OR cid = ? 
+         OR REPLACE(REPLACE(COALESCE(cid, ''), '-', ''), ' ', '') = ?
+         OR hn = LPAD(?, 7, '0') 
+         OR hn = LPAD(?, 8, '0') 
+         OR hn = LPAD(?, 9, '0')
       LIMIT 1
     `,
-      [cleanQuery, cleanQuery, cleanQuery, cleanQuery]
+      [cleanQuery, cleanQuery, cleanQuery, cleanQuery, cleanQuery, cleanQuery]
     );
 
     if (rows && rows.length > 0) {
@@ -263,7 +268,7 @@ export async function findPatientByHnOrCidInHosxp(queryStr: string) {
       const { data, error } = await supabase
         .from('patients')
         .select('*')
-        .or(`hn.eq.${formattedHn},raw_hn.eq.${cleanQuery},cid.eq.${cleanQuery}`)
+        .or(`hn.eq.${formattedHn},hn.eq.${cleanQuery},raw_hn.eq.${cleanQuery},cid.eq.${cleanQuery},cid.eq.${queryStr.trim()}`)
         .maybeSingle();
 
       if (data && !error) {
