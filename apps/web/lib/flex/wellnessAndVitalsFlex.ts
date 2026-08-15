@@ -24,6 +24,7 @@ function createGaugeBar(percentage: number, fillColor: string) {
         backgroundColor: fillColor,
         width: `${boundedPct}%`,
         cornerRadius: 'md',
+        contents: [{ type: 'filler' }],
       },
     ],
   };

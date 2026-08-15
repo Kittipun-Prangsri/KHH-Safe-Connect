@@ -397,6 +397,7 @@ export function createStaffRegistrationPromptFlex() {
                 size: 'xs',
                 color: '#475569',
                 margin: 'xs',
+                wrap: true,
               },
             ],
           },
