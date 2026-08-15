@@ -42,7 +42,14 @@ import {
   createMaxBindingReachedFlex,
 } from '@/lib/lineFlexTemplates';
 
-const pendingVerificationStore = new Map<string, { hn: string; patientName: string; userRole: 'patient' | 'caregiver' }>();
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  return NextResponse.json(
+    { status: 'ok', service: 'KHH Safe-Connect LINE Webhook', timestamp: new Date().toISOString() },
+    { status: 200 }
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
