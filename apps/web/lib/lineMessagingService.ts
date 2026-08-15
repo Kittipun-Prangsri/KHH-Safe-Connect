@@ -232,9 +232,11 @@ export async function sendLineReplyMessage(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`❌ LINE Reply API HTTP ${response.status} Error: ${errorText}`);
       throw new Error(`LINE Reply API returned status ${response.status}: ${errorText}`);
     }
 
+    console.log('📤 LINE Reply Message sent successfully (HTTP 200 OK)');
     return {
       success: true,
       simulated: false,
