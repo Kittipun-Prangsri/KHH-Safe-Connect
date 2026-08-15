@@ -646,11 +646,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'error', message: error.message }, { status: 500 });
   }
 }
-
-export async function GET() {
-  return NextResponse.json({
-    status: 'online',
-    service: 'KHH Safe-Connect LINE Webhook',
-    timestamp: new Date().toISOString(),
-  });
-}
