@@ -190,24 +190,39 @@ export async function syncHosxpToSupabase(): Promise<{ success: boolean; syncedP
     });
 
     // Format & Prepare Appointments Cache Records
-    const formattedAppointments = appointmentRows.map((r: any) => ({
-      id: String(r.oapp_id),
-      oapp_id: r.oapp_id,
-      hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
-      patient_name: r.patient_name || 'ไม่ระบุชื่อ',
-      phone: r.phone || '-',
-      cid: r.cid || '-',
-      vst_date: r.vstdate || null,
-      next_date: r.nextdate || null,
-      next_time: r.nexttime || '08:30 น.',
-      clinic_code: r.clinic,
-      clinic_name: r.clinic_name || 'คลินิก NCDs',
-      doctor_code: r.doctor,
-      doctor_name: r.doctor_name || 'แพทย์ผู้ตรวจ',
-      app_cause: r.app_cause || 'ตรวจติดตามอาการ NCDs',
-      status: 'confirmed',
-      synced_at: new Date().toISOString(),
-    }));
+    //
+    // The source query only ever selects rows with nextdate >= CURDATE(),
+    // so every row synced here is by definition upcoming at sync time.
+    // We still compute status per-row (rather than hardcoding it) so a
+    // row that scrolls past its date before the next sync run correctly
+    // reads as missed instead of frozen on whatever it said at sync time.
+    // HOSxP's oapp table doesn't carry a real "attended/no-show" flag we
+    // can read here, so 'confirmed'/'rescheduled' distinctions aren't
+    // derivable from this data — only the upcoming/missed split is.
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const formattedAppointments = appointmentRows.map((r: any) => {
+      const nextDateStr = r.nextdate ? new Date(r.nextdate).toISOString().slice(0, 10) : null;
+      const status = nextDateStr && nextDateStr < todayStr ? 'missed' : 'upcoming';
+
+      return {
+        id: String(r.oapp_id),
+        oapp_id: r.oapp_id,
+        hn: r.hn ? (r.hn.startsWith('HN-') ? r.hn : `HN-${r.hn}`) : 'HN-0000',
+        patient_name: r.patient_name || 'ไม่ระบุชื่อ',
+        phone: r.phone || '-',
+        cid: r.cid || '-',
+        vst_date: r.vstdate || null,
+        next_date: r.nextdate || null,
+        next_time: r.nexttime || '08:30 น.',
+        clinic_code: r.clinic,
+        clinic_name: r.clinic_name || 'คลินิก NCDs',
+        doctor_code: r.doctor,
+        doctor_name: r.doctor_name || 'แพทย์ผู้ตรวจ',
+        app_cause: r.app_cause || 'ตรวจติดตามอาการ NCDs',
+        status,
+        synced_at: new Date().toISOString(),
+      };
+    });
 
     // Save to Local In-Memory Cache (Immediate staging)
     setHosxpCache('snapshot:patients', formattedPatients, 86400000);

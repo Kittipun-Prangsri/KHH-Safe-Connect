@@ -3,7 +3,21 @@ import { getSyncConfig, syncHosxpToSupabase } from '@/lib/hosxpSyncService';
 
 export const dynamic = 'force-dynamic';
 
+function isAuthorized(request: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  // No secret configured -> leave the endpoint open (matches prior
+  // behavior) rather than lock out an operator who hasn't set it yet.
+  if (!secret) return true;
+  const url = new URL(request.url);
+  const provided = request.headers.get('x-cron-secret') || url.searchParams.get('secret');
+  return provided === secret;
+}
+
 export async function GET(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const config = await getSyncConfig();
 
