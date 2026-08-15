@@ -42,6 +42,8 @@ import {
   createMaxBindingReachedFlex,
 } from '@/lib/lineFlexTemplates';
 
+const pendingVerificationStore = new Map<string, { hn: string; patientName: string; userRole: 'patient' | 'caregiver' }>();
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
