@@ -23,6 +23,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // The khh-mobile app is a separate client with its own bearer-token
+  // session (see lib/mobileSession.ts) — it never holds the staff
+  // browser's session cookie, so it must bypass this cookie gate.
+  // Each /api/mobile/* route verifies its own token internally.
+  if (pathname.startsWith('/api/mobile/')) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = await verifySessionToken(token);
 
