@@ -4,7 +4,7 @@ module.exports = {
       name: 'khh-web',
       script: 'pnpm',
       args: 'start',
-      cwd: './apps/web',
+      cwd: '/opt/KHH-Safe-Connect/apps/web',
       env: {
         NODE_ENV: 'production',
         PORT: 5188,
@@ -15,7 +15,7 @@ module.exports = {
       name: 'khh-api',
       script: 'pnpm',
       args: 'start',
-      cwd: './apps/api',
+      cwd: '/opt/KHH-Safe-Connect/apps/api',
       env: {
         NODE_ENV: 'production',
         PORT: 5003,
