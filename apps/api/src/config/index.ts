@@ -5,9 +5,9 @@ dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 export const config = {
-  port: process.env.PORT || '4000',
+  port: process.env.PORT || '5003',
   nodeEnv: process.env.NODE_ENV || 'development',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin: process.env.CORS_ORIGIN || '*',
   supabase: {
     url: process.env.SUPABASE_URL || '',
     anonKey: process.env.SUPABASE_ANON_KEY || '',

@@ -95,10 +95,15 @@ const DEFAULT_DUPLICATED_ACCOUNTS: UserSessionProfile[] = [
   },
 ];
 
-// Initialize Store with Seed Accounts
-DEFAULT_DUPLICATED_ACCOUNTS.forEach((account) => {
-  PROVISIONED_PROFILES_STORE.set(account.loginname.toLowerCase(), account);
-});
+// Initialize Store with Seed Accounts — dev/staging convenience only. These
+// bypass HOSxP password verification entirely (see findDuplicatedUserProfile),
+// so they must never be reachable in production, where every login has to go
+// through a real password check at least once before a profile is cached here.
+if (process.env.NODE_ENV !== 'production') {
+  DEFAULT_DUPLICATED_ACCOUNTS.forEach((account) => {
+    PROVISIONED_PROFILES_STORE.set(account.loginname.toLowerCase(), account);
+  });
+}
 
 /**
  * Create dynamic fallback standby profile when HOSxP DB is offline/unreachable
@@ -139,6 +144,29 @@ export async function createDynamicStandbyProfile(username: string): Promise<Use
 
 
 /**
+ * Smartly extract clean avatar initials from Thai/English full names by stripping honorifics
+ */
+export function extractThaiInitials(fullName: string, role?: string): string {
+  if (!fullName) return 'KHH';
+
+  if (role === 'super_admin' || fullName.toLowerCase().includes('kittipun') || fullName.includes('กิตติพันธ์')) {
+    return 'กิ';
+  }
+
+  const clean = fullName
+    .replace(/^(นายแพทย์|แพทย์หญิง|นางสาว|นาย|นาง|น\.ส\.|พญ\.|นพ\.|ดร\.|ผศ\.|รศ\.|ศ\.|ภก\.|ภญ\.|เภสัชกร|ทพ\.|ทพญ\.|พยาบาล|คุณ|Dr\.|Mr\.|Mrs\.|Ms\.)\s*/i, '')
+    .trim();
+
+  if (!clean) return fullName.slice(0, 2);
+
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`;
+  }
+  return clean.slice(0, 2);
+}
+
+/**
  * Find duplicated user profile by loginname, doctorcode, or ID
  */
 export async function findDuplicatedUserProfile(username: string): Promise<UserSessionProfile | null> {
@@ -161,17 +189,19 @@ export async function findDuplicatedUserProfile(username: string): Promise<UserS
         .single();
 
       if (data && !error) {
+        const userRole = data.role || 'staff';
+        const userFullName = data.full_name || key;
         const profile: UserSessionProfile = {
           id: data.id || key,
           loginname: data.employee_code || key,
-          name: data.full_name || key,
+          name: userFullName,
           doctorcode: data.employee_code || '-',
           position: data.role === 'doctor' ? 'แพทย์ประจำคลินิก' : data.role === 'nurse' ? 'พยาบาลวิชาชีพ' : 'เจ้าหน้าที่',
           department: 'โรงพยาบาลคลองหาด',
-          role: data.role || 'staff',
+          role: userRole,
           roleLabel: data.role === 'super_admin' ? 'ผู้ดูแลระบบ (IT Admin)' : data.role === 'doctor' ? 'แพทย์ประจำคลินิก' : 'เจ้าหน้าที่',
-          badgeColor: 'bg-teal-100 text-teal-700 border-teal-200',
-          avatarInitials: (data.full_name || key).slice(0, 2),
+          badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
+          avatarInitials: extractThaiInitials(userFullName, userRole),
           isDuplicatedStore: true,
           syncedAt: data.created_at,
         };
@@ -206,6 +236,7 @@ export async function provisionHosxpUserToStore(hosxpUser: {
   const loginname = hosxpUser.loginname.trim();
   const key = loginname.toLowerCase();
   const fullName = hosxpUser.name || loginname;
+  const role = hosxpUser.role || 'staff';
 
   const profile: UserSessionProfile = {
     id: loginname,
@@ -214,10 +245,10 @@ export async function provisionHosxpUserToStore(hosxpUser: {
     doctorcode: hosxpUser.doctorcode || '-',
     position: hosxpUser.entryposition || 'เจ้าหน้าที่ HOSxP',
     department: hosxpUser.department || 'โรงพยาบาลคลองหาด',
-    role: hosxpUser.role || 'staff',
+    role,
     roleLabel: hosxpUser.roleLabel || 'เจ้าหน้าที่ (Staff)',
     badgeColor: hosxpUser.badgeColor || 'bg-amber-100 text-amber-700 border-amber-200',
-    avatarInitials: fullName.slice(0, 2),
+    avatarInitials: extractThaiInitials(fullName, role),
     isDuplicatedStore: true,
     syncedAt: new Date().toISOString(),
     lastLoginAt: hosxpUser.lastLoginAt || new Date().toISOString(),

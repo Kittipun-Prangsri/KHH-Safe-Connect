@@ -135,13 +135,13 @@ export default function FollowUpsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: 'Uf636cf9137cbd32ff2c18773591be46a',
+          action: 'reschedule_success',
           patientName: rescheduleTask.patientName,
           hn: rescheduleTask.hn,
           appointmentDate: formattedDate,
           appointmentTime: '08:30 น.',
-          clinic: rescheduleTask.clinic || 'คลินิก NCDs',
-          doctor: rescheduleTask.doctor || 'พญ. วรรณภา จิตดี',
+          clinic: rescheduleTask.clinic || 'คลินิก NCDs โรงพยาบาลคลองหาด',
+          doctor: rescheduleTask.doctor || 'พญ. วรรณภา จิตดี (แพทย์ประจำคลินิก NCDs)',
         }),
       });
     } catch (err) {
@@ -149,7 +149,7 @@ export default function FollowUpsPage() {
     }
 
     setRescheduleTask(null);
-    alert(`📅 เลื่อนนัดหมายให้คุณ "${rescheduleTask.patientName}" เป็นวันที่ ${formattedDate} และส่งการ์ด LINE Flex Message เรียบร้อย!`);
+    alert(`📅 เลื่อนนัดหมายให้คุณ "${rescheduleTask.patientName}" เป็นวันที่ ${formattedDate} และส่งการ์ดยืนยันวันนัดใหม่ (พร้อมปุ่ม Google Calendar) ทาง LINE เรียบร้อย!`);
   };
 
   const handleCreateTask = (e: React.FormEvent) => {

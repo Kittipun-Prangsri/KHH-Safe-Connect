@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import FloatingStaffChatWidget from './FloatingStaffChatWidget';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,6 +17,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Header onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto">{children}</main>
+
+        {/* Floating Quick Staff Chat Widget */}
+        <FloatingStaffChatWidget />
       </div>
     </div>
   );

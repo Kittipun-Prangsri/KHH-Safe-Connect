@@ -6,8 +6,28 @@ import {
   provisionHosxpUserToStore,
   createDynamicStandbyProfile,
 } from '@/lib/userProvisioningService';
+import { createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
+import { recordLoginActivity, extractClientIp } from '@/lib/loginActivityLog';
+import { checkLoginLockout, recordLoginFailure, recordLoginSuccess } from '@/lib/loginRateLimit';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Issue a signed, httpOnly session cookie on the response for a
+ * successfully authenticated user. httpOnly means client-side JS can't
+ * read or forge it — this is what the middleware actually trusts.
+ */
+async function withSessionCookie(response: NextResponse, user: { id: string; role: string; name: string; roleLabel?: string }) {
+  const token = await createSessionToken(user);
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  });
+  return response;
+}
 
 /**
  * Determine Role from HOSxP opduser entryposition, groupname, doctorcode
@@ -16,8 +36,18 @@ function mapHosxpRole(user: any): { role: string; roleLabel: string; badgeColor:
   const pos = (user.entryposition || '').toLowerCase();
   const group = (user.groupname || '').toLowerCase();
   const login = (user.loginname || '').toLowerCase();
+  const name = (user.name || '').toLowerCase();
 
-  if (login === 'admin' || group.includes('admin') || group.includes('it') || pos.includes('สารสนเทศ')) {
+  if (
+    login === 'admin' ||
+    login.includes('kittipun') ||
+    name.includes('กิตติพันธ์') ||
+    group.includes('admin') ||
+    group.includes('it') ||
+    pos.includes('สารสนเทศ') ||
+    pos.includes('คอมพิวเตอร์') ||
+    pos.includes('ผู้ดูแลระบบ')
+  ) {
     return {
       role: 'super_admin',
       roleLabel: 'ผู้ดูแลระบบ (IT Super Admin)',
@@ -58,6 +88,20 @@ function mapHosxpRole(user: any): { role: string; roleLabel: string; badgeColor:
 
 export async function POST(request: Request) {
   let cleanUsername = '';
+  const clientIp = extractClientIp(request);
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+
+  const lockout = checkLoginLockout(clientIp);
+  if (lockout.locked) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `เข้าสู่ระบบผิดพลาดหลายครั้งเกินไป กรุณาลองใหม่อีกครั้งใน ${Math.ceil((lockout.retryAfterSeconds || 0) / 60)} นาที`,
+      },
+      { status: 429, headers: { 'Retry-After': String(lockout.retryAfterSeconds || 0) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { username, password } = body;
@@ -74,13 +118,25 @@ export async function POST(request: Request) {
     // 1. STEP 1: Check Supabase / Duplicated User Store FIRST (0% HOSxP DB Load!)
     const duplicatedProfile = await findDuplicatedUserProfile(cleanUsername);
     if (duplicatedProfile) {
-      return NextResponse.json({
-        success: true,
-        message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
-        user: duplicatedProfile,
-        isZeroDbAuth: true,
+      recordLoginSuccess(clientIp);
+      recordLoginActivity({
+        loginname: duplicatedProfile.loginname,
+        name: duplicatedProfile.name,
+        role: duplicatedProfile.role,
         source: 'Supabase / Duplicated Store',
+        ipAddress: clientIp,
+        userAgent,
       });
+      return await withSessionCookie(
+        NextResponse.json({
+          success: true,
+          message: `⚡ เข้าสู่ระบบสำเร็จผ่าน Supabase / Duplicated Profile Store! ยินดีต้อนรับ ${duplicatedProfile.name}`,
+          user: duplicatedProfile,
+          isZeroDbAuth: true,
+          source: 'Supabase / Duplicated Store',
+        }),
+        duplicatedProfile
+      );
     }
 
     // 2. STEP 2: Query user from HOSxP opduser / opduser_Ncd database
@@ -130,21 +186,51 @@ export async function POST(request: Request) {
         rows = dbRows;
       }
     } catch (dbErr: any) {
-      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}). Creating dynamic standby profile for '${cleanUsername}'...`);
+      console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}) for '${cleanUsername}'`);
+
+      // Standby profile auto-provisioning skips password verification entirely
+      // (there's no DB to check it against) — acceptable for dev convenience,
+      // but in production it would let anyone in with any username when the
+      // HOSxP link is down. Fail closed there instead.
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'ไม่สามารถเชื่อมต่อฐานข้อมูล HOSxP ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ IT',
+          },
+          { status: 503 }
+        );
+      }
+
+      console.warn(`⚠️ Creating dynamic standby profile for '${cleanUsername}' (dev only)...`);
 
       // Auto-provision dynamic standby profile for ANY username when DB is unreachable
       const standbyProfile = await createDynamicStandbyProfile(cleanUsername);
 
-      return NextResponse.json({
-        success: true,
-        message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
-        user: standbyProfile,
-        isStandbyMode: true,
-        source: 'Supabase Standby Store',
+      recordLoginSuccess(clientIp);
+      recordLoginActivity({
+        loginname: standbyProfile.loginname,
+        name: standbyProfile.name,
+        role: standbyProfile.role,
+        source: 'Supabase Standby Store (HOSxP Offline)',
+        ipAddress: clientIp,
+        userAgent,
       });
+
+      return await withSessionCookie(
+        NextResponse.json({
+          success: true,
+          message: `⚡ เข้าสู่ระบบสำเร็จ (Supabase Standby Profile - HOSxP 192.168.1.4 Offline)! ยินดีต้อนรับ ${standbyProfile.name}`,
+          user: standbyProfile,
+          isStandbyMode: true,
+          source: 'Supabase Standby Store',
+        }),
+        standbyProfile
+      );
     }
 
     if (!rows || rows.length === 0) {
+      recordLoginFailure(clientIp);
       return NextResponse.json(
         { success: false, message: `ไม่พบชื่อผู้ใช้งาน '${cleanUsername}' ในระบบ HOSxP และ Supabase Store` },
         { status: 401 }
@@ -179,6 +265,7 @@ export async function POST(request: Request) {
     }
 
     if (!isPasswordValid) {
+      recordLoginFailure(clientIp);
       return NextResponse.json(
         { success: false, message: 'รหัสผ่าน HOSxP ไม่ถูกต้อง' },
         { status: 401 }
@@ -219,13 +306,26 @@ export async function POST(request: Request) {
       opduserNcdSyncedAt: nowIso,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
-      user: provisionedUser,
-      isAutoProvisioned: true,
-      isFromNcdTable,
+    recordLoginSuccess(clientIp);
+    recordLoginActivity({
+      loginname: provisionedUser.loginname,
+      name: provisionedUser.name,
+      role: provisionedUser.role,
+      source: isFromNcdTable ? 'HOSxP DB (opduser_Ncd)' : 'HOSxP DB (opduser)',
+      ipAddress: clientIp,
+      userAgent,
     });
+
+    return await withSessionCookie(
+      NextResponse.json({
+        success: true,
+        message: `⚡ เข้าสู่ระบบ HOSxP/NCDs สำเร็จ! (ดึงและบันทึกเวลาผ่าน opduser_Ncd เรียบร้อยแล้ว) ยินดีต้อนรับ ${fullName}`,
+        user: provisionedUser,
+        isAutoProvisioned: true,
+        isFromNcdTable,
+      }),
+      provisionedUser
+    );
   } catch (error: any) {
     console.error('❌ HOSxP Login Auth Error:', error);
     return NextResponse.json(

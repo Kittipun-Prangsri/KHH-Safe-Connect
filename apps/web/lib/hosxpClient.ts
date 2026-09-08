@@ -9,8 +9,8 @@ export function getHosxpPool(): mysql.Pool {
   if (!pool) {
     const host = process.env.HOSXP_DB_HOST || '192.168.1.4';
     const port = Number(process.env.HOSXP_DB_PORT) || 3306;
-    const user = process.env.HOSXP_DB_USER || 'Khos';
-    const password = process.env.HOSXP_DB_PASSWORD || 'KHzjkowfh';
+    const user = process.env.HOSXP_DB_USER || '';
+    const password = process.env.HOSXP_DB_PASSWORD || '';
     const database = process.env.HOSXP_DB_NAME || 'hos';
 
     pool = mysql.createPool({
@@ -22,7 +22,7 @@ export function getHosxpPool(): mysql.Pool {
       charset: 'tis620',
       waitForConnections: true,
       connectionLimit: 10,
-      connectTimeout: 3000, // 3 seconds timeout
+      connectTimeout: 1500, // 1.5 seconds timeout for rapid offline fallback
       enableKeepAlive: true,
     });
   }

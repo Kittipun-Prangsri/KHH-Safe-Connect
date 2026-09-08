@@ -27,19 +27,34 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
 
-      const data = await res.json();
+      // Read as text first — an interrupted connection (e.g. the dev server
+      // reloading mid-request) can leave the body empty or truncated, which
+      // makes res.json() throw a raw, meaningless error straight at the user.
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error('การเชื่อมต่อกับเซิร์ฟเวอร์ขาดหาย กรุณาลองเข้าสู่ระบบอีกครั้ง');
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
       }
 
-      // Save Real User Session
+      // The server already set an httpOnly session cookie on this response —
+      // that's what actually gates access. localStorage here is just for
+      // client-side UI display (e.g. the header's name/role badge).
       if (typeof window !== 'undefined') {
         localStorage.setItem('khh_user_session', JSON.stringify(data.user));
-        document.cookie = `user_role=${data.user.role}; path=/; max-age=86400`;
       }
 
-      window.location.href = '/dashboard';
+      // Honor the page the user was originally trying to reach (set by
+      // middleware when it redirected an unauthenticated request here).
+      // Only allow relative paths, to avoid an open-redirect.
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirectTo');
+      window.location.href = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/dashboard';
     } catch (err: any) {
       setErrorMsg(err.message || 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์กับฐานข้อมูล HOSxP');
     } finally {

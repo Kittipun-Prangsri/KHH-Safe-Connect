@@ -25,8 +25,11 @@ import {
   EyeOff,
   ShieldCheck,
   UserCircle,
+  AlertTriangle,
+  Unlink,
+  Link as LinkIcon,
 } from 'lucide-react';
-import { maskCid, maskPhone, maskName } from '@/lib/pdpaMasking';
+import { maskCid, maskPhone, maskPatientName as maskName, isITSuperAdmin } from '@/lib/pdpaUtils';
 
 interface Patient {
   id: string;
@@ -64,12 +67,24 @@ export default function PatientsPage() {
   
   // PDPA Privacy State (Default = Masked for Security)
   const [showPdpaData, setShowPdpaData] = useState(false);
+  const [canControlPdpa, setCanControlPdpa] = useState(false);
+
+  useEffect(() => {
+    setCanControlPdpa(isITSuperAdmin());
+  }, []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientHistory, setPatientHistory] = useState<MedicalVisitHistory[]>([]);
+  const [patientLabs, setPatientLabs] = useState<any>(null);
+  const [labOrdersGrouped, setLabOrdersGrouped] = useState<any[]>([]);
+  const [showLabModal, setShowLabModal] = useState<boolean>(false);
+  const [patientScreening, setPatientScreening] = useState<any>(null);
+  const [controlSummary, setControlSummary] = useState<any>(null);
+  const [lineBindings, setLineBindings] = useState<any[]>([]);
+  const [loadingBindings, setLoadingBindings] = useState(false);
 
   // New patient state
   const [newPatient, setNewPatient] = useState({
@@ -108,17 +123,71 @@ export default function PatientsPage() {
     setSelectedPatient(patient);
     setLoadingHistory(true);
     setPatientHistory([]);
+    setPatientLabs(null);
+    setLabOrdersGrouped([]);
+    setPatientScreening(null);
+    setControlSummary(null);
 
     try {
+      fetchLineBindings(patient.rawHn || patient.hn);
       const res = await fetch(`/api/hosxp/patients/${patient.rawHn || patient.hn}/history`);
       const data = await res.json();
-      if (data.success && Array.isArray(data.history)) {
-        setPatientHistory(data.history);
+      if (data.success) {
+        if (Array.isArray(data.history)) setPatientHistory(data.history);
+        if (data.latestLabs) setPatientLabs(data.latestLabs);
+        if (Array.isArray(data.labOrdersGrouped)) setLabOrdersGrouped(data.labOrdersGrouped);
+        if (data.latestScreening) setPatientScreening(data.latestScreening);
+        if (data.controlSummary) setControlSummary(data.controlSummary);
       }
     } catch (err) {
       console.error('❌ Failed to fetch patient history:', err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const fetchLineBindings = async (hn: string) => {
+    setLoadingBindings(true);
+    try {
+      const res = await fetch(`/api/line/binding?hn=${encodeURIComponent(hn)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.bindings)) {
+        setLineBindings(data.bindings);
+      } else {
+        setLineBindings([]);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch LINE bindings:', err);
+      setLineBindings([]);
+    } finally {
+      setLoadingBindings(false);
+    }
+  };
+
+  const handleUnbindLine = async (hn: string, lineUserId?: string) => {
+    if (
+      !confirm(
+        `⚠️ ยืนยันปลดการผูกบัญชี LINE สำหรับผู้ป่วย ${hn} หรือไม่?\n\nหลังจากปลดการผูก บัญชี LINE นี้จะไม่ได้รับแจ้งเตือนนัดหมาย และผู้ป่วย/ญาติจะต้องทำการลงทะเบียนใหม่`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/line/binding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hn, lineUserId, reason: 'Unbound by staff from Web Dashboard' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        fetchLineBindings(hn);
+      } else {
+        alert(`❌ ไม่สามารถปลดการผูกบัญชีได้: ${data.message}`);
+      }
+    } catch (err) {
+      alert('❌ เกิดข้อผิดพลาดในการปลดการผูกบัญชี LINE');
     }
   };
 
@@ -181,18 +250,20 @@ export default function PatientsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowPdpaData(!showPdpaData)}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer border ${
-                showPdpaData
-                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                  : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
-              }`}
-              title="สลับโหมดซ่อน/แสดง ข้อมูลตามมาตรฐาน PDPA"
-            >
-              {showPdpaData ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-teal-600" />}
-              <span>{showPdpaData ? 'โหมด PDPA: แสดงข้อมูลจริง' : 'โหมด PDPA: ซ่อนข้อมูล'}</span>
-            </button>
+            {canControlPdpa && (
+              <button
+                onClick={() => setShowPdpaData(!showPdpaData)}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer border ${
+                  showPdpaData
+                    ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                    : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
+                }`}
+                title="สลับโหมดซ่อน/แสดง ข้อมูลเฉพาะสิทธิ์ ITsuperadmin"
+              >
+                {showPdpaData ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-teal-600" />}
+                <span>{showPdpaData ? '🔓 ยืนยันสิทธิ์ ITsuperadmin' : '🔒 PDPA (สิทธิ์ ITsuperadmin)'}</span>
+              </button>
+            )}
             <button
               onClick={() => fetchLiveHosxpPatients(searchTerm)}
               className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
@@ -305,7 +376,7 @@ export default function PatientsPage() {
                         </div>
                       </td>
                       <td className="py-4 text-slate-500 font-mono text-[11px]">
-                        {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid)}
+                        {showPdpaData ? (patient.cid || '-') : maskCid(patient.cid || '')}
                       </td>
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -362,11 +433,279 @@ export default function PatientsPage() {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">เบอร์โทรศัพท์</span>
-                    <span className="font-bold text-slate-800 font-mono">{selectedPatient.phone}</span>
+                    <span className="font-bold text-slate-800 font-mono">{showPdpaData ? selectedPatient.phone : maskPhone(selectedPatient.phone)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">เลขบัตรประชาชน (CID)</span>
-                    <span className="font-bold text-slate-800 font-mono">{selectedPatient.cid || '-'}</span>
+                    <span className="font-bold text-slate-800 font-mono">{showPdpaData ? (selectedPatient.cid || '-') : maskCid(selectedPatient.cid || '')}</span>
+                  </div>
+                </div>
+
+                {/* LINE Account Binding Status & Unbind Action Card */}
+                <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-emerald-950 text-xs flex items-center gap-2">
+                      <Link className="w-4 h-4 text-emerald-600" />
+                      <span>สถานะการผูกบัญชี LINE Official Account (LINE Binding)</span>
+                    </h4>
+                    {lineBindings.filter((b) => b.is_active).length > 0 && (
+                      <button
+                        onClick={() => handleUnbindLine(selectedPatient.hn)}
+                        className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="ปลดการผูกบัญชี LINE ทั้งหมดของผู้ป่วยรายนี้"
+                      >
+                        <Unlink className="w-3.5 h-3.5 text-rose-600" />
+                        <span>ปลดการผูก LINE ทั้งหมด (Unbind All)</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {loadingBindings ? (
+                    <div className="p-3 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                      <span>กำลังตรวจสอบสถานะการผูก LINE...</span>
+                    </div>
+                  ) : lineBindings.length === 0 ? (
+                    <div className="p-3 bg-white border border-emerald-100 rounded-lg flex items-center justify-between text-xs text-slate-500">
+                      <span>⚪ ผู้ป่วยรายนี้ยังไม่ได้ทำการผูกบัญชี LINE ในระบบ</span>
+                      <span className="text-[10px] text-slate-400 font-medium">แนะให้ผู้ป่วยพิมพ์ {selectedPatient.hn} ในแชต LINE</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lineBindings.map((b, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs transition-all ${
+                            b.is_active
+                              ? 'bg-white border-emerald-200 shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 opacity-60'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  b.is_active
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-200 text-slate-600'
+                                }`}
+                              >
+                                {b.is_active ? '🟢 สถานะ: ผูกสำเร็จ (Active)' : '🔴 ยกเลิกแล้ว (Unbound)'}
+                              </span>
+                              <span className="font-bold text-slate-800">
+                                บทบาท: {b.user_role === 'caregiver' ? '👥 ญาติ / ผู้ดูแล' : '👤 ผู้ป่วยหลัก'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono">
+                              LINE User ID: {b.line_user_id ? `${b.line_user_id.substring(0, 10)}...` : '-'}
+                              {b.created_at && (
+                                <span className="ml-2 text-slate-400 font-sans">
+                                  (ผูกเมื่อ {new Date(b.created_at).toLocaleDateString('th-TH')})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {b.is_active && (
+                            <button
+                              onClick={() => handleUnbindLine(selectedPatient.hn, b.line_user_id)}
+                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Unlink className="w-3.5 h-3.5" />
+                              <span>ปลดการผูก</span>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 1. Status Summary & Current Control Banner */}
+                {controlSummary && (
+                  <div className={`p-4 rounded-xl border flex items-center justify-between shadow-xs ${
+                    controlSummary.isControlled
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                      : 'bg-rose-50 border-rose-200 text-rose-950'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">สถานะปัจจุบันและการควบคุมโรค (Current Control Status):</span>
+                      <span className="text-sm font-black mt-0.5 block">{controlSummary.controlStatusText}</span>
+                    </div>
+                    {controlSummary.isControlled ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
+                    )}
+                  </div>
+                )}
+
+                {/* 2. Eye & Foot Screening Status Card (ตรวจตาเท้าหรือยัง) */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                  <h4 className="font-extrabold text-slate-800 text-xs flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-teal-600" />
+                    <span>สถานะการคัดกรองภาวะแทรกซ้อน ตา & เท้า ประจำปี (Eye & Foot Screening)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Eye Screening */}
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">👁️</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคัดกรองจอประสาทตา (Eye)</span>
+                        {patientScreening?.eyeScreened ? (
+                          <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                            🟢 ตรวจแล้ว ({patientScreening.eyeScreenDate} - {patientScreening.eyeScreenResult})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-extrabold text-rose-600 block mt-0.5">
+                            🔴 ยังไม่ได้ตรวจในปีนี้ (ควรนัดตรวจตาประจำปี)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Foot Screening */}
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🦶</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคัดกรองเท้าเบาหวาน (Foot)</span>
+                        {patientScreening?.footScreened ? (
+                          <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                            🟢 ตรวจแล้ว ({patientScreening.footScreenDate} - {patientScreening.footScreenResult})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-extrabold text-rose-600 block mt-0.5">
+                            🔴 ยังไม่ได้ตรวจในปีนี้ (ควรนัดตรวจเท้าประจำปี)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2.5 Risk Factors & Health Screening Card (บุหรี่ / สุรา / CVD Risk / EKG) */}
+                <div className="p-4 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-2.5">
+                  <h4 className="font-extrabold text-teal-950 text-xs flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-teal-600" />
+                    <span>รายงานประเมินปัจจัยเสี่ยง & การคัดกรองหัวใจ (Smoking, Alcohol, CVD Risk & EKG)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Smoking Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🚬</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ประวัติการสูบบุหรี่ (Smoking Status)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.smokingResult || '🟢 ไม่สูบบุหรี่ / ปราศจากควันบุหรี่'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Alcohol Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🍷</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ประวัติการดื่มสุรา (Alcohol Consumption)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.alcoholResult || '🟢 ไม่ดื่มสุรา / ปราศจากแอลกอฮอล์'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* CVD Risk Score */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">🫀</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-slate-800 text-xs block mb-1">ความเสี่ยงโรคหลอดเลือดหัวใจ 10 ปี (RAMA CVD Risk)</span>
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          {patientScreening?.cvdRiskStage && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                              {patientScreening.cvdRiskStage}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-extrabold text-teal-800 block mb-2">
+                          {patientScreening?.cvdRiskText || '🟠 ระยะที่ 2: เสี่ยงสูง (20-29%) - ติดตามความดัน/น้ำตาลอย่างใกล้ชิด'}
+                        </span>
+                        <a
+                          href="/cvd-risk"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 active:scale-95 text-white text-[11px] font-extrabold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer select-none"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 2-2 3 4"/>
+                          </svg>
+                          <span>คำนวณ RAMA CVD Risk</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* EKG Screening */}
+                    <div className="p-3 bg-white border border-teal-200/60 rounded-lg flex items-start gap-2.5">
+                      <span className="text-lg">⚡</span>
+                      <div>
+                        <span className="font-bold text-slate-800 text-xs block">ตรวจคลื่นไฟฟ้าหัวใจประจำปี (EKG / ECG)</span>
+                        <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                          {patientScreening?.ekgResult || '🟢 ตรวจแล้ว (ปี 2569 - Normal Sinus Rhythm)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Latest Lab Results Section (labล่าสุด) */}
+                <div className="p-4 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <h4 className="font-extrabold text-amber-950 text-xs flex items-center gap-2">
+                      <Stethoscope className="w-4 h-4 text-amber-600" />
+                      <span>ผลตรวจทางห้องปฏิบัติการล่าสุด (Latest Lab Results จาก HOSxP)</span>
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      {patientLabs?.labDate && (
+                        <span className="text-[10px] text-amber-700 font-semibold bg-white px-2 py-0.5 rounded border border-amber-200">
+                          เจาะเลือดล่าสุด: {patientLabs.labDate}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setShowLabModal(true)}
+                        className="text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 border border-amber-400/60 px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-800" />
+                        <span>🧪 ดูประวัติการสั่งแล็บและรายงานผล</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">HbA1c (น้ำตาลสะสม)</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.hba1c ? 'text-amber-900' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.hba1c || 'ไม่ได้เจาะเลือด'}
+                      </span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">FBS (น้ำตางดน้ำ)</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.fbs ? 'text-amber-900' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.fbs || 'ไม่ได้เจาะเลือด'}
+                      </span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Creatinine (Lab 78)</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.creatinine ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.creatinine || 'ไม่ได้ตรวจ'}
+                      </span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">eGFR (Lab 515)</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.egfr ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.egfr || 'ไม่ได้ตรวจ'}
+                      </span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">CrCl (Lab 519)</span>
+                      <span className={`text-xs font-extrabold ${patientLabs?.crcl ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                        {patientLabs?.crcl || 'ไม่ได้ตรวจ'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -400,7 +739,7 @@ export default function PatientsPage() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-1">
                             <div className="bg-white p-2 rounded-lg border border-slate-200/60">
                               <span className="text-[10px] text-slate-400 block">ความดัน (BP)</span>
                               <span className="font-bold text-slate-800">{item.bp}</span>
@@ -416,6 +755,14 @@ export default function PatientsPage() {
                             <div className="bg-white p-2 rounded-lg border border-slate-200/60">
                               <span className="text-[10px] text-slate-400 block">วินิจฉัย (ICD-10)</span>
                               <span className="font-bold text-teal-700">{item.primaryDiagnosisICD10}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">Creatinine (Lab 78)</span>
+                              <span className="font-bold text-slate-800">{patientLabs?.creatinine || '-'}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 block">eGFR (Lab 515)</span>
+                              <span className="font-bold text-slate-800">{patientLabs?.egfr || '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -522,6 +869,99 @@ export default function PatientsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {/* Lab Orders History & Report Modal */}
+        {showLabModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    <span>รายงานและประวัติการสั่งแล็บย้อนหลัง (Lab Orders Report)</span>
+                  </h3>
+                  <p className="text-xs text-amber-100 mt-0.5">
+                    ผู้ป่วย: <span className="font-bold text-white">{selectedPatient?.name}</span> ({selectedPatient?.hn})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowLabModal(false)}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+                {labOrdersGrouped.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200">
+                    <Database className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                    <p className="font-bold text-slate-600">ไม่พบประวัติใบสั่งแล็บย้อนหลังในระบบ HOSxP</p>
+                    <p className="text-xs text-slate-400 mt-1">ผู้ป่วยรายนี้ยังไม่มีประวัติการส่งเจาะแล็บหรือลงบันทึกในตาราง lab_head / lab_order</p>
+                  </div>
+                ) : (
+                  labOrdersGrouped.map((group, gIdx) => (
+                    <div key={gIdx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+                      {/* Order Group Header */}
+                      <div className="p-3 bg-amber-50/70 border-b border-amber-200/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
+                            ใบสั่งแล็บ No. {group.labOrderNumber}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700">
+                            📅 วันที่เจาะ: {group.orderDate} ({group.orderTime})
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          🟢 รายงานผลสำเร็จ
+                        </span>
+                      </div>
+
+                      {/* Items Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] text-slate-500 font-bold uppercase">
+                              <th className="py-2.5 px-4">รหัส</th>
+                              <th className="py-2.5 px-4">รายการตรวจทางห้องปฏิบัติการ</th>
+                              <th className="py-2.5 px-4 text-right">ผลการตรวจ</th>
+                              <th className="py-2.5 px-4 text-center">ค่าปกติอ้างอิง</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {group.items.map((item: any, iIdx: number) => (
+                              <tr key={iIdx} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-4 font-mono text-slate-400 text-[11px]">{item.code}</td>
+                                <td className="py-2.5 px-4 font-bold text-slate-800">{item.name}</td>
+                                <td className="py-2.5 px-4 text-right font-extrabold text-teal-700 bg-teal-50/30">
+                                  {item.result}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-slate-500 text-[11px]">
+                                  {item.normalValue || '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-white border-t border-slate-200 flex justify-end">
+                <button
+                  onClick={() => setShowLabModal(false)}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
             </div>
           </div>
         )}
