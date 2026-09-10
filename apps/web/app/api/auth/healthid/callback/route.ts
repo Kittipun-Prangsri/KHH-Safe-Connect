@@ -145,8 +145,18 @@ export async function POST(request: Request) {
 
     const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข');
 
-    const displayName = mophIdName || dbUser?.name || 'นายกิตติพันธ์ ปรางศรี';
-    const displayPosition = mophIdPosition || dbUser?.entryposition || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+    const fallbackName = (providerId && providerId !== 'HEALTHID-USER')
+      ? `เจ้าหน้าที่ (Provider ID: ${providerId})`
+      : (cid && cid !== 'HEALTHID-USER')
+      ? `บุคลากร MOPH ID (${cid})`
+      : 'เจ้าหน้าที่สาธารณสุข';
+
+    const fallbackPosition = (providerId && providerId !== 'HEALTHID-USER')
+      ? `บุคลากรทางการแพทย์ (${providerId})`
+      : 'บุคลากรสาธารณสุข';
+
+    const displayName = mophIdName || dbUser?.name || fallbackName;
+    const displayPosition = mophIdPosition || dbUser?.entryposition || fallbackPosition;
 
     // B. Check existing user profile in Supabase Store and update with real MOPH ID/HOSxP info
     const existingStoreProfile = await findDuplicatedUserProfile(cid);
@@ -156,7 +166,7 @@ export async function POST(request: Request) {
 
       const isDoctor = finalPos.includes('แพทย์') || finalPos.includes('นพ') || finalPos.includes('พญ');
       const isNurse = finalPos.includes('พยาบาล');
-      const isAdmin = finalPos.includes('คอมพิวเตอร์') || finalPos.includes('IT') || finalPos.includes('ADMIN') || finalName.includes('กิตติพันธ์');
+      const isAdmin = finalPos.includes('คอมพิวเตอร์') || finalPos.includes('IT') || finalPos.includes('ADMIN');
 
       const updatedProfile = {
         ...existingStoreProfile,
@@ -197,7 +207,7 @@ export async function POST(request: Request) {
     // D. Auto-provision User Profile with MOPH ID / HOSxP Real Name & Position
     const isDoctor = displayPosition.includes('แพทย์') || displayPosition.includes('นพ') || displayPosition.includes('พญ') || providerId.startsWith('DOC');
     const isNurse = displayPosition.includes('พยาบาล');
-    const isAdmin = displayPosition.includes('คอมพิวเตอร์') || displayPosition.includes('IT') || displayPosition.includes('ADMIN') || displayName.includes('กิตติพันธ์');
+    const isAdmin = displayPosition.includes('คอมพิวเตอร์') || displayPosition.includes('IT') || displayPosition.includes('ADMIN');
 
     const roleInfo = {
       role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : 'staff',
