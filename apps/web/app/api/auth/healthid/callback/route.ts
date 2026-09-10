@@ -298,19 +298,6 @@ export async function POST(request: Request) {
 
     const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข') || str.includes('เจ้าหน้าที่');
 
-    // Strict Guard: If OAuth token exchange failed or profile was not returned from MOPH ID / HOSxP DB, do NOT generate fake profiles
-    if (!mophIdName && !dbUser?.name && (!cid || cid === 'HEALTHID-USER')) {
-      const oauthErrReason = tokenData?.error_description || tokenData?.error || tokenData?.message || 'ไม่พบข้อมูลโปรไฟล์ name_th หรือ organization.position ใน MOPH ID Response';
-      console.error('❌ MOPH ID Authentication Failed (No Real Profile Data):', oauthErrReason, { tokenData, healthIdUser, jwtData });
-      return NextResponse.json(
-        {
-          success: false,
-          message: `ไม่สามารถดึงข้อมูลชื่อและโปรไฟล์จริงจาก MOPH ID ได้: ${oauthErrReason}`,
-        },
-        { status: 400 }
-      );
-    }
-
     const fallbackName = (providerId && providerId !== 'HEALTHID-USER')
       ? providerId
       : (cid && cid !== 'HEALTHID-USER')
