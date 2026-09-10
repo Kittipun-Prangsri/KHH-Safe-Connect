@@ -9,6 +9,9 @@ import { requireAuth, AuthenticatedRequest } from './middleware/auth.js';
 
 const app: Express = express();
 
+// Trust reverse proxy (Nginx / PM2 / Cloudflare) for rate limiting & IP extraction
+app.set('trust proxy', 1);
+
 // Security middlewares
 app.use(helmet());
 app.use(express.json());
