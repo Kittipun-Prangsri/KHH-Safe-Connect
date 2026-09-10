@@ -123,6 +123,64 @@ export async function POST(request: Request) {
       return null;
     };
 
+    // Helper to get name_th directly from MOPH ID JSON payload
+    const getMophIdName = (raw: any): string | null => {
+      if (!raw || typeof raw !== 'object') return null;
+
+      const inspectObj = (o: any): string | null => {
+        if (!o || typeof o !== 'object') return null;
+        if (o.name_th && typeof o.name_th === 'string' && o.name_th.trim()) return o.name_th.trim();
+        if (o.th_name && typeof o.th_name === 'string' && o.th_name.trim()) return o.th_name.trim();
+        if (o.provider_name && typeof o.provider_name === 'string' && o.provider_name.trim()) return o.provider_name.trim();
+        if (o.provider_full_name && typeof o.provider_full_name === 'string' && o.provider_full_name.trim()) return o.provider_full_name.trim();
+        if (o.full_name && typeof o.full_name === 'string' && o.full_name.trim()) return o.full_name.trim();
+        if (o.name && typeof o.name === 'string' && o.name.trim()) return o.name.trim();
+
+        const t = o.title_th || o.title || o.prefix_name || '';
+        const fn = o.first_name_th || o.first_name || o.firstname || o.fname || '';
+        const ln = o.last_name_th || o.last_name || o.lastname || o.lname || '';
+        if (fn.trim() || ln.trim()) return `${t}${fn} ${ln}`.trim();
+
+        return null;
+      };
+
+      return inspectObj(raw) ||
+             inspectObj(raw.data) ||
+             inspectObj(raw.data?.user) ||
+             inspectObj(raw.data?.profile) ||
+             inspectObj(raw.user) ||
+             inspectObj(raw.profile) ||
+             null;
+    };
+
+    // Helper to get organization.position directly from MOPH ID JSON payload
+    const getMophIdPosition = (raw: any): string | null => {
+      if (!raw || typeof raw !== 'object') return null;
+
+      const inspectPos = (o: any): string | null => {
+        if (!o || typeof o !== 'object') return null;
+        // Check organization.position explicitly
+        if (typeof o.organization === 'object' && o.organization?.position && typeof o.organization.position === 'string' && o.organization.position.trim()) {
+          return o.organization.position.trim();
+        }
+        if (typeof o.organization === 'string' && o.organization.trim()) {
+          return o.organization.trim();
+        }
+        // Direct position fields
+        const p = o.position || o.position_name || o.entryposition || o.position_th || o.job_title || o.role_label;
+        if (p && typeof p === 'string' && p.trim()) return p.trim();
+        return null;
+      };
+
+      return inspectPos(raw) ||
+             inspectPos(raw.data) ||
+             inspectPos(raw.data?.user) ||
+             inspectPos(raw.data?.profile) ||
+             inspectPos(raw.user) ||
+             inspectPos(raw.profile) ||
+             null;
+    };
+
     // Extract CID & Provider ID from all possible sources
     const cidCandidate = extractDeepKey(healthIdUser, ['cid', 'pid', 'id_card', 'national_id', 'health_id', 'sub']) ||
                          extractDeepKey(jwtData, ['cid', 'pid', 'sub']) ||
@@ -134,22 +192,9 @@ export async function POST(request: Request) {
                                 directProviderId || cid;
     const providerId = providerIdCandidate || cid;
 
-    // Extract Name DIRECTLY from MOPH ID / Provider Center payloads
-    const directNameFound = extractDeepKey(healthIdUser, ['provider_name', 'provider_full_name', 'doctor_name', 'staff_name', 'name_th', 'th_name', 'full_name_th', 'name', 'full_name', 'fullname', 'display_name']) ||
-                            extractDeepKey(jwtData, ['provider_name', 'name_th', 'name', 'full_name']) ||
-                            directName;
-
-    const title = extractDeepKey(healthIdUser, ['title_th', 'title', 'prefix_name', 'prefix']) || '';
-    const firstName = extractDeepKey(healthIdUser, ['first_name_th', 'first_name', 'firstname', 'fname_th', 'fname']) || '';
-    const lastName = extractDeepKey(healthIdUser, ['last_name_th', 'last_name', 'lastname', 'lname_th', 'lname']) || '';
-    const constructedName = (firstName || lastName) ? `${title}${firstName} ${lastName}`.trim() : null;
-
-    const mophIdName = (directNameFound || (constructedName && constructedName.length > 2 ? constructedName : null) || '').trim();
-
-    // Extract Position DIRECTLY from MOPH ID / Provider Center payloads
-    const rawPosFound = extractDeepKey(healthIdUser, ['position', 'position_name', 'entryposition', 'position_th', 'job_title', 'role_label', 'rank']) ||
-                        extractDeepKey(jwtData, ['position', 'entryposition', 'role_label']);
-    const mophIdPosition = (rawPosFound || '').trim();
+    // Extract Name & Position DIRECTLY from MOPH ID / Provider Center payloads (name_th & organization.position)
+    const mophIdName = (getMophIdName(healthIdUser) || getMophIdName(jwtData) || getMophIdName(body) || extractDeepKey(healthIdUser, ['name_th', 'provider_name', 'name']) || directName || '').trim();
+    const mophIdPosition = (getMophIdPosition(healthIdUser) || getMophIdPosition(jwtData) || getMophIdPosition(body) || extractDeepKey(healthIdUser, ['position', 'position_name']) || '').trim();
 
     // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname with 1s timeout
     let dbUser: any = null;
