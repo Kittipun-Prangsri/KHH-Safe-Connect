@@ -185,6 +185,28 @@ export async function POST(request: Request) {
         );
         rows = dbRows;
       }
+
+      // Fallback to doctor table if not found in opduser/opduser_Ncd
+      if (!rows || rows.length === 0) {
+        try {
+          const [docRows]: any = await pool.execute(
+            `SELECT code AS loginname, 
+                    CONVERT(name USING utf8mb4) AS name, 
+                    CONVERT(position_name USING utf8mb4) AS entryposition, 
+                    code AS doctorcode, licenseno, cid
+             FROM doctor 
+             WHERE (code = ? OR licenseno = ? OR cid = ?)
+               AND (active = 'Y' OR active IS NULL)
+             LIMIT 1`,
+            [cleanUsername, cleanUsername, cleanUsername]
+          );
+          if (docRows && docRows.length > 0) {
+            rows = docRows;
+          }
+        } catch {
+          // doctor table query fallback
+        }
+      }
     } catch (dbErr: any) {
       console.warn(`⚠️ HOSxP DB Connection Notice (${dbErr.code || 'ETIMEDOUT'}) for '${cleanUsername}'`);
 

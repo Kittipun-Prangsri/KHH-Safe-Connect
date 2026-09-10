@@ -135,7 +135,7 @@ export async function createDynamicStandbyProfile(
     badgeColor = 'bg-teal-100 text-teal-700 border-teal-200';
   }
 
-  const displayName = customName?.trim() || (isNumericCid ? `บุคลากรสาธารณสุข MOPH` : clean);
+  const displayName = customName?.trim() || (isNumericCid ? `บุคลากร MOPH ID (${clean})` : `เจ้าหน้าที่ (Provider ID: ${clean})`);
   const displayPosition = customPosition?.trim() || roleLabel;
 
   return provisionHosxpUserToStore({

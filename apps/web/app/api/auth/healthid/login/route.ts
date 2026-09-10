@@ -11,8 +11,9 @@ export async function GET(request: Request) {
 
   // State parameter for CSRF security
   const state = Math.random().toString(36).substring(2, 15);
+  const scope = encodeURIComponent('openid profile provider_id name_th organization');
 
-  const authUrl = `${baseUrl.replace(/\/$/, '')}/oauth/redirect?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
+  const authUrl = `${baseUrl.replace(/\/$/, '')}/oauth/redirect?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}&scope=${scope}`;
 
   return NextResponse.redirect(authUrl);
 }

@@ -61,13 +61,29 @@ export async function POST(request: Request) {
         const accessToken = tokenData.access_token || tokenData.token;
 
         if (accessToken) {
-          // Fetch HealthID User Profile
-          const profileRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
-            headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
-          }).catch(() => null);
+          // Fetch HealthID User Profile across standard MOPH ID endpoints
+          const profileEndpoints = [
+            `${baseUrl.replace(/\/$/, '')}/api/v1/users/me`,
+            `${baseUrl.replace(/\/$/, '')}/oauth/userinfo`,
+            `${baseUrl.replace(/\/$/, '')}/api/v1/profile`,
+            `${baseUrl.replace(/\/$/, '')}/api/v1/user`,
+          ];
 
-          if (profileRes && profileRes.ok) {
-            healthIdUser = await profileRes.json();
+          for (const ep of profileEndpoints) {
+            try {
+              const profileRes = await fetch(ep, {
+                headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+              });
+              if (profileRes && profileRes.ok) {
+                const resJson = await profileRes.json();
+                if (resJson && Object.keys(resJson).length > 0) {
+                  healthIdUser = resJson;
+                  break;
+                }
+              }
+            } catch {
+              // Try next endpoint
+            }
           }
         }
       } catch (oauthErr) {
@@ -89,54 +105,109 @@ export async function POST(request: Request) {
     };
     const jwtData = decodeJwt(tokenData?.access_token || tokenData?.token || tokenData?.id_token);
 
-    // Unnest HealthID profile payload if wrapped inside data/user/profile objects
-    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || jwtData || {};
+    // Deep recursive extractor for any key list inside nested objects
+    const extractDeepKey = (obj: any, keys: string[]): string | null => {
+      if (!obj || typeof obj !== 'object') return null;
+      for (const k of keys) {
+        if (obj[k] && (typeof obj[k] === 'string' || typeof obj[k] === 'number')) {
+          const val = String(obj[k]).trim();
+          if (val.length > 0) return val;
+        }
+      }
+      for (const subKey of Object.keys(obj)) {
+        if (obj[subKey] && typeof obj[subKey] === 'object') {
+          const res = extractDeepKey(obj[subKey], keys);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
 
-    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || jwtData.cid || jwtData.pid || directCid || directProviderId || 'HEALTHID-USER';
-    const providerId = u.provider_id || u.doctorcode || jwtData.provider_id || directProviderId || cid;
+    // Extract CID & Provider ID from all possible sources
+    const cidCandidate = extractDeepKey(healthIdUser, ['cid', 'pid', 'id_card', 'national_id', 'health_id', 'sub']) ||
+                         extractDeepKey(jwtData, ['cid', 'pid', 'sub']) ||
+                         directCid || directProviderId;
+    const cid = cidCandidate && cidCandidate !== 'HEALTHID-USER' ? cidCandidate : 'HEALTHID-USER';
 
-    // Extract full name DIRECTLY from MOPH ID / ProviderID response parameters
-    const rawName = u.provider_name || u.provider_full_name || u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name || jwtData.provider_name || jwtData.name_th || jwtData.name || jwtData.full_name;
-    const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
-    const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
+    const providerIdCandidate = extractDeepKey(healthIdUser, ['provider_id', 'providerId', 'doctorcode', 'doctor_code', 'license_no', 'licenseno']) ||
+                                extractDeepKey(jwtData, ['provider_id', 'doctorcode']) ||
+                                directProviderId || cid;
+    const providerId = providerIdCandidate || cid;
 
-    // Extract position DIRECTLY from MOPH ID / ProviderID response parameters
-    const orgObj = typeof u.organization === 'object' ? u.organization : (typeof jwtData.organization === 'object' ? jwtData.organization : {});
-    const orgPosition = orgObj?.position || orgObj?.position_name || orgObj?.entryposition || u.organization_position || jwtData.organization_position;
-    const rawPosition = orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || jwtData.position || jwtData.entryposition;
-    const mophIdPosition = (rawPosition || '').trim();
+    // Extract Name DIRECTLY from MOPH ID / Provider Center payloads
+    const directNameFound = extractDeepKey(healthIdUser, ['provider_name', 'provider_full_name', 'doctor_name', 'staff_name', 'name_th', 'th_name', 'full_name_th', 'name', 'full_name', 'fullname', 'display_name']) ||
+                            extractDeepKey(jwtData, ['provider_name', 'name_th', 'name', 'full_name']) ||
+                            directName;
 
-    // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname
+    const title = extractDeepKey(healthIdUser, ['title_th', 'title', 'prefix_name', 'prefix']) || '';
+    const firstName = extractDeepKey(healthIdUser, ['first_name_th', 'first_name', 'firstname', 'fname_th', 'fname']) || '';
+    const lastName = extractDeepKey(healthIdUser, ['last_name_th', 'last_name', 'lastname', 'lname_th', 'lname']) || '';
+    const constructedName = (firstName || lastName) ? `${title}${firstName} ${lastName}`.trim() : null;
+
+    const mophIdName = (directNameFound || (constructedName && constructedName.length > 2 ? constructedName : null) || '').trim();
+
+    // Extract Position DIRECTLY from MOPH ID / Provider Center payloads
+    const rawPosFound = extractDeepKey(healthIdUser, ['position', 'position_name', 'entryposition', 'position_th', 'job_title', 'role_label', 'rank']) ||
+                        extractDeepKey(jwtData, ['position', 'entryposition', 'role_label']);
+    const mophIdPosition = (rawPosFound || '').trim();
+
+    // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname across opduser_Ncd, opduser, doctor
     let dbUser: any = null;
     try {
       const pool = getHosxpPool();
-      // Try opduser table first by CID or ProviderID (doctorcode)
-      const [rows]: any = await pool.execute(
-        `SELECT loginname, 
-                CONVERT(name USING utf8mb4) AS name, 
-                CONVERT(entryposition USING utf8mb4) AS entryposition, 
-                CONVERT(department USING utf8mb4) AS department, 
-                CONVERT(groupname USING utf8mb4) AS groupname, 
-                doctorcode, cid
-         FROM opduser 
-         WHERE (cid = ? OR doctorcode = ? OR loginname = ?) LIMIT 1`,
-        [cid, providerId, cid]
-      );
-      if (rows && rows.length > 0) {
-        dbUser = rows[0];
-      } else if (providerId) {
-        // Fallback: Query HOSxP doctor table by ProviderID (doctorcode / licenseno)
-        const [docRows]: any = await pool.execute(
-          `SELECT code AS doctorcode, 
-                  CONVERT(name USING utf8mb4) AS name, 
-                  CONVERT(position_name USING utf8mb4) AS entryposition, 
-                  cid
-           FROM doctor 
-           WHERE (code = ? OR licenseno = ? OR cid = ?) LIMIT 1`,
-          [providerId, providerId, cid]
-        );
-        if (docRows && docRows.length > 0) {
-          dbUser = docRows[0];
+      const searchTerms = Array.from(new Set([cid, providerId, directProviderId, directCid])).filter((t) => t && t !== 'HEALTHID-USER');
+
+      if (searchTerms.length > 0) {
+        // 1. Try opduser_Ncd
+        try {
+          const [ncdRows]: any = await pool.execute(
+            `SELECT loginname, 
+                    CONVERT(name USING utf8mb4) AS name, 
+                    CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                    CONVERT(department USING utf8mb4) AS department, 
+                    doctorcode, cid
+             FROM opduser_Ncd 
+             WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+            [...searchTerms, ...searchTerms, ...searchTerms]
+          );
+          if (ncdRows && ncdRows.length > 0) {
+            dbUser = ncdRows[0];
+          }
+        } catch {
+          // Fallback to opduser
+        }
+
+        // 2. Try opduser
+        if (!dbUser) {
+          const [opdRows]: any = await pool.execute(
+            `SELECT loginname, 
+                    CONVERT(name USING utf8mb4) AS name, 
+                    CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                    CONVERT(department USING utf8mb4) AS department, 
+                    doctorcode, cid
+             FROM opduser 
+             WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+            [...searchTerms, ...searchTerms, ...searchTerms]
+          );
+          if (opdRows && opdRows.length > 0) {
+            dbUser = opdRows[0];
+          }
+        }
+
+        // 3. Fallback to doctor table
+        if (!dbUser) {
+          const [docRows]: any = await pool.execute(
+            `SELECT code AS doctorcode, 
+                    CONVERT(name USING utf8mb4) AS name, 
+                    CONVERT(position_name USING utf8mb4) AS entryposition, 
+                    cid
+             FROM doctor 
+             WHERE (code IN (${searchTerms.map(() => '?').join(',')}) OR licenseno IN (${searchTerms.map(() => '?').join(',')}) OR cid IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+            [...searchTerms, ...searchTerms, ...searchTerms]
+          );
+          if (docRows && docRows.length > 0) {
+            dbUser = docRows[0];
+          }
         }
       }
     } catch {

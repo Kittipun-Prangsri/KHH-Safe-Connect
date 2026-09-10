@@ -25,11 +25,23 @@ export default function HealthIdCallbackPage() {
         return;
       }
 
+      const providerId = params.get('provider_id') || params.get('providerId') || params.get('doctorcode') || params.get('pid') || params.get('id');
+      const cid = params.get('cid') || params.get('national_id') || params.get('id_card') || params.get('health_id');
+      const name = params.get('name') || params.get('name_th') || params.get('full_name') || params.get('fullname') || params.get('th_name');
+      const position = params.get('position') || params.get('entryposition') || params.get('job_title');
+
       try {
         const res = await fetch('/api/auth/healthid/callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({
+            code,
+            providerId,
+            cid,
+            name,
+            position,
+            queryParams: Object.fromEntries(params.entries()),
+          }),
         });
 
         const data = await res.json();
