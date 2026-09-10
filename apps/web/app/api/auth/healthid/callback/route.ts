@@ -64,9 +64,6 @@ export async function POST(request: Request) {
         tokenData = tokenJson?.data || tokenJson;
         const accessToken = tokenData.access_token || tokenData.token;
 
-        // TEMP DEBUG — remove once real-name display is confirmed working
-        console.log('🔍 [HealthID DEBUG] token exchange status:', tokenRes.status, 'keys:', Object.keys(tokenData || {}));
-
         // B. Real name/position lives in the separate Provider ID system (provider.id.th), not HealthID.
         // Requires its own client_id/secret_key registered with Provider ID (distinct from the
         // HealthID client_id/client_secret above). If not configured, we skip gracefully.
@@ -88,9 +85,6 @@ export async function POST(request: Request) {
                 }),
               });
 
-              // TEMP DEBUG — remove once real-name display is confirmed working
-              console.log('🔍 [HealthID DEBUG] provider token status:', providerTokenRes.status);
-
               if (providerTokenRes.ok) {
                 const providerTokenJson = await providerTokenRes.json().catch(() => ({}));
                 const providerAccessToken = providerTokenJson?.data?.access_token;
@@ -105,14 +99,9 @@ export async function POST(request: Request) {
                     },
                   });
 
-                  // TEMP DEBUG — remove once real-name display is confirmed working
-                  console.log('🔍 [HealthID DEBUG] provider profile status:', providerProfileRes.status);
-
                   if (providerProfileRes.ok) {
                     const providerProfileJson = await providerProfileRes.json().catch(() => ({}));
                     healthIdUser = providerProfileJson?.data || null;
-                    // TEMP DEBUG — remove once real-name display is confirmed working
-                    console.log('🔍 [HealthID DEBUG] provider profile payload:', JSON.stringify(healthIdUser));
                   }
                 }
               }
@@ -120,13 +109,7 @@ export async function POST(request: Request) {
             } catch (providerErr) {
               console.warn('⚠️ Provider ID profile fetch warning:', providerErr);
             }
-          } else {
-            // TEMP DEBUG — remove once real-name display is confirmed working
-            console.log('🔍 [HealthID DEBUG] PROVIDER_ID_CLIENT_ID/SECRET_KEY not configured — skipping Provider ID profile fetch');
           }
-        } else {
-          // TEMP DEBUG — remove once real-name display is confirmed working
-          console.log('🔍 [HealthID DEBUG] no access_token in token response:', JSON.stringify(tokenData));
         }
       } catch (oauthErr) {
         console.warn('⚠️ HealthID OAuth Token exchange warning:', oauthErr);
@@ -277,18 +260,6 @@ export async function POST(request: Request) {
       extractDeepKey(idTokenJwt, ['position', 'position_name']) ||
       ''
     ).trim();
-
-    // TEMP DEBUG — remove once real-name display is confirmed working
-    console.log('🔍 [HealthID DEBUG] extraction summary:', JSON.stringify({
-      cid,
-      providerId,
-      mophIdName,
-      mophIdPosition,
-      idTokenJwtKeys: Object.keys(idTokenJwt || {}),
-      accessTokenJwtKeys: Object.keys(accessTokenJwt || {}),
-      bodyDirect: { directName, directProviderId, directCid },
-      queryParams: body?.queryParams,
-    }));
 
     // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname with 1s timeout
     let dbUser: any = null;
