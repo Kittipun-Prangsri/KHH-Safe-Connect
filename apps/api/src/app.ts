@@ -1,4 +1,5 @@
 import express, { Express, Response } from 'express';
+import http from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -217,6 +218,39 @@ app.get('/api/v1/auth/me', requireAuth, (req: AuthenticatedRequest, res: Respons
       profile: req.profile
     }
   });
+});
+
+// 4. Fallback proxy to Next.js frontend (port 5188) for all web page routes
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith('/api/v1')) {
+    return next();
+  }
+
+  const targetPort = process.env.WEB_PORT || 5188;
+  const options: http.RequestOptions = {
+    hostname: '127.0.0.1',
+    port: targetPort,
+    path: req.url,
+    method: req.method,
+    headers: {
+      ...req.headers,
+      host: `127.0.0.1:${targetPort}`,
+    },
+  };
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+    proxyRes.pipe(res, { end: true });
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error(`⚠️ Proxy to Next.js (port ${targetPort}) failed:`, err.message);
+    if (!res.headersSent) {
+      res.status(502).send('Next.js frontend server unavailable on port ' + targetPort);
+    }
+  });
+
+  req.pipe(proxyReq, { end: true });
 });
 
 // Error handling middleware
