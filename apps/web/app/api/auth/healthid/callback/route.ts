@@ -151,64 +151,68 @@ export async function POST(request: Request) {
                         extractDeepKey(jwtData, ['position', 'entryposition', 'role_label']);
     const mophIdPosition = (rawPosFound || '').trim();
 
-    // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname across opduser_Ncd, opduser, doctor
+    // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname with 1s timeout
     let dbUser: any = null;
     try {
-      const pool = getHosxpPool();
       const searchTerms = Array.from(new Set([cid, providerId, directProviderId, directCid])).filter((t) => t && t !== 'HEALTHID-USER');
 
       if (searchTerms.length > 0) {
-        // 1. Try opduser_Ncd
-        try {
-          const [ncdRows]: any = await pool.execute(
-            `SELECT loginname, 
-                    CONVERT(name USING utf8mb4) AS name, 
-                    CONVERT(entryposition USING utf8mb4) AS entryposition, 
-                    CONVERT(department USING utf8mb4) AS department, 
-                    doctorcode, cid
-             FROM opduser_Ncd 
-             WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
-            [...searchTerms, ...searchTerms, ...searchTerms]
-          );
-          if (ncdRows && ncdRows.length > 0) {
-            dbUser = ncdRows[0];
+        const fetchDbUser = async () => {
+          const pool = getHosxpPool();
+          // 1. Try opduser_Ncd
+          try {
+            const [ncdRows]: any = await pool.execute(
+              `SELECT loginname, 
+                      CONVERT(name USING utf8mb4) AS name, 
+                      CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                      CONVERT(department USING utf8mb4) AS department, 
+                      doctorcode, cid
+               FROM opduser_Ncd 
+               WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+              [...searchTerms, ...searchTerms, ...searchTerms]
+            );
+            if (ncdRows && ncdRows.length > 0) return ncdRows[0];
+          } catch {
+            // Fallback to opduser
           }
-        } catch {
-          // Fallback to opduser
-        }
 
-        // 2. Try opduser
-        if (!dbUser) {
-          const [opdRows]: any = await pool.execute(
-            `SELECT loginname, 
-                    CONVERT(name USING utf8mb4) AS name, 
-                    CONVERT(entryposition USING utf8mb4) AS entryposition, 
-                    CONVERT(department USING utf8mb4) AS department, 
-                    doctorcode, cid
-             FROM opduser 
-             WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
-            [...searchTerms, ...searchTerms, ...searchTerms]
-          );
-          if (opdRows && opdRows.length > 0) {
-            dbUser = opdRows[0];
+          // 2. Try opduser
+          try {
+            const [opdRows]: any = await pool.execute(
+              `SELECT loginname, 
+                      CONVERT(name USING utf8mb4) AS name, 
+                      CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                      CONVERT(department USING utf8mb4) AS department, 
+                      doctorcode, cid
+               FROM opduser 
+               WHERE (cid IN (${searchTerms.map(() => '?').join(',')}) OR doctorcode IN (${searchTerms.map(() => '?').join(',')}) OR loginname IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+              [...searchTerms, ...searchTerms, ...searchTerms]
+            );
+            if (opdRows && opdRows.length > 0) return opdRows[0];
+          } catch {
+            // Fallback to doctor
           }
-        }
 
-        // 3. Fallback to doctor table
-        if (!dbUser) {
-          const [docRows]: any = await pool.execute(
-            `SELECT code AS doctorcode, 
-                    CONVERT(name USING utf8mb4) AS name, 
-                    CONVERT(position_name USING utf8mb4) AS entryposition, 
-                    cid
-             FROM doctor 
-             WHERE (code IN (${searchTerms.map(() => '?').join(',')}) OR licenseno IN (${searchTerms.map(() => '?').join(',')}) OR cid IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
-            [...searchTerms, ...searchTerms, ...searchTerms]
-          );
-          if (docRows && docRows.length > 0) {
-            dbUser = docRows[0];
+          // 3. Fallback to doctor table
+          try {
+            const [docRows]: any = await pool.execute(
+              `SELECT code AS doctorcode, 
+                      CONVERT(name USING utf8mb4) AS name, 
+                      CONVERT(position_name USING utf8mb4) AS entryposition, 
+                      cid
+               FROM doctor 
+               WHERE (code IN (${searchTerms.map(() => '?').join(',')}) OR licenseno IN (${searchTerms.map(() => '?').join(',')}) OR cid IN (${searchTerms.map(() => '?').join(',')})) LIMIT 1`,
+              [...searchTerms, ...searchTerms, ...searchTerms]
+            );
+            if (docRows && docRows.length > 0) return docRows[0];
+          } catch {
+            // doctor fallback
           }
-        }
+          return null;
+        };
+
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 1000));
+        dbUser = await Promise.race([fetchDbUser(), timeoutPromise]);
       }
     } catch {
       // HOSxP DB fallback
