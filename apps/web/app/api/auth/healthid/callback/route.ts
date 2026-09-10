@@ -60,6 +60,9 @@ export async function POST(request: Request) {
         tokenData = await tokenRes.json().catch(() => ({}));
         const accessToken = tokenData.access_token || tokenData.token;
 
+        // TEMP DEBUG — remove once real-name display is confirmed working
+        console.log('🔍 [HealthID DEBUG] token exchange status:', tokenRes.status, 'keys:', Object.keys(tokenData || {}));
+
         if (accessToken) {
           // Fetch HealthID User Profile across standard MOPH ID endpoints
           const profileEndpoints = [
@@ -74,17 +77,25 @@ export async function POST(request: Request) {
               const profileRes = await fetch(ep, {
                 headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
               });
+              // TEMP DEBUG — remove once real-name display is confirmed working
+              console.log('🔍 [HealthID DEBUG] profile endpoint', ep, '→ status', profileRes?.status);
               if (profileRes && profileRes.ok) {
                 const resJson = await profileRes.json();
                 if (resJson && Object.keys(resJson).length > 0) {
                   healthIdUser = resJson;
+                  // TEMP DEBUG — remove once real-name display is confirmed working
+                  console.log('🔍 [HealthID DEBUG] healthIdUser payload from', ep, ':', JSON.stringify(resJson));
                   break;
                 }
               }
-            } catch {
-              // Try next endpoint
+            } catch (epErr) {
+              // TEMP DEBUG — remove once real-name display is confirmed working
+              console.log('🔍 [HealthID DEBUG] profile endpoint', ep, 'threw:', epErr);
             }
           }
+        } else {
+          // TEMP DEBUG — remove once real-name display is confirmed working
+          console.log('🔍 [HealthID DEBUG] no access_token in token response:', JSON.stringify(tokenData));
         }
       } catch (oauthErr) {
         console.warn('⚠️ HealthID OAuth Token exchange warning:', oauthErr);
@@ -228,6 +239,18 @@ export async function POST(request: Request) {
       extractDeepKey(idTokenJwt, ['position', 'position_name']) ||
       ''
     ).trim();
+
+    // TEMP DEBUG — remove once real-name display is confirmed working
+    console.log('🔍 [HealthID DEBUG] extraction summary:', JSON.stringify({
+      cid,
+      providerId,
+      mophIdName,
+      mophIdPosition,
+      idTokenJwtKeys: Object.keys(idTokenJwt || {}),
+      accessTokenJwtKeys: Object.keys(accessTokenJwt || {}),
+      bodyDirect: { directName, directProviderId, directCid },
+      queryParams: body?.queryParams,
+    }));
 
     // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname with 1s timeout
     let dbUser: any = null;
