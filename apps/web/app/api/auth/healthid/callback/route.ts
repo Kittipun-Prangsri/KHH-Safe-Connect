@@ -94,12 +94,12 @@ export async function POST(request: Request) {
 
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || jwtData.cid || jwtData.pid || directCid || directProviderId || 'HEALTHID-USER';
     const providerId = u.provider_id || u.doctorcode || jwtData.provider_id || directProviderId || cid;
-    
+
     // Extract full name DIRECTLY from MOPH ID response parameter: name_th
     const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name || jwtData.name_th || jwtData.name || jwtData.full_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
-    
+
     // Extract position DIRECTLY from MOPH ID response parameter: organization.position
     const orgObj = typeof u.organization === 'object' ? u.organization : (typeof jwtData.organization === 'object' ? jwtData.organization : {});
     const orgPosition = orgObj?.position || orgObj?.position_name || orgObj?.entryposition || u.organization_position || jwtData.organization_position;
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
     const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข');
 
-    const displayName = mophIdName || dbUser?.name || 'นายกิตติพันธ์ ปรางค์ศรี';
+    const displayName = mophIdName || dbUser?.name || 'นายกิตติพันธ์ ปรางศรี';
     const displayPosition = mophIdPosition || dbUser?.entryposition || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
 
     // B. Check existing user profile in Supabase Store and update with real MOPH ID/HOSxP info
@@ -152,10 +152,10 @@ export async function POST(request: Request) {
         badgeColor: isAdmin
           ? 'bg-purple-100 text-purple-700 border-purple-200'
           : isDoctor
-          ? 'bg-sky-100 text-sky-700 border-sky-200'
-          : isNurse
-          ? 'bg-teal-100 text-teal-700 border-teal-200'
-          : existingStoreProfile.badgeColor || 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            ? 'bg-sky-100 text-sky-700 border-sky-200'
+            : isNurse
+              ? 'bg-teal-100 text-teal-700 border-teal-200'
+              : existingStoreProfile.badgeColor || 'bg-emerald-100 text-emerald-700 border-emerald-200',
       };
 
       recordLoginSuccess(clientIp);
@@ -190,10 +190,10 @@ export async function POST(request: Request) {
       badgeColor: isAdmin
         ? 'bg-purple-100 text-purple-700 border-purple-200'
         : isDoctor
-        ? 'bg-sky-100 text-sky-700 border-sky-200'
-        : isNurse
-        ? 'bg-teal-100 text-teal-700 border-teal-200'
-        : 'bg-emerald-100 text-emerald-700 border-emerald-200',
+          ? 'bg-sky-100 text-sky-700 border-sky-200'
+          : isNurse
+            ? 'bg-teal-100 text-teal-700 border-teal-200'
+            : 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
 
     const nowIso = new Date().toISOString();
