@@ -224,11 +224,11 @@ export async function POST(request: Request) {
       ? `เจ้าหน้าที่ (Provider ID: ${providerId})`
       : (cid && cid !== 'HEALTHID-USER')
       ? `บุคลากร MOPH ID (${cid})`
-      : 'เจ้าหน้าที่สาธารณสุข';
+      : 'เจ้าหน้าที่ทางการแพทย์';
 
     const fallbackPosition = (providerId && providerId !== 'HEALTHID-USER')
       ? `บุคลากรทางการแพทย์ (${providerId})`
-      : 'บุคลากรสาธารณสุข';
+      : 'บุคลากรทางการแพทย์';
 
     const displayName = mophIdName || dbUser?.name || fallbackName;
     const displayPosition = mophIdPosition || dbUser?.entryposition || fallbackPosition;

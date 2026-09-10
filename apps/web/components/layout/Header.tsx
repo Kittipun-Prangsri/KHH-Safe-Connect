@@ -14,16 +14,34 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [user, setUser] = useState<UserProfile>(PRESET_USERS.nurse);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('khh_user_session');
-      if (saved) {
+    const syncUserSession = async () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('khh_user_session');
+        if (saved) {
+          try {
+            setUser(JSON.parse(saved));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        // Always verify & sync with server cookie session
         try {
-          setUser(JSON.parse(saved));
-        } catch (e) {
-          console.error(e);
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+              setUser(data.user);
+              localStorage.setItem('khh_user_session', JSON.stringify(data.user));
+            }
+          }
+        } catch {
+          // Ignore network errors
         }
       }
-    }
+    };
+
+    syncUserSession();
   }, []);
 
   return (
