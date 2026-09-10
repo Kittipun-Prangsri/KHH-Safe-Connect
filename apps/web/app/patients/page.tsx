@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Unlink,
   Link as LinkIcon,
+  MessageSquare,
 } from 'lucide-react';
 import { maskCid, maskPhone, maskPatientName as maskName, isITSuperAdmin } from '@/lib/pdpaUtils';
 
@@ -445,7 +446,7 @@ export default function PatientsPage() {
                 <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <h4 className="font-extrabold text-emerald-950 text-xs flex items-center gap-2">
-                      <Link className="w-4 h-4 text-emerald-600" />
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
                       <span>สถานะการผูกบัญชี LINE Official Account (LINE Binding)</span>
                     </h4>
                     {lineBindings.filter((b) => b.is_active).length > 0 && (

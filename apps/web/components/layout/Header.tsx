@@ -60,7 +60,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </div>
             <div className="flex items-center gap-1 mt-0.5">
               <span className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded border ${user.badgeColor}`}>
-                {user.roleLabel}
+                {user.position || user.roleLabel}
               </span>
             </div>
           </div>
@@ -76,18 +76,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </Link>
 
         {/* Logout button */}
-        <Link
-          href="/"
-          onClick={() => {
+        <button
+          onClick={async () => {
             if (typeof window !== 'undefined') {
               localStorage.removeItem('khh_user_session');
             }
+            await fetch('/api/hosxp/auth/logout', { method: 'POST' }).catch(() => null);
+            window.location.href = '/';
           }}
-          className="p-2 rounded-xl border border-rose-100 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all"
+          className="p-2 rounded-xl border border-rose-100 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all cursor-pointer"
           title="ออกจากระบบ"
         >
           <LogOut className="w-4 h-4" />
-        </Link>
+        </button>
       </div>
     </header>
   );

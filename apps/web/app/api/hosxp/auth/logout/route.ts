@@ -18,3 +18,16 @@ export async function POST() {
   });
   return response;
 }
+
+export async function GET(request: Request) {
+  const loginUrl = new URL('/', request.url);
+  const response = NextResponse.redirect(loginUrl);
+  response.cookies.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+  return response;
+}

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" fill="none">
+  <defs>
+    <linearGradient id="gradBorder" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#84cc16"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <linearGradient id="gradNodes" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a3e635"/>
+      <stop offset="50%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Stylized Frame Border -->
+  <path d="M 405,135 Q 450,95 500,95 L 700,95 Q 770,95 725,180 L 650,305 Q 625,330 575,330 L 350,330 Q 315,330 330,315 Q 345,300 375,300 L 570,300 Q 610,300 630,265 L 700,150 Q 720,120 680,120 L 520,120" stroke="url(#gradBorder)" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+  <!-- Logo Text PROVIDER -->
+  <text x="25" y="255" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="105" fill="#059669" letter-spacing="2">PROVIDER</text>
+
+  <!-- Logo Text ID -->
+  <text x="525" y="260" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="140" fill="#046a59" letter-spacing="-1">ID</text>
+
+  <!-- Top Medical Cross Nodes Icon -->
+  <!-- Top Node -->
+  <rect x="470" y="25" width="80" height="80" rx="20" fill="url(#gradNodes)"/>
+  <!-- Center/Left Node -->
+  <rect x="470" y="115" width="80" height="80" rx="20" fill="url(#gradNodes)"/>
+  <!-- Connecting Horizontal & Vertical Bridges -->
+  <rect x="525" y="140" width="80" height="55" rx="15" fill="url(#gradNodes)"/>
+  <rect x="520" y="175" width="55" height="75" rx="15" fill="url(#gradNodes)"/>
+</svg>

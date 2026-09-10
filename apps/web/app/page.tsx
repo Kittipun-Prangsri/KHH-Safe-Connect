@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Lock, User, Activity, ArrowRight, HeartHandshake, AlertCircle, Database, CheckCircle2 } from 'lucide-react';
+import {
+  Shield,
+  Lock,
+  User,
+  Activity,
+  ArrowRight,
+  HeartHandshake,
+  AlertCircle,
+  Database,
+  CheckCircle2,
+  ShieldCheck,
+  ExternalLink,
+} from 'lucide-react';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -27,9 +39,6 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
 
-      // Read as text first — an interrupted connection (e.g. the dev server
-      // reloading mid-request) can leave the body empty or truncated, which
-      // makes res.json() throw a raw, meaningless error straight at the user.
       const raw = await res.text();
       let data: any = {};
       try {
@@ -42,16 +51,10 @@ export default function LoginPage() {
         throw new Error(data.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
       }
 
-      // The server already set an httpOnly session cookie on this response —
-      // that's what actually gates access. localStorage here is just for
-      // client-side UI display (e.g. the header's name/role badge).
       if (typeof window !== 'undefined') {
         localStorage.setItem('khh_user_session', JSON.stringify(data.user));
       }
 
-      // Honor the page the user was originally trying to reach (set by
-      // middleware when it redirected an unauthenticated request here).
-      // Only allow relative paths, to avoid an open-redirect.
       const params = new URLSearchParams(window.location.search);
       const redirectTo = params.get('redirectTo');
       window.location.href = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/dashboard';
@@ -60,6 +63,10 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHealthIdOAuthRedirect = () => {
+    window.location.href = '/api/auth/healthid/login';
   };
 
   return (
@@ -82,15 +89,20 @@ export default function LoginPage() {
 
         {/* Middle Value Proposition */}
         <div className="relative z-10 my-12 space-y-4">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            <Database className="w-3.5 h-3.5 text-emerald-400" /> เชื่อมต่อฐานข้อมูล HOSxP opduser สด 100%
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <Database className="w-3.5 h-3.5 text-emerald-400" /> เชื่อมต่อฐานข้อมูล HOSxP opduser สด 100%
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-sky-400" /> HealthID OAuth 2.0 (moph.id.th)
+            </span>
+          </div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
             เข้าสู่ระบบด้วยบัญชี HOSxP <br />
-            <span className="text-teal-400">ของโรงพยาบาลคลองหาด</span>
+            <span className="text-teal-400">หรือ HealthID / MOPH ID SSO</span>
           </h2>
           <p className="text-xs md:text-sm text-slate-300 max-w-md leading-relaxed">
-            เจ้าหน้าที่ แพทย์ พยาบาล และผู้ดูแลระบบ สามารถใช้ ชื่อผู้ใช้งาน (loginname) และ รหัสผ่าน เดียวกับที่ขึ้นเวรใช้งาน HOSxP เพื่อเข้าสู่ระบบได้ทันที
+            เจ้าหน้าที่ แพทย์ พยาบาล และบุคลากรทางการแพทย์ สามารถเข้าสู่ระบบด้วยชื่อผู้ใช้งาน HOSxP หรือยืนยันตัวตนด้วย HealthID (moph.id.th) / Provider ID ของกระทรวงสาธารณสุขได้ทันที
           </p>
         </div>
 
@@ -98,7 +110,7 @@ export default function LoginPage() {
         <div className="relative z-10 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/10 pt-4">
           <span>โรงพยาบาลคลองหาด (KHH Hospital)</span>
           <span className="flex items-center gap-1 text-emerald-400 font-bold">
-            <CheckCircle2 className="w-3.5 h-3.5" /> HOSxP Auth Active
+            <CheckCircle2 className="w-3.5 h-3.5" /> HOSxP & HealthID Auth Active
           </span>
         </div>
       </div>
@@ -108,7 +120,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-2xl p-8 shadow-xl space-y-6">
           <div>
             <h3 className="text-2xl font-bold text-slate-800">เข้าสู่ระบบ (Sign In)</h3>
-            <p className="text-xs text-slate-500 mt-1">ยืนยันตัวตนผ่านตาราง opduser ของระบบ HOSxP</p>
+            <p className="text-xs text-slate-500 mt-1">ยืนยันตัวตนด้วยบัญชี HOSxP หรือ HealthID (moph.id.th)</p>
           </div>
 
           {/* Error Message Box */}
@@ -119,7 +131,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form */}
+          {/* Form: HOSxP Login */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ใช้งาน HOSxP (Username / Login Name)</label>
@@ -167,9 +179,36 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="pt-4 border-t border-slate-100 text-center">
+          {/* Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-[11px]">
+              <span className="bg-white px-3 text-slate-400 font-semibold uppercase tracking-wider">
+                หรือยืนยันตัวตนผ่านกระทรวงสาธารณสุข
+              </span>
+            </div>
+          </div>
+
+          {/* Single MOPH ID Direct Link Button with Official Provider ID Logo */}
+          <button
+            type="button"
+            onClick={handleHealthIdOAuthRedirect}
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-800 text-white font-extrabold rounded-xl text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-between gap-3 cursor-pointer border border-emerald-500/30 group"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="px-2 py-1 rounded-lg bg-white shadow-xs group-hover:scale-105 transition-transform flex items-center justify-center">
+                <img src="/provider-id-logo.svg" alt="Provider ID Logo" className="h-5 w-auto object-contain" />
+              </div>
+              <span className="text-xs font-extrabold tracking-tight">เข้าสู่ระบบด้วย MOPH ID (Provider ID)</span>
+            </div>
+            <ExternalLink className="w-4 h-4 text-emerald-200 group-hover:translate-x-0.5 transition-transform shrink-0" />
+          </button>
+
+          <div className="pt-3 border-t border-slate-100 text-center">
             <p className="text-[11px] text-slate-400">
-              * หากไม่สามารถเข้าสู่ระบบได้ กรุณาติดต่อผู้ดูแลระบบ IT โรงพยาบาลคลองหาดเพื่อเปิดใช้งานสิทธิ์ `opduser`
+              * รองรับ HealthID Single Sign-On (SSO) บุคลากรสาธารณสุข กระทรวงสาธารณสุข (`moph.id.th`)
             </p>
           </div>
         </div>

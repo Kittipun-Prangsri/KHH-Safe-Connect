@@ -108,9 +108,14 @@ if (process.env.NODE_ENV !== 'production') {
 /**
  * Create dynamic fallback standby profile when HOSxP DB is offline/unreachable
  */
-export async function createDynamicStandbyProfile(username: string): Promise<UserSessionProfile> {
+export async function createDynamicStandbyProfile(
+  username: string,
+  customName?: string,
+  customPosition?: string
+): Promise<UserSessionProfile> {
   const clean = username.trim();
   const lower = clean.toLowerCase();
+  const isNumericCid = /^\d{10,13}$/.test(clean);
 
   let role = 'staff';
   let roleLabel = 'เจ้าหน้าที่ (Staff)';
@@ -123,21 +128,24 @@ export async function createDynamicStandbyProfile(username: string): Promise<Use
   } else if (lower.includes('doc') || lower.includes('dr') || lower === '0816' || lower.includes('หมอ')) {
     role = 'doctor';
     roleLabel = 'แพทย์ประจำคลินิก (Doctor)';
-    badgeColor: 'bg-sky-100 text-sky-700 border-sky-200';
+    badgeColor = 'bg-sky-100 text-sky-700 border-sky-200';
   } else if (lower.includes('nurse') || lower.includes('พยาบาล')) {
     role = 'nurse';
     roleLabel = 'พยาบาลวิชาชีพ (Nurse)';
     badgeColor = 'bg-teal-100 text-teal-700 border-teal-200';
   }
 
+  const displayName = customName?.trim() || (isNumericCid ? `บุคลากรสาธารณสุข MOPH` : clean);
+  const displayPosition = customPosition?.trim() || roleLabel;
+
   return provisionHosxpUserToStore({
     loginname: clean,
-    name: `${clean} (HOSxP User)`,
-    entryposition: roleLabel,
+    name: displayName,
+    entryposition: displayPosition,
     department: 'โรงพยาบาลคลองหาด',
     doctorcode: role === 'doctor' ? clean : '-',
     role,
-    roleLabel,
+    roleLabel: displayPosition,
     badgeColor,
   });
 }

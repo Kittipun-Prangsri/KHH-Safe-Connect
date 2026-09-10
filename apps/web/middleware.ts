@@ -6,13 +6,17 @@ const PUBLIC_PATHS = new Set([
   '/', // login page
   '/api/hosxp/auth/login',
   '/api/hosxp/auth/logout',
+  '/api/hosxp/auth/moph-id',
   '/api/line/webhook', // called by LINE's servers, not the browser
+  '/auth/healthid/callback', // HealthID OAuth callback page
+  '/api/auth/healthid/login', // HealthID OAuth authorize route
+  '/api/auth/healthid/callback', // HealthID OAuth code exchange route
 ]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (PUBLIC_PATHS.has(pathname)) {
+  if (PUBLIC_PATHS.has(pathname) || pathname.startsWith('/auth/healthid/') || pathname.startsWith('/api/auth/healthid/')) {
     return NextResponse.next();
   }
 
