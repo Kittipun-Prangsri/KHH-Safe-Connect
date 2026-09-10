@@ -80,21 +80,26 @@ export async function POST(request: Request) {
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
     const providerId = u.provider_id || u.doctorcode || directProviderId || cid;
     
-    // Extract full name (single string or prefix + first + last name)
+    // Extract full name DIRECTLY from MOPH ID response (single string or title + first_name + last_name)
     const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
-    const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
+    const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
     
-    // Extract position
-    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+    // Extract position DIRECTLY from MOPH ID response
+    const mophIdPosition = (u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || '').trim();
 
-    // B. Check existing user profile in Supabase Store
+    // Priority: 1. Direct MOPH ID -> 2. Existing Store -> 3. Fallback
+    const finalName = mophIdName || 'บุคลากรสาธารณสุข (MOPH ID)';
+    const finalPosition = mophIdPosition || 'MOPH Provider ID';
+
+    // B. Check existing user profile in Supabase Store and update with MOPH ID direct info
     const existingStoreProfile = await findDuplicatedUserProfile(cid);
     if (existingStoreProfile) {
       const updatedProfile = {
         ...existingStoreProfile,
-        name: fullName !== 'นายกิตติพันธ์ ปรางค์ศรี' ? fullName : existingStoreProfile.name,
-        position: position !== 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)' ? position : (existingStoreProfile.position || existingStoreProfile.roleLabel),
+        name: mophIdName || existingStoreProfile.name,
+        position: mophIdPosition || existingStoreProfile.position || existingStoreProfile.roleLabel,
+        roleLabel: mophIdPosition || existingStoreProfile.roleLabel,
       };
 
       recordLoginSuccess(clientIp);
@@ -102,7 +107,7 @@ export async function POST(request: Request) {
         loginname: updatedProfile.loginname,
         name: updatedProfile.name,
         role: updatedProfile.role,
-        source: 'HealthID OAuth 2.0 (moph.id.th)',
+        source: 'MOPH ID (moph.id.th)',
         ipAddress: clientIp,
         userAgent,
       });
@@ -110,7 +115,7 @@ export async function POST(request: Request) {
       return await withSessionCookie(
         NextResponse.json({
           success: true,
-          message: `⚡ เข้าสู่ระบบสำเร็จด้วย HealthID SSO (moph.id.th)! ยินดีต้อนรับ ${updatedProfile.name}`,
+          message: `⚡ เข้าสู่ระบบสำเร็จด้วย MOPH ID! ยินดีต้อนรับ ${updatedProfile.name}`,
           user: updatedProfile,
           authMethod: 'HEALTHID_OAUTH',
         }),
@@ -118,7 +123,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // C. Match with HOSxP DB by CID or DoctorCode
+    // C. Match with HOSxP DB by CID or DoctorCode (if needed for loginname/doctorcode)
     let dbUser: any = null;
     try {
       const pool = getHosxpPool();
@@ -140,17 +145,17 @@ export async function POST(request: Request) {
       // HOSxP DB fallback
     }
 
-    // D. Auto-provision User Profile with Thai Name & Position
-    const finalName = dbUser?.name || fullName;
-    const finalPosition = dbUser?.entryposition || position;
+    // D. Auto-provision User Profile with Direct MOPH ID Name & Position
+    const displayName = mophIdName || dbUser?.name || 'บุคลากรสาธารณสุข (MOPH ID)';
+    const displayPosition = mophIdPosition || dbUser?.entryposition || 'MOPH Provider ID';
 
-    const isDoctor = finalPosition.includes('แพทย์') || finalPosition.includes('นพ') || finalPosition.includes('พญ') || providerId.startsWith('DOC');
-    const isNurse = finalPosition.includes('พยาบาล');
-    const isAdmin = finalPosition.includes('คอมพิวเตอร์') || finalPosition.includes('IT') || finalPosition.includes('ADMIN') || finalName.includes('กิตติพันธ์');
+    const isDoctor = displayPosition.includes('แพทย์') || displayPosition.includes('นพ') || displayPosition.includes('พญ') || providerId.startsWith('DOC');
+    const isNurse = displayPosition.includes('พยาบาล');
+    const isAdmin = displayPosition.includes('คอมพิวเตอร์') || displayPosition.includes('IT') || displayPosition.includes('ADMIN') || displayName.includes('กิตติพันธ์');
 
     const roleInfo = {
       role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : 'staff',
-      roleLabel: finalPosition,
+      roleLabel: displayPosition,
       badgeColor: isAdmin
         ? 'bg-purple-100 text-purple-700 border-purple-200'
         : isDoctor
@@ -163,8 +168,8 @@ export async function POST(request: Request) {
     const nowIso = new Date().toISOString();
     const provisionedUser = await provisionHosxpUserToStore({
       loginname: dbUser?.loginname || providerId || cid,
-      name: finalName,
-      entryposition: finalPosition,
+      name: displayName,
+      entryposition: displayPosition,
       department: dbUser?.department || 'โรงพยาบาลคลองหาด (10866)',
       doctorcode: dbUser?.doctorcode || providerId,
       role: roleInfo.role,
