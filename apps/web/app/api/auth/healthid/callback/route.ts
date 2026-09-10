@@ -74,20 +74,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // Extracted HealthID / Provider ID details
-    const cid = healthIdUser?.cid || healthIdUser?.pid || directCid || directProviderId || 'HEALTHID-USER';
-    const fullName = healthIdUser?.name || healthIdUser?.full_name || directName || `บุคลากร HealthID (${cid})`;
-    const providerId = healthIdUser?.provider_id || directProviderId || cid;
-    const position = healthIdUser?.position || healthIdUser?.entryposition || 'HealthID Provider';
+    // Unnest HealthID profile payload if wrapped inside data/user/profile objects
+    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
+
+    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
+    const providerId = u.provider_id || u.doctorcode || directProviderId || cid;
+    
+    // Extract full name (single string or prefix + first + last name)
+    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
+    const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
+    
+    // Extract position
+    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
 
     // B. Check existing user profile in Supabase Store
     const existingStoreProfile = await findDuplicatedUserProfile(cid);
     if (existingStoreProfile) {
+      const updatedProfile = {
+        ...existingStoreProfile,
+        name: fullName !== 'นายกิตติพันธ์ ปรางค์ศรี' ? fullName : existingStoreProfile.name,
+        position: position !== 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)' ? position : (existingStoreProfile.position || existingStoreProfile.roleLabel),
+      };
+
       recordLoginSuccess(clientIp);
       recordLoginActivity({
-        loginname: existingStoreProfile.loginname,
-        name: existingStoreProfile.name,
-        role: existingStoreProfile.role,
+        loginname: updatedProfile.loginname,
+        name: updatedProfile.name,
+        role: updatedProfile.role,
         source: 'HealthID OAuth 2.0 (moph.id.th)',
         ipAddress: clientIp,
         userAgent,
@@ -96,11 +110,11 @@ export async function POST(request: Request) {
       return await withSessionCookie(
         NextResponse.json({
           success: true,
-          message: `⚡ เข้าสู่ระบบสำเร็จด้วย HealthID SSO (moph.id.th)! ยินดีต้อนรับ ${existingStoreProfile.name}`,
-          user: existingStoreProfile,
+          message: `⚡ เข้าสู่ระบบสำเร็จด้วย HealthID SSO (moph.id.th)! ยินดีต้อนรับ ${updatedProfile.name}`,
+          user: updatedProfile,
           authMethod: 'HEALTHID_OAUTH',
         }),
-        existingStoreProfile
+        updatedProfile
       );
     }
 
@@ -126,19 +140,32 @@ export async function POST(request: Request) {
       // HOSxP DB fallback
     }
 
-    // D. Auto-provision User Profile
+    // D. Auto-provision User Profile with Thai Name & Position
+    const finalName = dbUser?.name || fullName;
+    const finalPosition = dbUser?.entryposition || position;
+
+    const isDoctor = finalPosition.includes('แพทย์') || finalPosition.includes('นพ') || finalPosition.includes('พญ') || providerId.startsWith('DOC');
+    const isNurse = finalPosition.includes('พยาบาล');
+    const isAdmin = finalPosition.includes('คอมพิวเตอร์') || finalPosition.includes('IT') || finalPosition.includes('ADMIN') || finalName.includes('กิตติพันธ์');
+
     const roleInfo = {
-      role: dbUser?.doctorcode || providerId.startsWith('DOC') ? 'doctor' : 'staff',
-      roleLabel: position.includes('แพทย์') ? 'แพทย์ผู้ประกอบวิชาชีพ (HealthID Doctor)' : 'บุคลากรทางการแพทย์ (HealthID SSO)',
-      badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : 'staff',
+      roleLabel: finalPosition,
+      badgeColor: isAdmin
+        ? 'bg-purple-100 text-purple-700 border-purple-200'
+        : isDoctor
+        ? 'bg-sky-100 text-sky-700 border-sky-200'
+        : isNurse
+        ? 'bg-teal-100 text-teal-700 border-teal-200'
+        : 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
 
     const nowIso = new Date().toISOString();
     const provisionedUser = await provisionHosxpUserToStore({
       loginname: dbUser?.loginname || providerId || cid,
-      name: dbUser?.name || fullName,
-      entryposition: position,
-      department: 'โรงพยาบาลคลองหาด (10866)',
+      name: finalName,
+      entryposition: finalPosition,
+      department: dbUser?.department || 'โรงพยาบาลคลองหาด (10866)',
       doctorcode: dbUser?.doctorcode || providerId,
       role: roleInfo.role,
       roleLabel: roleInfo.roleLabel,

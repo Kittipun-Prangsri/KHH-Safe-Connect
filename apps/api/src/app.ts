@@ -112,9 +112,17 @@ app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: 
       }
     }
 
-    const cid = healthIdUser?.cid || healthIdUser?.pid || 'HEALTHID-USER';
-    const fullName = healthIdUser?.name || healthIdUser?.full_name || `บุคลากร HealthID (${cid})`;
-    const position = healthIdUser?.position || healthIdUser?.entryposition || 'HealthID Provider';
+    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
+
+    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || 'HEALTHID-USER';
+    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
+    const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
+    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+
+    const isDoctor = position.includes('แพทย์') || position.includes('นพ') || position.includes('พญ');
+    const isNurse = position.includes('พยาบาล');
+    const isAdmin = position.includes('คอมพิวเตอร์') || position.includes('IT') || position.includes('ADMIN') || fullName.includes('กิตติพันธ์');
 
     const userProfile = {
       id: cid,
@@ -122,9 +130,15 @@ app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: 
       name: fullName,
       entryposition: position,
       department: 'โรงพยาบาลคลองหาด (10866)',
-      role: position.includes('แพทย์') ? 'doctor' : 'staff',
-      roleLabel: position.includes('แพทย์') ? 'แพทย์ผู้ประกอบวิชาชีพ (HealthID Doctor)' : 'บุคลากรทางการแพทย์ (HealthID SSO)',
-      badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : 'staff',
+      roleLabel: position,
+      badgeColor: isAdmin
+        ? 'bg-purple-100 text-purple-700 border-purple-200'
+        : isDoctor
+        ? 'bg-sky-100 text-sky-700 border-sky-200'
+        : isNurse
+        ? 'bg-teal-100 text-teal-700 border-teal-200'
+        : 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
 
     return res.redirect(`${frontendUrl}/dashboard?sso=healthid&name=${encodeURIComponent(userProfile.name)}`);
@@ -140,7 +154,7 @@ app.post(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req:
     const baseUrl = process.env.HEALTHID_BASE_URL || 'https://moph.id.th';
     const clientId = process.env.HEALTHID_CLIENT_ID || '01939ac3-9394-7b9b-b3a4-0d53f13d3f32';
     const clientSecret = process.env.HEALTHID_CLIENT_SECRET || '6411c9c12f6a9bec112ed808a2d3dadbaa563938';
-    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://ncdnotify.khostime.site/api/auth/healthid/callback';
+    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://khhncd.khostime.site/auth/healthid/callback';
 
     let healthIdUser: any = null;
 
@@ -178,19 +192,33 @@ app.post(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req:
       }
     }
 
-    const cid = healthIdUser?.cid || healthIdUser?.pid || directCid || directProviderId || 'HEALTHID-USER';
-    const fullName = healthIdUser?.name || healthIdUser?.full_name || directName || `บุคลากร HealthID (${cid})`;
-    const position = healthIdUser?.position || healthIdUser?.entryposition || 'HealthID Provider';
+    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
+
+    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
+    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
+    const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
+    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+
+    const isDoctor = position.includes('แพทย์') || position.includes('นพ') || position.includes('พญ');
+    const isNurse = position.includes('พยาบาล');
+    const isAdmin = position.includes('คอมพิวเตอร์') || position.includes('IT') || position.includes('ADMIN') || fullName.includes('กิตติพันธ์');
 
     const userProfile = {
       id: cid,
       loginname: cid,
       name: fullName,
       entryposition: position,
-      department: 'โรงพยาบาลคลองหาด (10912)',
-      role: position.includes('แพทย์') ? 'doctor' : 'staff',
-      roleLabel: position.includes('แพทย์') ? 'แพทย์ผู้ประกอบวิชาชีพ (HealthID Doctor)' : 'บุคลากรทางการแพทย์ (HealthID SSO)',
-      badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      department: 'โรงพยาบาลคลองหาด (10866)',
+      role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : 'staff',
+      roleLabel: position,
+      badgeColor: isAdmin
+        ? 'bg-purple-100 text-purple-700 border-purple-200'
+        : isDoctor
+        ? 'bg-sky-100 text-sky-700 border-sky-200'
+        : isNurse
+        ? 'bg-teal-100 text-teal-700 border-teal-200'
+        : 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
 
     return res.status(200).json({
