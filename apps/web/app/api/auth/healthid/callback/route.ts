@@ -313,8 +313,8 @@ export async function POST(request: Request) {
     const displayName = mophIdName || dbUser?.name || fallbackName;
     const displayPosition = mophIdPosition || dbUser?.entryposition || fallbackPosition;
 
-    // B. Check existing user profile in Supabase Store and update with real MOPH ID/HOSxP info
-    const existingStoreProfile = await findDuplicatedUserProfile(cid);
+    // B. Check existing user profile in Supabase Store ONLY for real non-generic CIDs
+    const existingStoreProfile = (cid && cid !== 'HEALTHID-USER') ? await findDuplicatedUserProfile(cid) : null;
     if (existingStoreProfile) {
       const finalName = mophIdName || dbUser?.name || (isGeneric(existingStoreProfile.name) ? displayName : existingStoreProfile.name);
       const finalPos = mophIdPosition || dbUser?.entryposition || (isGeneric(existingStoreProfile.position) ? displayPosition : existingStoreProfile.position);
