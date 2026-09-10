@@ -64,15 +64,17 @@ app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: 
   const code = String(req.query.code || '');
   const error = String(req.query.error || '');
 
+  const frontendUrl = process.env.FRONTEND_URL || 'https://khhncd.khostime.site';
+
   if (error || !code) {
-    return res.redirect(`/?error=${encodeURIComponent(error || 'HealthID OAuth Cancelled')}`);
+    return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(error || 'HealthID OAuth Cancelled')}`);
   }
 
   try {
     const baseUrl = process.env.HEALTHID_BASE_URL || 'https://moph.id.th';
     const clientId = process.env.HEALTHID_CLIENT_ID || '01939ac3-9394-7b9b-b3a4-0d53f13d3f32';
     const clientSecret = process.env.HEALTHID_CLIENT_SECRET || '6411c9c12f6a9bec112ed808a2d3dadbaa563938';
-    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://ncdnotify.khostime.site/api/auth/healthid/callback';
+    const redirectUri = process.env.HEALTHID_REDIRECT_URI || `${frontendUrl}/auth/healthid/callback`;
 
     let healthIdUser: any = null;
 
@@ -125,10 +127,10 @@ app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: 
       badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
 
-    return res.redirect(`/dashboard?sso=healthid&name=${encodeURIComponent(userProfile.name)}`);
+    return res.redirect(`${frontendUrl}/dashboard?sso=healthid&name=${encodeURIComponent(userProfile.name)}`);
   } catch (err: any) {
     console.error('❌ Express HealthID GET Callback Error:', err);
-    return res.redirect(`/?error=${encodeURIComponent(err.message || 'OAuth Processing Error')}`);
+    return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message || 'OAuth Processing Error')}`);
   }
 });
 

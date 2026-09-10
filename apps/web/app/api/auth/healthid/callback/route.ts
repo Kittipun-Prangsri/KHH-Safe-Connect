@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const baseUrl = process.env.HEALTHID_BASE_URL || 'https://moph.id.th';
     const clientId = process.env.HEALTHID_CLIENT_ID || '01939ac3-9394-7b9b-b3a4-0d53f13d3f32';
     const clientSecret = process.env.HEALTHID_CLIENT_SECRET || '6411c9c12f6a9bec112ed808a2d3dadbaa563938';
-    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://ncdnotify.khostime.site/api/auth/healthid/callback';
+    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://khhncd.khostime.site/auth/healthid/callback';
 
     let healthIdUser: any = null;
 
