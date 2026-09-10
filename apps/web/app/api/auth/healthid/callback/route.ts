@@ -95,21 +95,22 @@ export async function POST(request: Request) {
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || jwtData.cid || jwtData.pid || directCid || directProviderId || 'HEALTHID-USER';
     const providerId = u.provider_id || u.doctorcode || jwtData.provider_id || directProviderId || cid;
 
-    // Extract full name DIRECTLY from MOPH ID response parameter: name_th
-    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name || jwtData.name_th || jwtData.name || jwtData.full_name;
+    // Extract full name DIRECTLY from MOPH ID / ProviderID response parameters
+    const rawName = u.provider_name || u.provider_full_name || u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name || jwtData.provider_name || jwtData.name_th || jwtData.name || jwtData.full_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
 
-    // Extract position DIRECTLY from MOPH ID response parameter: organization.position
+    // Extract position DIRECTLY from MOPH ID / ProviderID response parameters
     const orgObj = typeof u.organization === 'object' ? u.organization : (typeof jwtData.organization === 'object' ? jwtData.organization : {});
     const orgPosition = orgObj?.position || orgObj?.position_name || orgObj?.entryposition || u.organization_position || jwtData.organization_position;
     const rawPosition = orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || jwtData.position || jwtData.entryposition;
     const mophIdPosition = (rawPosition || '').trim();
 
-    // Match HOSxP DB by CID or DoctorCode to get real HOSxP Name & Position if MOPH ID was empty
+    // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname
     let dbUser: any = null;
     try {
       const pool = getHosxpPool();
+      // Try opduser table first by CID or ProviderID (doctorcode)
       const [rows]: any = await pool.execute(
         `SELECT loginname, 
                 CONVERT(name USING utf8mb4) AS name, 
@@ -123,6 +124,20 @@ export async function POST(request: Request) {
       );
       if (rows && rows.length > 0) {
         dbUser = rows[0];
+      } else if (providerId) {
+        // Fallback: Query HOSxP doctor table by ProviderID (doctorcode / licenseno)
+        const [docRows]: any = await pool.execute(
+          `SELECT code AS doctorcode, 
+                  CONVERT(name USING utf8mb4) AS name, 
+                  CONVERT(position_name USING utf8mb4) AS entryposition, 
+                  cid
+           FROM doctor 
+           WHERE (code = ? OR licenseno = ? OR cid = ?) LIMIT 1`,
+          [providerId, providerId, cid]
+        );
+        if (docRows && docRows.length > 0) {
+          dbUser = docRows[0];
+        }
       }
     } catch {
       // HOSxP DB fallback

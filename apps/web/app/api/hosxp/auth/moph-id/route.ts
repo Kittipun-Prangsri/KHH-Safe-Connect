@@ -189,6 +189,25 @@ export async function POST(request: Request) {
           dbUser = dbRows[0];
         }
       }
+
+      // Fallback: Query doctor table by ProviderID (code / licenseno / cid)
+      if (!dbUser) {
+        const [docRows]: any = await pool.execute(
+          `SELECT code AS doctorcode, 
+                  code AS loginname,
+                  CONVERT(name USING utf8mb4) AS name, 
+                  CONVERT(position_name USING utf8mb4) AS entryposition, 
+                  cid
+           FROM doctor 
+           WHERE (code = ? OR licenseno = ? OR cid = ?)
+             AND (active = 'Y' OR active IS NULL)
+           LIMIT 1`,
+          [inputId, inputId, inputId]
+        );
+        if (docRows && docRows.length > 0) {
+          dbUser = docRows[0];
+        }
+      }
     } catch (dbErr) {
       console.warn(`⚠️ HOSxP DB offline/unreachable for MOPH ID '${inputId}'`);
     }
