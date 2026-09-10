@@ -80,15 +80,16 @@ export async function POST(request: Request) {
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
     const providerId = u.provider_id || u.doctorcode || directProviderId || cid;
     
-    // Extract full name DIRECTLY from MOPH ID response (single string or title + first_name + last_name)
-    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    // Extract full name DIRECTLY from MOPH ID response parameter: name_th
+    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
     
-    // Extract position DIRECTLY from MOPH ID response
-    const mophIdPosition = (u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || '').trim();
+    // Extract position DIRECTLY from MOPH ID response parameter: organization.position
+    const orgPosition = typeof u.organization === 'object' ? (u.organization?.position || u.organization?.position_name || u.organization?.entryposition) : u.organization_position;
+    const mophIdPosition = (orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || '').trim();
 
-    // Priority: 1. Direct MOPH ID -> 2. Existing Store -> 3. Fallback
+    // Priority: 1. Direct MOPH ID (name_th & organization.position) -> 2. Fallback
     const finalName = mophIdName || 'บุคลากรสาธารณสุข (MOPH ID)';
     const finalPosition = mophIdPosition || 'MOPH Provider ID';
 

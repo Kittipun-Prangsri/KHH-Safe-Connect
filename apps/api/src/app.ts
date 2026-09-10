@@ -115,10 +115,11 @@ app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: 
     const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
 
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || 'HEALTHID-USER';
-    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
-    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+    const orgPosition = typeof u.organization === 'object' ? (u.organization?.position || u.organization?.position_name || u.organization?.entryposition) : u.organization_position;
+    const position = (orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)').trim();
 
     const isDoctor = position.includes('แพทย์') || position.includes('นพ') || position.includes('พญ');
     const isNurse = position.includes('พยาบาล');
@@ -195,10 +196,11 @@ app.post(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req:
     const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
 
     const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
-    const rawName = u.name || u.full_name || u.fullname || u.name_th || u.display_name || u.th_name;
+    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const fullName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || 'นายกิตติพันธ์ ปรางค์ศรี').trim();
-    const position = u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+    const orgPosition = typeof u.organization === 'object' ? (u.organization?.position || u.organization?.position_name || u.organization?.entryposition) : u.organization_position;
+    const position = (orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)').trim();
 
     const isDoctor = position.includes('แพทย์') || position.includes('นพ') || position.includes('พญ');
     const isNurse = position.includes('พยาบาล');
