@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Decode JWT payload from access_token / id_token if available
+    // Decode JWT payload from access_token / id_token if available (prioritize id_token for OIDC claims)
     const decodeJwt = (t?: string) => {
       if (!t || typeof t !== 'string' || !t.includes('.')) return {};
       try {
@@ -103,7 +103,16 @@ export async function POST(request: Request) {
         return {};
       }
     };
-    const jwtData = decodeJwt(tokenData?.access_token || tokenData?.token || tokenData?.id_token);
+
+    const idTokenJwt = decodeJwt(tokenData?.id_token);
+    const accessTokenJwt = decodeJwt(tokenData?.access_token);
+    const tokenJwt = decodeJwt(tokenData?.token);
+
+    const jwtData = {
+      ...accessTokenJwt,
+      ...tokenJwt,
+      ...idTokenJwt, // OIDC ID Token claims take highest priority
+    };
 
     // Deep recursive extractor for any key list inside nested objects
     const extractDeepKey = (obj: any, keys: string[]): string | null => {
@@ -183,11 +192,13 @@ export async function POST(request: Request) {
 
     // Extract CID & Provider ID from all possible sources
     const cidCandidate = extractDeepKey(healthIdUser, ['cid', 'pid', 'id_card', 'national_id', 'health_id', 'sub']) ||
+                         extractDeepKey(idTokenJwt, ['cid', 'pid', 'sub']) ||
                          extractDeepKey(jwtData, ['cid', 'pid', 'sub']) ||
                          directCid || directProviderId;
     const cid = cidCandidate && cidCandidate !== 'HEALTHID-USER' ? cidCandidate : 'HEALTHID-USER';
 
     const providerIdCandidate = extractDeepKey(healthIdUser, ['provider_id', 'providerId', 'doctorcode', 'doctor_code', 'license_no', 'licenseno']) ||
+                                extractDeepKey(idTokenJwt, ['provider_id', 'doctorcode']) ||
                                 extractDeepKey(jwtData, ['provider_id', 'doctorcode']) ||
                                 directProviderId || cid;
     const providerId = providerIdCandidate || cid;
@@ -196,10 +207,12 @@ export async function POST(request: Request) {
     const mophIdName = (
       getMophIdName(healthIdUser) ||
       getMophIdName(tokenData) ||
+      getMophIdName(idTokenJwt) ||
       getMophIdName(jwtData) ||
       getMophIdName(body) ||
       getMophIdName(body?.queryParams) ||
       extractDeepKey(healthIdUser, ['name_th', 'provider_name', 'name']) ||
+      extractDeepKey(idTokenJwt, ['name_th', 'provider_name', 'name']) ||
       directName ||
       ''
     ).trim();
@@ -207,10 +220,12 @@ export async function POST(request: Request) {
     const mophIdPosition = (
       getMophIdPosition(healthIdUser) ||
       getMophIdPosition(tokenData) ||
+      getMophIdPosition(idTokenJwt) ||
       getMophIdPosition(jwtData) ||
       getMophIdPosition(body) ||
       getMophIdPosition(body?.queryParams) ||
       extractDeepKey(healthIdUser, ['position', 'position_name']) ||
+      extractDeepKey(idTokenJwt, ['position', 'position_name']) ||
       ''
     ).trim();
 
