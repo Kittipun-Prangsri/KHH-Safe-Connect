@@ -193,8 +193,26 @@ export async function POST(request: Request) {
     const providerId = providerIdCandidate || cid;
 
     // Extract Name & Position DIRECTLY from MOPH ID / Provider Center payloads (name_th & organization.position)
-    const mophIdName = (getMophIdName(healthIdUser) || getMophIdName(jwtData) || getMophIdName(body) || extractDeepKey(healthIdUser, ['name_th', 'provider_name', 'name']) || directName || '').trim();
-    const mophIdPosition = (getMophIdPosition(healthIdUser) || getMophIdPosition(jwtData) || getMophIdPosition(body) || extractDeepKey(healthIdUser, ['position', 'position_name']) || '').trim();
+    const mophIdName = (
+      getMophIdName(healthIdUser) ||
+      getMophIdName(tokenData) ||
+      getMophIdName(jwtData) ||
+      getMophIdName(body) ||
+      getMophIdName(body?.queryParams) ||
+      extractDeepKey(healthIdUser, ['name_th', 'provider_name', 'name']) ||
+      directName ||
+      ''
+    ).trim();
+
+    const mophIdPosition = (
+      getMophIdPosition(healthIdUser) ||
+      getMophIdPosition(tokenData) ||
+      getMophIdPosition(jwtData) ||
+      getMophIdPosition(body) ||
+      getMophIdPosition(body?.queryParams) ||
+      extractDeepKey(healthIdUser, ['position', 'position_name']) ||
+      ''
+    ).trim();
 
     // Match HOSxP DB by CID, ProviderID (doctorcode), or loginname with 1s timeout
     let dbUser: any = null;
@@ -263,17 +281,19 @@ export async function POST(request: Request) {
       // HOSxP DB fallback
     }
 
-    const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข');
+    const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข') || str.includes('เจ้าหน้าที่');
 
     const fallbackName = (providerId && providerId !== 'HEALTHID-USER')
-      ? `เจ้าหน้าที่ (Provider ID: ${providerId})`
+      ? `Provider ID: ${providerId}`
       : (cid && cid !== 'HEALTHID-USER')
-      ? `บุคลากร MOPH ID (${cid})`
-      : 'เจ้าหน้าที่ทางการแพทย์';
+      ? `MOPH ID: ${cid}`
+      : 'MOPH ID User';
 
     const fallbackPosition = (providerId && providerId !== 'HEALTHID-USER')
-      ? `บุคลากรทางการแพทย์ (${providerId})`
-      : 'บุคลากรทางการแพทย์';
+      ? `Provider ID: ${providerId}`
+      : (cid && cid !== 'HEALTHID-USER')
+      ? `MOPH ID: ${cid}`
+      : 'MOPH ID';
 
     const displayName = mophIdName || dbUser?.name || fallbackName;
     const displayPosition = mophIdPosition || dbUser?.entryposition || fallbackPosition;
