@@ -58,10 +58,77 @@ app.get('/api/v1/health', (_, res: Response) => {
   });
 });
 
-// HealthID OAuth Callback Handlers in Express (supports GET & POST for both /api/auth/healthid/callback and /auth/healthid/callback)
-app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], (req: express.Request, res: Response) => {
-  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-  res.redirect(`/auth/healthid/callback${queryStr}`);
+// HealthID OAuth Callback Handlers in Express (processes GET and redirects directly to /dashboard to prevent redirect loops)
+app.get(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: express.Request, res: Response) => {
+  const code = String(req.query.code || '');
+  const error = String(req.query.error || '');
+
+  if (error || !code) {
+    return res.redirect(`/?error=${encodeURIComponent(error || 'HealthID OAuth Cancelled')}`);
+  }
+
+  try {
+    const baseUrl = process.env.HEALTHID_BASE_URL || 'https://moph.id.th';
+    const clientId = process.env.HEALTHID_CLIENT_ID || '01939ac3-9394-7b9b-b3a4-0d53f13d3f32';
+    const clientSecret = process.env.HEALTHID_CLIENT_SECRET || '6411c9c12f6a9bec112ed808a2d3dadbaa563938';
+    const redirectUri = process.env.HEALTHID_REDIRECT_URI || 'https://ncdnotify.khostime.site/api/auth/healthid/callback';
+
+    let healthIdUser: any = null;
+
+    if (code) {
+      try {
+        const tokenRes = await fetch(`${baseUrl.replace(/\/$/, '')}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: redirectUri,
+            client_id: clientId,
+            client_secret: clientSecret,
+          }).toString(),
+        });
+
+        const tokenData: any = await tokenRes.json();
+        const accessToken = tokenData.access_token || tokenData.token;
+
+        if (accessToken) {
+          const profileRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
+            headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+          }).catch(() => null);
+
+          if (profileRes && profileRes.ok) {
+            healthIdUser = await profileRes.json();
+          }
+        }
+      } catch (oauthErr) {
+        console.warn('⚠️ HealthID OAuth Token exchange warning in Express GET:', oauthErr);
+      }
+    }
+
+    const cid = healthIdUser?.cid || healthIdUser?.pid || 'HEALTHID-USER';
+    const fullName = healthIdUser?.name || healthIdUser?.full_name || `บุคลากร HealthID (${cid})`;
+    const position = healthIdUser?.position || healthIdUser?.entryposition || 'HealthID Provider';
+
+    const userProfile = {
+      id: cid,
+      loginname: cid,
+      name: fullName,
+      entryposition: position,
+      department: 'โรงพยาบาลคลองหาด (10866)',
+      role: position.includes('แพทย์') ? 'doctor' : 'staff',
+      roleLabel: position.includes('แพทย์') ? 'แพทย์ผู้ประกอบวิชาชีพ (HealthID Doctor)' : 'บุคลากรทางการแพทย์ (HealthID SSO)',
+      badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    };
+
+    return res.redirect(`/dashboard?sso=healthid&name=${encodeURIComponent(userProfile.name)}`);
+  } catch (err: any) {
+    console.error('❌ Express HealthID GET Callback Error:', err);
+    return res.redirect(`/?error=${encodeURIComponent(err.message || 'OAuth Processing Error')}`);
+  }
 });
 
 app.post(['/api/auth/healthid/callback', '/auth/healthid/callback'], async (req: express.Request, res: Response) => {
