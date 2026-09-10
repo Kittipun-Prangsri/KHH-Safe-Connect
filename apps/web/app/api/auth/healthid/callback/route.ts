@@ -39,10 +39,13 @@ export async function POST(request: Request) {
     let healthIdUser: any = null;
 
     // A. Exchange Code for Access Token with HealthID (moph.id.th) if code is present
+    // Per official MOPH ID OAuth integration guide: POST {HealthID-URL}/api/v1/token
+    // Response shape: { status, data: { access_token, token_type, expires_in, account_id }, message }
+    // NOTE: HealthID's token response carries NO name/profile fields — only account_id.
     let tokenData: any = {};
     if (code) {
       try {
-        const tokenRes = await fetch(`${baseUrl.replace(/\/$/, '')}/oauth/token`, {
+        const tokenRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -57,41 +60,69 @@ export async function POST(request: Request) {
           }).toString(),
         });
 
-        tokenData = await tokenRes.json().catch(() => ({}));
+        const tokenJson = await tokenRes.json().catch(() => ({}));
+        tokenData = tokenJson?.data || tokenJson;
         const accessToken = tokenData.access_token || tokenData.token;
 
         // TEMP DEBUG — remove once real-name display is confirmed working
         console.log('🔍 [HealthID DEBUG] token exchange status:', tokenRes.status, 'keys:', Object.keys(tokenData || {}));
 
+        // B. Real name/position lives in the separate Provider ID system (provider.id.th), not HealthID.
+        // Requires its own client_id/secret_key registered with Provider ID (distinct from the
+        // HealthID client_id/client_secret above). If not configured, we skip gracefully.
         if (accessToken) {
-          // Fetch HealthID User Profile across standard MOPH ID endpoints
-          const profileEndpoints = [
-            `${baseUrl.replace(/\/$/, '')}/api/v1/users/me`,
-            `${baseUrl.replace(/\/$/, '')}/oauth/userinfo`,
-            `${baseUrl.replace(/\/$/, '')}/api/v1/profile`,
-            `${baseUrl.replace(/\/$/, '')}/api/v1/user`,
-          ];
+          const providerBaseUrl = process.env.PROVIDER_ID_BASE_URL || 'https://provider.id.th';
+          const providerClientId = process.env.PROVIDER_ID_CLIENT_ID;
+          const providerSecretKey = process.env.PROVIDER_ID_SECRET_KEY;
 
-          for (const ep of profileEndpoints) {
+          if (providerClientId && providerSecretKey) {
             try {
-              const profileRes = await fetch(ep, {
-                headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+              const providerTokenRes = await fetch(`${providerBaseUrl.replace(/\/$/, '')}/api/v1/services/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({
+                  client_id: providerClientId,
+                  secret_key: providerSecretKey,
+                  token_by: 'Health ID',
+                  token: accessToken,
+                }),
               });
+
               // TEMP DEBUG — remove once real-name display is confirmed working
-              console.log('🔍 [HealthID DEBUG] profile endpoint', ep, '→ status', profileRes?.status);
-              if (profileRes && profileRes.ok) {
-                const resJson = await profileRes.json();
-                if (resJson && Object.keys(resJson).length > 0) {
-                  healthIdUser = resJson;
+              console.log('🔍 [HealthID DEBUG] provider token status:', providerTokenRes.status);
+
+              if (providerTokenRes.ok) {
+                const providerTokenJson = await providerTokenRes.json().catch(() => ({}));
+                const providerAccessToken = providerTokenJson?.data?.access_token;
+
+                if (providerAccessToken) {
+                  const providerProfileRes = await fetch(`${providerBaseUrl.replace(/\/$/, '')}/api/v1/services/profile`, {
+                    headers: {
+                      Authorization: `Bearer ${providerAccessToken}`,
+                      'client-id': providerClientId,
+                      'secret-key': providerSecretKey,
+                      Accept: 'application/json',
+                    },
+                  });
+
                   // TEMP DEBUG — remove once real-name display is confirmed working
-                  console.log('🔍 [HealthID DEBUG] healthIdUser payload from', ep, ':', JSON.stringify(resJson));
-                  break;
+                  console.log('🔍 [HealthID DEBUG] provider profile status:', providerProfileRes.status);
+
+                  if (providerProfileRes.ok) {
+                    const providerProfileJson = await providerProfileRes.json().catch(() => ({}));
+                    healthIdUser = providerProfileJson?.data || null;
+                    // TEMP DEBUG — remove once real-name display is confirmed working
+                    console.log('🔍 [HealthID DEBUG] provider profile payload:', JSON.stringify(healthIdUser));
+                  }
                 }
               }
-            } catch (epErr) {
-              // TEMP DEBUG — remove once real-name display is confirmed working
-              console.log('🔍 [HealthID DEBUG] profile endpoint', ep, 'threw:', epErr);
+              // A 400 here means this HealthID user has no Provider ID registered — expected, not an error.
+            } catch (providerErr) {
+              console.warn('⚠️ Provider ID profile fetch warning:', providerErr);
             }
+          } else {
+            // TEMP DEBUG — remove once real-name display is confirmed working
+            console.log('🔍 [HealthID DEBUG] PROVIDER_ID_CLIENT_ID/SECRET_KEY not configured — skipping Provider ID profile fetch');
           }
         } else {
           // TEMP DEBUG — remove once real-name display is confirmed working
@@ -156,9 +187,9 @@ export async function POST(request: Request) {
         if (o.full_name && typeof o.full_name === 'string' && o.full_name.trim()) return o.full_name.trim();
         if (o.name && typeof o.name === 'string' && o.name.trim()) return o.name.trim();
 
-        const t = o.title_th || o.title || o.prefix_name || '';
-        const fn = o.first_name_th || o.first_name || o.firstname || o.fname || '';
-        const ln = o.last_name_th || o.last_name || o.lastname || o.lname || '';
+        const t = o.title_th || o.special_title_th || o.title || o.prefix_name || '';
+        const fn = o.firstname_th || o.first_name_th || o.first_name || o.firstname || o.fname || '';
+        const ln = o.lastname_th || o.last_name_th || o.last_name || o.lastname || o.lname || '';
         if (fn.trim() || ln.trim()) return `${t}${fn} ${ln}`.trim();
 
         return null;
@@ -179,8 +210,15 @@ export async function POST(request: Request) {
 
       const inspectPos = (o: any): string | null => {
         if (!o || typeof o !== 'object') return null;
+        // Provider ID profile returns `organization` as an array of affiliations
+        if (Array.isArray(o.organization) && o.organization.length > 0) {
+          const org = o.organization[0];
+          if (org?.position && typeof org.position === 'string' && org.position.trim()) {
+            return org.position.trim();
+          }
+        }
         // Check organization.position explicitly
-        if (typeof o.organization === 'object' && o.organization?.position && typeof o.organization.position === 'string' && o.organization.position.trim()) {
+        if (typeof o.organization === 'object' && !Array.isArray(o.organization) && o.organization?.position && typeof o.organization.position === 'string' && o.organization.position.trim()) {
           return o.organization.position.trim();
         }
         if (typeof o.organization === 'string' && o.organization.trim()) {
@@ -202,7 +240,7 @@ export async function POST(request: Request) {
     };
 
     // Extract CID & Provider ID from all possible sources
-    const cidCandidate = extractDeepKey(healthIdUser, ['cid', 'pid', 'id_card', 'national_id', 'health_id', 'sub']) ||
+    const cidCandidate = extractDeepKey(healthIdUser, ['cid', 'pid', 'id_card', 'national_id', 'health_id', 'sub', 'hash_cid', 'account_id']) ||
                          extractDeepKey(idTokenJwt, ['cid', 'pid', 'sub']) ||
                          extractDeepKey(jwtData, ['cid', 'pid', 'sub']) ||
                          directCid || directProviderId;
