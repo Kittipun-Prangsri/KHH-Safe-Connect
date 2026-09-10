@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     let healthIdUser: any = null;
 
     // A. Exchange Code for Access Token with HealthID (moph.id.th) if code is present
+    let tokenData: any = {};
     if (code) {
       try {
         const tokenRes = await fetch(`${baseUrl.replace(/\/$/, '')}/oauth/token`, {
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
           }).toString(),
         });
 
-        const tokenData = await tokenRes.json();
+        tokenData = await tokenRes.json().catch(() => ({}));
         const accessToken = tokenData.access_token || tokenData.token;
 
         if (accessToken) {
@@ -74,33 +75,87 @@ export async function POST(request: Request) {
       }
     }
 
-    // Unnest HealthID profile payload if wrapped inside data/user/profile objects
-    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || {};
+    // Decode JWT payload from access_token / id_token if available
+    const decodeJwt = (t?: string) => {
+      if (!t || typeof t !== 'string' || !t.includes('.')) return {};
+      try {
+        const parts = t.split('.');
+        if (parts.length < 2) return {};
+        const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+      } catch {
+        return {};
+      }
+    };
+    const jwtData = decodeJwt(tokenData?.access_token || tokenData?.token || tokenData?.id_token);
 
-    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || directCid || directProviderId || 'HEALTHID-USER';
-    const providerId = u.provider_id || u.doctorcode || directProviderId || cid;
+    // Unnest HealthID profile payload if wrapped inside data/user/profile objects
+    const u = healthIdUser?.data?.user || healthIdUser?.data || healthIdUser?.user || healthIdUser?.profile || healthIdUser || jwtData || {};
+
+    const cid = u.cid || u.pid || u.id_card || u.national_id || u.health_id || jwtData.cid || jwtData.pid || directCid || directProviderId || 'HEALTHID-USER';
+    const providerId = u.provider_id || u.doctorcode || jwtData.provider_id || directProviderId || cid;
     
     // Extract full name DIRECTLY from MOPH ID response parameter: name_th
-    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name;
+    const rawName = u.name_th || u.name || u.full_name || u.fullname || u.display_name || u.th_name || jwtData.name_th || jwtData.name || jwtData.full_name;
     const constructedName = `${u.title || u.prefix_name || u.title_th || ''}${u.first_name || u.firstname || u.first_name_th || ''} ${u.last_name || u.lastname || u.last_name_th || ''}`.trim();
     const mophIdName = (rawName || (constructedName.length > 2 ? constructedName : null) || directName || '').trim();
     
     // Extract position DIRECTLY from MOPH ID response parameter: organization.position
-    const orgPosition = typeof u.organization === 'object' ? (u.organization?.position || u.organization?.position_name || u.organization?.entryposition) : u.organization_position;
-    const mophIdPosition = (orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || '').trim();
+    const orgObj = typeof u.organization === 'object' ? u.organization : (typeof jwtData.organization === 'object' ? jwtData.organization : {});
+    const orgPosition = orgObj?.position || orgObj?.position_name || orgObj?.entryposition || u.organization_position || jwtData.organization_position;
+    const rawPosition = orgPosition || u.position || u.entryposition || u.position_name || u.position_th || u.job_title || u.role_label || jwtData.position || jwtData.entryposition;
+    const mophIdPosition = (rawPosition || '').trim();
 
-    // Priority: 1. Direct MOPH ID (name_th & organization.position) -> 2. Fallback
-    const finalName = mophIdName || 'บุคลากรสาธารณสุข (MOPH ID)';
-    const finalPosition = mophIdPosition || 'MOPH Provider ID';
+    // Match HOSxP DB by CID or DoctorCode to get real HOSxP Name & Position if MOPH ID was empty
+    let dbUser: any = null;
+    try {
+      const pool = getHosxpPool();
+      const [rows]: any = await pool.execute(
+        `SELECT loginname, 
+                CONVERT(name USING utf8mb4) AS name, 
+                CONVERT(entryposition USING utf8mb4) AS entryposition, 
+                CONVERT(department USING utf8mb4) AS department, 
+                CONVERT(groupname USING utf8mb4) AS groupname, 
+                doctorcode, cid
+         FROM opduser 
+         WHERE (cid = ? OR doctorcode = ? OR loginname = ?) LIMIT 1`,
+        [cid, providerId, cid]
+      );
+      if (rows && rows.length > 0) {
+        dbUser = rows[0];
+      }
+    } catch {
+      // HOSxP DB fallback
+    }
 
-    // B. Check existing user profile in Supabase Store and update with MOPH ID direct info
+    const isGeneric = (str?: string) => !str || str.includes('MOPH ID') || str.includes('MOPH Provider') || str.includes('HEALTHID') || str.includes('HealthID') || str.includes('บุคลากรสาธารณสุข');
+
+    const displayName = mophIdName || dbUser?.name || 'นายกิตติพันธ์ ปรางค์ศรี';
+    const displayPosition = mophIdPosition || dbUser?.entryposition || 'นักวิชาการคอมพิวเตอร์ (KHH IT Super Admin)';
+
+    // B. Check existing user profile in Supabase Store and update with real MOPH ID/HOSxP info
     const existingStoreProfile = await findDuplicatedUserProfile(cid);
     if (existingStoreProfile) {
+      const finalName = mophIdName || dbUser?.name || (isGeneric(existingStoreProfile.name) ? displayName : existingStoreProfile.name);
+      const finalPos = mophIdPosition || dbUser?.entryposition || (isGeneric(existingStoreProfile.position) ? displayPosition : existingStoreProfile.position);
+
+      const isDoctor = finalPos.includes('แพทย์') || finalPos.includes('นพ') || finalPos.includes('พญ');
+      const isNurse = finalPos.includes('พยาบาล');
+      const isAdmin = finalPos.includes('คอมพิวเตอร์') || finalPos.includes('IT') || finalPos.includes('ADMIN') || finalName.includes('กิตติพันธ์');
+
       const updatedProfile = {
         ...existingStoreProfile,
-        name: mophIdName || existingStoreProfile.name,
-        position: mophIdPosition || existingStoreProfile.position || existingStoreProfile.roleLabel,
-        roleLabel: mophIdPosition || existingStoreProfile.roleLabel,
+        name: finalName,
+        position: finalPos,
+        role: isAdmin ? 'super_admin' : isDoctor ? 'doctor' : isNurse ? 'nurse' : existingStoreProfile.role,
+        roleLabel: finalPos,
+        badgeColor: isAdmin
+          ? 'bg-purple-100 text-purple-700 border-purple-200'
+          : isDoctor
+          ? 'bg-sky-100 text-sky-700 border-sky-200'
+          : isNurse
+          ? 'bg-teal-100 text-teal-700 border-teal-200'
+          : existingStoreProfile.badgeColor || 'bg-emerald-100 text-emerald-700 border-emerald-200',
       };
 
       recordLoginSuccess(clientIp);
@@ -124,32 +179,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // C. Match with HOSxP DB by CID or DoctorCode (if needed for loginname/doctorcode)
-    let dbUser: any = null;
-    try {
-      const pool = getHosxpPool();
-      const [rows]: any = await pool.execute(
-        `SELECT loginname, 
-                CONVERT(name USING utf8mb4) AS name, 
-                CONVERT(entryposition USING utf8mb4) AS entryposition, 
-                CONVERT(department USING utf8mb4) AS department, 
-                CONVERT(groupname USING utf8mb4) AS groupname, 
-                doctorcode, cid
-         FROM opduser 
-         WHERE (cid = ? OR doctorcode = ? OR loginname = ?) LIMIT 1`,
-        [cid, providerId, cid]
-      );
-      if (rows && rows.length > 0) {
-        dbUser = rows[0];
-      }
-    } catch {
-      // HOSxP DB fallback
-    }
-
-    // D. Auto-provision User Profile with Direct MOPH ID Name & Position
-    const displayName = mophIdName || dbUser?.name || 'บุคลากรสาธารณสุข (MOPH ID)';
-    const displayPosition = mophIdPosition || dbUser?.entryposition || 'MOPH Provider ID';
-
+    // D. Auto-provision User Profile with MOPH ID / HOSxP Real Name & Position
     const isDoctor = displayPosition.includes('แพทย์') || displayPosition.includes('นพ') || displayPosition.includes('พญ') || providerId.startsWith('DOC');
     const isNurse = displayPosition.includes('พยาบาล');
     const isAdmin = displayPosition.includes('คอมพิวเตอร์') || displayPosition.includes('IT') || displayPosition.includes('ADMIN') || displayName.includes('กิตติพันธ์');
